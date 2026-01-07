@@ -1,0 +1,190 @@
+# ============================================================================
+# OmniCpp Template - Platform Configuration
+# ============================================================================
+# Defines platform-specific settings for Windows, Linux, and WASM
+# ============================================================================
+
+# ============================================================================
+# Platform Detection
+# ============================================================================
+if(WIN32)
+    set(OMNICPP_PLATFORM_WINDOWS ON)
+    set(OMNICPP_PLATFORM_NAME "Windows")
+elseif(UNIX AND NOT APPLE)
+    set(OMNICPP_PLATFORM_LINUX ON)
+    set(OMNICPP_PLATFORM_NAME "Linux")
+elseif(APPLE)
+    set(OMNICPP_PLATFORM_MACOS ON)
+    set(OMNICPP_PLATFORM_NAME "macOS")
+elseif(EMSCRIPTEN)
+    set(OMNICPP_PLATFORM_WASM ON)
+    set(OMNICPP_PLATFORM_NAME "WASM")
+else()
+    message(WARNING "Unknown platform: ${CMAKE_SYSTEM_NAME}")
+    set(OMNICPP_PLATFORM_NAME "Unknown")
+endif()
+
+# ============================================================================
+# Architecture Detection
+# ============================================================================
+if(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64|AMD64|x64")
+    set(OMNICPP_ARCH_X64 ON)
+    set(OMNICPP_ARCH_NAME "x64")
+elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "i386|i686|x86")
+    set(OMNICPP_ARCH_X86 ON)
+    set(OMNICPP_ARCH_NAME "x86")
+elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64|arm64|ARM64")
+    set(OMNICPP_ARCH_ARM64 ON)
+    set(OMNICPP_ARCH_NAME "arm64")
+elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "arm|ARM")
+    set(OMNICPP_ARCH_ARM ON)
+    set(OMNICPP_ARCH_NAME "arm")
+else()
+    message(WARNING "Unknown architecture: ${CMAKE_SYSTEM_PROCESSOR}")
+    set(OMNICPP_ARCH_NAME "Unknown")
+endif()
+
+# ============================================================================
+# Windows-Specific Configuration
+# ============================================================================
+if(OMNICPP_PLATFORM_WINDOWS)
+    # Windows libraries
+    set(OMNICPP_PLATFORM_LIBRARIES "ws2_32;winmm;version")
+
+    # Windows definitions
+    add_definitions(-DWIN32_LEAN_AND_MEAN)
+    add_definitions(-DNOMINMAX)
+    add_definitions(-D_CRT_SECURE_NO_WARNINGS)
+    add_definitions(-D_CRT_SECURE_NO_DEPRECATE)
+    add_definitions(-D_SCL_SECURE_NO_WARNINGS)
+
+    # Windows subsystem
+    if(OMNICPP_PLATFORM_WASM)
+    # WASM doesn't use Windows subsystem
+    else()
+        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /SUBSYSTEM:WINDOWS")
+    endif()
+
+    # Windows-specific paths
+    set(OMNICPP_PATH_SEPARATOR "\\")
+
+    # Windows-specific compiler flags
+    if(MSVC)
+        add_compile_options(/utf-8) # Use UTF-8 source files
+    endif()
+endif()
+
+# ============================================================================
+# Linux-Specific Configuration
+# ============================================================================
+if(OMNICPP_PLATFORM_LINUX)
+    # Linux libraries
+    set(OMNICPP_PLATFORM_LIBRARIES "pthread;dl;rt")
+
+    # Linux definitions
+    add_definitions(-D_POSIX_C_SOURCE=200809L)
+    add_definitions(-D_XOPEN_SOURCE=700)
+
+    # Linux-specific paths
+    set(OMNICPP_PATH_SEPARATOR "/")
+
+    # Linux-specific compiler flags
+    if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+        add_compile_options(-fPIC)
+    endif()
+
+    # Linux-specific linker flags
+    add_link_options(-Wl,--as-needed)
+    add_link_options(-Wl,--no-undefined)
+endif()
+
+# ============================================================================
+# WASM-Specific Configuration
+# ============================================================================
+if(OMNICPP_PLATFORM_WASM)
+    # WASM libraries (Emscripten provides most)
+    set(OMNICPP_PLATFORM_LIBRARIES "")
+
+    # WASM definitions
+    add_definitions(-D__EMSCRIPTEN__)
+
+    # WASM-specific paths
+    set(OMNICPP_PATH_SEPARATOR "/")
+
+    # WASM-specific compiler flags
+    add_compile_options(-s USE_SDL=2)
+    add_compile_options(-s WASM=1)
+    add_compile_options(-s ALLOW_MEMORY_GROWTH=1)
+
+    # WASM-specific linker flags
+    add_link_options(-s USE_SDL=2)
+    add_link_options(-s WASM=1)
+    add_link_options(-s ALLOW_MEMORY_GROWTH=1)
+    add_link_options(-s EXPORTED_RUNTIME_METHODS='["ccall","cwrap"]')
+    add_link_options(-s EXPORTED_FUNCTIONS='["_main","_malloc","_free"]')
+
+    # Disable threading for WASM (not fully supported yet)
+    set(CMAKE_THREAD_PREFER_PTHREAD OFF)
+endif()
+
+# ============================================================================
+# macOS-Specific Configuration
+# ============================================================================
+if(OMNICPP_PLATFORM_MACOS)
+    # macOS libraries
+    set(OMNICPP_PLATFORM_LIBRARIES "-framework Cocoa -framework IOKit -framework CoreVideo")
+
+    # macOS definitions
+    add_definitions(-D__APPLE__)
+
+    # macOS-specific paths
+    set(OMNICPP_PATH_SEPARATOR "/")
+
+    # macOS-specific compiler flags
+    add_compile_options(-fPIC)
+
+    # macOS-specific linker flags
+    add_link_options(-Wl,-headerpad_max_install_names)
+endif()
+
+# ============================================================================
+# Cross-Compilation Detection
+# ============================================================================
+if(CMAKE_CROSSCOMPILING)
+    set(OMNICPP_CROSS_COMPILING ON)
+    message(STATUS "Cross-compiling for ${CMAKE_SYSTEM_NAME}-${CMAKE_SYSTEM_PROCESSOR}")
+else()
+    set(OMNICPP_CROSS_COMPILING OFF)
+endif()
+
+# ============================================================================
+# Platform-Specific Libraries
+# ============================================================================
+if(OMNICPP_PLATFORM_WINDOWS)
+    find_library(WS2_32_LIBRARY ws2_32)
+    find_library(WINMM_LIBRARY winmm)
+    find_library(VERSION_LIBRARY version)
+    list(APPEND OMNICPP_PLATFORM_LIBRARIES ${WS2_32_LIBRARY} ${WINMM_LIBRARY} ${VERSION_LIBRARY})
+elseif(OMNICPP_PLATFORM_LINUX)
+    find_package(Threads REQUIRED)
+    list(APPEND OMNICPP_PLATFORM_LIBRARIES Threads::Threads)
+endif()
+
+# ============================================================================
+# Export variables
+# ============================================================================
+set(OMNICPP_PLATFORM_WINDOWS ${OMNICPP_PLATFORM_WINDOWS} PARENT_SCOPE)
+set(OMNICPP_PLATFORM_LINUX ${OMNICPP_PLATFORM_LINUX} PARENT_SCOPE)
+set(OMNICPP_PLATFORM_MACOS ${OMNICPP_PLATFORM_MACOS} PARENT_SCOPE)
+set(OMNICPP_PLATFORM_WASM ${OMNICPP_PLATFORM_WASM} PARENT_SCOPE)
+set(OMNICPP_PLATFORM_NAME ${OMNICPP_PLATFORM_NAME} PARENT_SCOPE)
+set(OMNICPP_ARCH_X64 ${OMNICPP_ARCH_X64} PARENT_SCOPE)
+set(OMNICPP_ARCH_X86 ${OMNICPP_ARCH_X86} PARENT_SCOPE)
+set(OMNICPP_ARCH_ARM64 ${OMNICPP_ARCH_ARM64} PARENT_SCOPE)
+set(OMNICPP_ARCH_ARM ${OMNICPP_ARCH_ARM} PARENT_SCOPE)
+set(OMNICPP_ARCH_NAME ${OMNICPP_ARCH_NAME} PARENT_SCOPE)
+set(OMNICPP_PLATFORM_LIBRARIES ${OMNICPP_PLATFORM_LIBRARIES} PARENT_SCOPE)
+set(OMNICPP_PATH_SEPARATOR ${OMNICPP_PATH_SEPARATOR} PARENT_SCOPE)
+set(OMNICPP_CROSS_COMPILING ${OMNICPP_CROSS_COMPILING} PARENT_SCOPE)
+
+message(STATUS "Platform configuration loaded: ${OMNICPP_PLATFORM_NAME}-${OMNICPP_ARCH_NAME}")

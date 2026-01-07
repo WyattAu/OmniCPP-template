@@ -1,0 +1,10 @@
+{
+  "level": "INFO",
+  "console_enabled": true,
+  "file_enabled": true,
+  "file_path": "logs/omnicpp.log",
+  "max_file_size": 10485760,
+  "max_files": 5,
+  "colored_output": true,
+  "timestamp_format": "%Y-%m-%d %H:%M:%S"
+}

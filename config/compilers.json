@@ -1,0 +1,50 @@
+{
+  "msvc": {
+    "name": "MSVC",
+    "executable": "cl.exe",
+    "flags": {
+      "debug": "/Od /Zi /RTC1",
+      "release": "/O2 /GL /DNDEBUG"
+    }
+  },
+  "msvc_clang": {
+    "name": "MSVC-Clang",
+    "executable": "clang-cl.exe",
+    "flags": {
+      "debug": "-O0 -g",
+      "release": "-O3 -DNDEBUG"
+    }
+  },
+  "mingw_gcc": {
+    "name": "MinGW-GCC",
+    "executable": "g++.exe",
+    "flags": {
+      "debug": "-O0 -g",
+      "release": "-O3 -DNDEBUG"
+    }
+  },
+  "mingw_clang": {
+    "name": "MinGW-Clang",
+    "executable": "clang++.exe",
+    "flags": {
+      "debug": "-O0 -g",
+      "release": "-O3 -DNDEBUG"
+    }
+  },
+  "gcc": {
+    "name": "GCC",
+    "executable": "g++",
+    "flags": {
+      "debug": "-O0 -g",
+      "release": "-O3 -DNDEBUG"
+    }
+  },
+  "clang": {
+    "name": "Clang",
+    "executable": "clang++",
+    "flags": {
+      "debug": "-O0 -g",
+      "release": "-O3 -DNDEBUG"
+    }
+  }
+}

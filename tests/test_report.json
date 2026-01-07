@@ -1,0 +1,19 @@
+{
+  "timestamp": "2025-12-31T21:18:45.560464",
+  "suites": {
+    "System Tests": {
+      "tests_run": 24,
+      "failures": 2,
+      "errors": 0,
+      "skipped": 0,
+      "success": false
+    }
+  },
+  "summary": {
+    "total": 24,
+    "passed": 22,
+    "failed": 2,
+    "errors": 0,
+    "skipped": 0
+  }
+}

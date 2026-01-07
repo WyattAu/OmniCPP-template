@@ -1,0 +1,395 @@
+{
+  "buildType": {
+    "default": "debug",
+    "description": "Build type",
+    "choices": {
+      "debug": {
+        "short": "Debug",
+        "long": "Debug build",
+        "buildType": "Debug",
+        "settings": {
+          "CMAKE_BUILD_TYPE": "Debug",
+          "OMNICPP_BUILD_TYPE": "Debug",
+          "CMAKE_CXX_FLAGS_DEBUG": "-g -O0",
+          "CMAKE_C_FLAGS_DEBUG": "-g -O0"
+        }
+      },
+      "release": {
+        "short": "Release",
+        "long": "Release build",
+        "buildType": "Release",
+        "settings": {
+          "CMAKE_BUILD_TYPE": "Release",
+          "OMNICPP_BUILD_TYPE": "Release",
+          "CMAKE_CXX_FLAGS_RELEASE": "-O3 -DNDEBUG",
+          "CMAKE_C_FLAGS_RELEASE": "-O3 -DNDEBUG"
+        }
+      },
+      "relwithdebinfo": {
+        "short": "RelWithDebInfo",
+        "long": "Release with debug info",
+        "buildType": "RelWithDebInfo",
+        "settings": {
+          "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+          "OMNICPP_BUILD_TYPE": "RelWithDebInfo",
+          "CMAKE_CXX_FLAGS_RELWITHDEBINFO": "-O2 -g -DNDEBUG",
+          "CMAKE_C_FLAGS_RELWITHDEBINFO": "-O2 -g -DNDEBUG"
+        }
+      },
+      "minsizerel": {
+        "short": "MinSizeRel",
+        "long": "Minimum size release",
+        "buildType": "MinSizeRel",
+        "settings": {
+          "CMAKE_BUILD_TYPE": "MinSizeRel",
+          "OMNICPP_BUILD_TYPE": "MinSizeRel",
+          "CMAKE_CXX_FLAGS_MINSIZEREL": "-Os -DNDEBUG",
+          "CMAKE_C_FLAGS_MINSIZEREL": "-Os -DNDEBUG"
+        }
+      }
+    }
+  },
+  "compiler": {
+    "default": "auto",
+    "description": "Compiler to use",
+    "choices": {
+      "auto": {
+        "short": "Auto",
+        "long": "Auto-detect compiler",
+        "settings": {
+          "OMNICPP_COMPILER": "auto"
+        }
+      },
+      "msvc": {
+        "short": "MSVC",
+        "long": "Microsoft Visual C++",
+        "settings": {
+          "OMNICPP_COMPILER": "msvc",
+          "CMAKE_C_COMPILER": "cl.exe",
+          "CMAKE_CXX_COMPILER": "cl.exe"
+        }
+      },
+      "msvc-clang": {
+        "short": "MSVC-Clang",
+        "long": "MSVC with Clang",
+        "settings": {
+          "OMNICPP_COMPILER": "msvc-clang",
+          "CMAKE_C_COMPILER": "clang-cl",
+          "CMAKE_CXX_COMPILER": "clang-cl"
+        }
+      },
+      "mingw-gcc": {
+        "short": "MinGW-GCC",
+        "long": "MinGW with GCC",
+        "settings": {
+          "OMNICPP_COMPILER": "mingw-gcc",
+          "CMAKE_C_COMPILER": "gcc",
+          "CMAKE_CXX_COMPILER": "g++"
+        }
+      },
+      "mingw-clang": {
+        "short": "MinGW-Clang",
+        "long": "MinGW with Clang",
+        "settings": {
+          "OMNICPP_COMPILER": "mingw-clang",
+          "CMAKE_C_COMPILER": "clang",
+          "CMAKE_CXX_COMPILER": "clang++"
+        }
+      },
+      "gcc": {
+        "short": "GCC",
+        "long": "GNU Compiler Collection",
+        "settings": {
+          "OMNICPP_COMPILER": "gcc",
+          "CMAKE_C_COMPILER": "gcc",
+          "CMAKE_CXX_COMPILER": "g++"
+        }
+      },
+      "clang": {
+        "short": "Clang",
+        "long": "LLVM Clang",
+        "settings": {
+          "OMNICPP_COMPILER": "clang",
+          "CMAKE_C_COMPILER": "clang",
+          "CMAKE_CXX_COMPILER": "clang++"
+        }
+      }
+    }
+  },
+  "target": {
+    "default": "windows",
+    "description": "Target platform",
+    "choices": {
+      "windows": {
+        "short": "Windows",
+        "long": "Windows platform",
+        "settings": {
+          "OMNICPP_TARGET": "windows",
+          "CMAKE_SYSTEM_NAME": "Windows"
+        }
+      },
+      "linux": {
+        "short": "Linux",
+        "long": "Linux platform",
+        "settings": {
+          "OMNICPP_TARGET": "linux",
+          "CMAKE_SYSTEM_NAME": "Linux"
+        }
+      },
+      "wasm": {
+        "short": "WASM",
+        "long": "WebAssembly",
+        "settings": {
+          "OMNICPP_TARGET": "wasm",
+          "CMAKE_SYSTEM_NAME": "Emscripten",
+          "CMAKE_C_COMPILER": "emcc",
+          "CMAKE_CXX_COMPILER": "em++"
+        }
+      }
+    }
+  },
+  "architecture": {
+    "default": "x64",
+    "description": "Target architecture",
+    "choices": {
+      "x64": {
+        "short": "x64",
+        "long": "64-bit x86 architecture",
+        "settings": {
+          "CMAKE_SYSTEM_PROCESSOR": "AMD64",
+          "OMNICPP_ARCH": "x64"
+        }
+      },
+      "x86": {
+        "short": "x86",
+        "long": "32-bit x86 architecture",
+        "settings": {
+          "CMAKE_SYSTEM_PROCESSOR": "X86",
+          "OMNICPP_ARCH": "x86"
+        }
+      },
+      "arm64": {
+        "short": "ARM64",
+        "long": "64-bit ARM architecture",
+        "settings": {
+          "CMAKE_SYSTEM_PROCESSOR": "ARM64",
+          "OMNICPP_ARCH": "arm64"
+        }
+      }
+    }
+  },
+  "cppStandard": {
+    "default": "23",
+    "description": "C++ standard",
+    "choices": {
+      "20": {
+        "short": "C++20",
+        "long": "C++20 standard",
+        "settings": {
+          "CMAKE_CXX_STANDARD": "20",
+          "OMNICPP_CPP_STANDARD": "20"
+        }
+      },
+      "23": {
+        "short": "C++23",
+        "long": "C++23 standard",
+        "settings": {
+          "CMAKE_CXX_STANDARD": "23",
+          "OMNICPP_CPP_STANDARD": "23"
+        }
+      }
+    }
+  },
+  "linkage": {
+    "default": "shared",
+    "description": "Library linkage type",
+    "choices": {
+      "shared": {
+        "short": "Shared",
+        "long": "Shared libraries",
+        "settings": {
+          "BUILD_SHARED_LIBS": "ON",
+          "OMNICPP_LINKAGE": "shared"
+        }
+      },
+      "static": {
+        "short": "Static",
+        "long": "Static libraries",
+        "settings": {
+          "BUILD_SHARED_LIBS": "OFF",
+          "OMNICPP_LINKAGE": "static"
+        }
+      }
+    }
+  },
+  "testing": {
+    "default": "on",
+    "description": "Build tests",
+    "choices": {
+      "on": {
+        "short": "On",
+        "long": "Build tests",
+        "settings": {
+          "OMNICPP_BUILD_TESTS": "ON",
+          "BUILD_TESTING": "ON"
+        }
+      },
+      "off": {
+        "short": "Off",
+        "long": "Don't build tests",
+        "settings": {
+          "OMNICPP_BUILD_TESTS": "OFF",
+          "BUILD_TESTING": "OFF"
+        }
+      }
+    }
+  },
+  "coverage": {
+    "default": "off",
+    "description": "Code coverage",
+    "choices": {
+      "on": {
+        "short": "On",
+        "long": "Enable code coverage",
+        "settings": {
+          "OMNICPP_ENABLE_COVERAGE": "ON",
+          "CMAKE_CXX_FLAGS_DEBUG": "-g -O0 --coverage",
+          "CMAKE_C_FLAGS_DEBUG": "-g -O0 --coverage"
+        }
+      },
+      "off": {
+        "short": "Off",
+        "long": "Disable code coverage",
+        "settings": {
+          "OMNICPP_ENABLE_COVERAGE": "OFF"
+        }
+      }
+    }
+  },
+  "sanitizer": {
+    "default": "none",
+    "description": "Sanitizer type",
+    "choices": {
+      "none": {
+        "short": "None",
+        "long": "No sanitizer",
+        "settings": {
+          "OMNICPP_SANITIZER": "none"
+        }
+      },
+      "address": {
+        "short": "Address",
+        "long": "Address sanitizer",
+        "settings": {
+          "OMNICPP_SANITIZER": "address",
+          "CMAKE_CXX_FLAGS_DEBUG": "-g -O0 -fsanitize=address",
+          "CMAKE_C_FLAGS_DEBUG": "-g -O0 -fsanitize=address"
+        }
+      },
+      "thread": {
+        "short": "Thread",
+        "long": "Thread sanitizer",
+        "settings": {
+          "OMNICPP_SANITIZER": "thread",
+          "CMAKE_CXX_FLAGS_DEBUG": "-g -O0 -fsanitize=thread",
+          "CMAKE_C_FLAGS_DEBUG": "-g -O0 -fsanitize=thread"
+        }
+      },
+      "undefined": {
+        "short": "Undefined",
+        "long": "Undefined behavior sanitizer",
+        "settings": {
+          "OMNICPP_SANITIZER": "undefined",
+          "CMAKE_CXX_FLAGS_DEBUG": "-g -O0 -fsanitize=undefined",
+          "CMAKE_C_FLAGS_DEBUG": "-g -O0 -fsanitize=undefined"
+        }
+      },
+      "memory": {
+        "short": "Memory",
+        "long": "Memory sanitizer",
+        "settings": {
+          "OMNICPP_SANITIZER": "memory",
+          "CMAKE_CXX_FLAGS_DEBUG": "-g -O0 -fsanitize=memory",
+          "CMAKE_C_FLAGS_DEBUG": "-g -O0 -fsanitize=memory"
+        }
+      }
+    }
+  },
+  "optimization": {
+    "default": "standard",
+    "description": "Optimization level",
+    "choices": {
+      "none": {
+        "short": "None",
+        "long": "No optimization",
+        "settings": {
+          "CMAKE_CXX_FLAGS_RELEASE": "-O0",
+          "CMAKE_C_FLAGS_RELEASE": "-O0"
+        }
+      },
+      "standard": {
+        "short": "Standard",
+        "long": "Standard optimization",
+        "settings": {
+          "CMAKE_CXX_FLAGS_RELEASE": "-O2",
+          "CMAKE_C_FLAGS_RELEASE": "-O2"
+        }
+      },
+      "aggressive": {
+        "short": "Aggressive",
+        "long": "Aggressive optimization",
+        "settings": {
+          "CMAKE_CXX_FLAGS_RELEASE": "-O3",
+          "CMAKE_C_FLAGS_RELEASE": "-O3"
+        }
+      },
+      "size": {
+        "short": "Size",
+        "long": "Optimize for size",
+        "settings": {
+          "CMAKE_CXX_FLAGS_RELEASE": "-Os",
+          "CMAKE_C_FLAGS_RELEASE": "-Os"
+        }
+      }
+    }
+  },
+  "warnings": {
+    "default": "standard",
+    "description": "Warning level",
+    "choices": {
+      "none": {
+        "short": "None",
+        "long": "No warnings",
+        "settings": {
+          "CMAKE_CXX_FLAGS": "-w",
+          "CMAKE_C_FLAGS": "-w"
+        }
+      },
+      "standard": {
+        "short": "Standard",
+        "long": "Standard warnings",
+        "settings": {
+          "CMAKE_CXX_FLAGS": "-Wall",
+          "CMAKE_C_FLAGS": "-Wall"
+        }
+      },
+      "extra": {
+        "short": "Extra",
+        "long": "Extra warnings",
+        "settings": {
+          "CMAKE_CXX_FLAGS": "-Wall -Wextra",
+          "CMAKE_C_FLAGS": "-Wall -Wextra"
+        }
+      },
+      "pedantic": {
+        "short": "Pedantic",
+        "long": "Pedantic warnings",
+        "settings": {
+          "CMAKE_CXX_FLAGS": "-Wall -Wextra -pedantic",
+          "CMAKE_C_FLAGS": "-Wall -Wextra -pedantic"
+        }
+      }
+    }
+  }
+}
+

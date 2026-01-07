@@ -1,0 +1,20 @@
+{
+  "windows": {
+    "name": "Windows",
+    "platform": "windows",
+    "generator": "Ninja",
+    "toolchain": "windows-msvc-x64"
+  },
+  "linux": {
+    "name": "Linux",
+    "platform": "linux",
+    "generator": "Ninja",
+    "toolchain": "linux-gcc-x64"
+  },
+  "wasm": {
+    "name": "WebAssembly",
+    "platform": "wasm",
+    "generator": "Ninja",
+    "toolchain": "emscripten"
+  }
+}

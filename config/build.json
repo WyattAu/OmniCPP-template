@@ -1,0 +1,8 @@
+{
+  "default_compiler": "auto",
+  "default_target": "windows",
+  "default_build_type": "Release",
+  "build_directory": "build",
+  "install_directory": "install",
+  "parallel_jobs": 4
+}

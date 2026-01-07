@@ -1,0 +1,839 @@
+{
+  "version": 3,
+  "cmakeMinimumRequired": {
+    "major": 4,
+    "minor": 0,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "default",
+      "displayName": "Default Config",
+      "description": "Default build configuration",
+      "binaryDir": "${sourceDir}/build/${presetName}",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "OMNICPP_BUILD_ENGINE": "ON",
+        "OMNICPP_BUILD_GAME": "ON",
+        "OMNICPP_BUILD_TESTS": "OFF",
+        "OMNICPP_BUILD_EXAMPLES": "OFF"
+      }
+    },
+    {
+      "name": "debug",
+      "displayName": "Debug",
+      "description": "Debug build",
+      "binaryDir": "${sourceDir}/build/debug",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "OMNICPP_BUILD_ENGINE": "ON",
+        "OMNICPP_BUILD_GAME": "ON",
+        "OMNICPP_BUILD_TESTS": "ON",
+        "OMNICPP_BUILD_EXAMPLES": "OFF"
+      }
+    },
+    {
+      "name": "release",
+      "displayName": "Release",
+      "description": "Release build",
+      "binaryDir": "${sourceDir}/build/release",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "OMNICPP_BUILD_ENGINE": "ON",
+        "OMNICPP_BUILD_GAME": "ON",
+        "OMNICPP_BUILD_TESTS": "OFF",
+        "OMNICPP_BUILD_EXAMPLES": "OFF"
+      }
+    },
+    {
+      "name": "relwithdebinfo",
+      "displayName": "RelWithDebInfo",
+      "description": "Release with debug info",
+      "binaryDir": "${sourceDir}/build/relwithdebinfo",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+        "OMNICPP_BUILD_ENGINE": "ON",
+        "OMNICPP_BUILD_GAME": "ON",
+        "OMNICPP_BUILD_TESTS": "OFF",
+        "OMNICPP_BUILD_EXAMPLES": "OFF"
+      }
+    },
+    {
+      "name": "minsizerel",
+      "displayName": "MinSizeRel",
+      "description": "Minimum size release",
+      "binaryDir": "${sourceDir}/build/minsizerel",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "MinSizeRel",
+        "OMNICPP_BUILD_ENGINE": "ON",
+        "OMNICPP_BUILD_GAME": "ON",
+        "OMNICPP_BUILD_TESTS": "OFF",
+        "OMNICPP_BUILD_EXAMPLES": "OFF"
+      }
+    },
+    {
+      "name": "engine-debug",
+      "displayName": "Engine Debug",
+      "description": "Debug build for engine library only",
+      "binaryDir": "${sourceDir}/build/debug/engine",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "OMNICPP_BUILD_ENGINE": "ON",
+        "OMNICPP_BUILD_GAME": "OFF",
+        "OMNICPP_BUILD_TESTS": "ON",
+        "OMNICPP_BUILD_EXAMPLES": "OFF"
+      }
+    },
+    {
+      "name": "engine-release",
+      "displayName": "Engine Release",
+      "description": "Release build for engine library only",
+      "binaryDir": "${sourceDir}/build/release/engine",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "OMNICPP_BUILD_ENGINE": "ON",
+        "OMNICPP_BUILD_GAME": "OFF",
+        "OMNICPP_BUILD_TESTS": "OFF",
+        "OMNICPP_BUILD_EXAMPLES": "OFF"
+      }
+    },
+    {
+      "name": "game-debug",
+      "displayName": "Game Debug",
+      "description": "Debug build for game executable only",
+      "binaryDir": "${sourceDir}/build/debug/game",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "OMNICPP_BUILD_ENGINE": "OFF",
+        "OMNICPP_BUILD_GAME": "ON",
+        "OMNICPP_BUILD_TESTS": "OFF",
+        "OMNICPP_BUILD_EXAMPLES": "OFF"
+      }
+    },
+    {
+      "name": "game-release",
+      "displayName": "Game Release",
+      "description": "Release build for game executable only",
+      "binaryDir": "${sourceDir}/build/release/game",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "OMNICPP_BUILD_ENGINE": "OFF",
+        "OMNICPP_BUILD_GAME": "ON",
+        "OMNICPP_BUILD_TESTS": "OFF",
+        "OMNICPP_BUILD_EXAMPLES": "OFF"
+      }
+    },
+    {
+      "name": "msvc-debug",
+      "displayName": "MSVC Debug",
+      "description": "Debug build with MSVC compiler",
+      "binaryDir": "${sourceDir}/build/msvc/debug",
+      "generator": "Ninja",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_C_COMPILER": "cl",
+        "CMAKE_CXX_COMPILER": "cl",
+        "OMNICPP_BUILD_ENGINE": "ON",
+        "OMNICPP_BUILD_GAME": "ON",
+        "OMNICPP_BUILD_TESTS": "ON"
+      }
+    },
+    {
+      "name": "msvc-release",
+      "displayName": "MSVC Release",
+      "description": "Release build with MSVC compiler",
+      "binaryDir": "${sourceDir}/build/msvc/release",
+      "generator": "Ninja",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_C_COMPILER": "cl",
+        "CMAKE_CXX_COMPILER": "cl",
+        "OMNICPP_BUILD_ENGINE": "ON",
+        "OMNICPP_BUILD_GAME": "ON",
+        "OMNICPP_BUILD_TESTS": "OFF"
+      }
+    },
+    {
+      "name": "msvc-relwithdebinfo",
+      "displayName": "MSVC RelWithDebInfo",
+      "description": "Release with debug info build with MSVC compiler",
+      "binaryDir": "${sourceDir}/build/msvc/relwithdebinfo",
+      "generator": "Ninja",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+        "CMAKE_C_COMPILER": "cl",
+        "CMAKE_CXX_COMPILER": "cl",
+        "OMNICPP_BUILD_ENGINE": "ON",
+        "OMNICPP_BUILD_GAME": "ON",
+        "OMNICPP_BUILD_TESTS": "OFF"
+      }
+    },
+    {
+      "name": "msvc-minsizerel",
+      "displayName": "MSVC MinSizeRel",
+      "description": "Minimum size release build with MSVC compiler",
+      "binaryDir": "${sourceDir}/build/msvc/minsizerel",
+      "generator": "Ninja",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "MinSizeRel",
+        "CMAKE_C_COMPILER": "cl",
+        "CMAKE_CXX_COMPILER": "cl",
+        "OMNICPP_BUILD_ENGINE": "ON",
+        "OMNICPP_BUILD_GAME": "ON",
+        "OMNICPP_BUILD_TESTS": "OFF"
+      }
+    },
+    {
+      "name": "msvc-clang-debug",
+      "displayName": "MSVC-Clang Debug",
+      "description": "Debug build with MSVC-Clang compiler",
+      "binaryDir": "${sourceDir}/build/msvc-clang/debug",
+      "generator": "Ninja",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_C_COMPILER": "clang-cl",
+        "CMAKE_CXX_COMPILER": "clang-cl",
+        "OMNICPP_BUILD_ENGINE": "ON",
+        "OMNICPP_BUILD_GAME": "ON",
+        "OMNICPP_BUILD_TESTS": "ON"
+      }
+    },
+    {
+      "name": "msvc-clang-release",
+      "displayName": "MSVC-Clang Release",
+      "description": "Release build with MSVC-Clang compiler",
+      "binaryDir": "${sourceDir}/build/msvc-clang/release",
+      "generator": "Ninja",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_C_COMPILER": "clang-cl",
+        "CMAKE_CXX_COMPILER": "clang-cl",
+        "OMNICPP_BUILD_ENGINE": "ON",
+        "OMNICPP_BUILD_GAME": "ON",
+        "OMNICPP_BUILD_TESTS": "OFF"
+      }
+    },
+    {
+      "name": "msvc-clang-relwithdebinfo",
+      "displayName": "MSVC-Clang RelWithDebInfo",
+      "description": "Release with debug info build with MSVC-Clang compiler",
+      "binaryDir": "${sourceDir}/build/msvc-clang/relwithdebinfo",
+      "generator": "Ninja",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+        "CMAKE_C_COMPILER": "clang-cl",
+        "CMAKE_CXX_COMPILER": "clang-cl",
+        "OMNICPP_BUILD_ENGINE": "ON",
+        "OMNICPP_BUILD_GAME": "ON",
+        "OMNICPP_BUILD_TESTS": "OFF"
+      }
+    },
+    {
+      "name": "msvc-clang-minsizerel",
+      "displayName": "MSVC-Clang MinSizeRel",
+      "description": "Minimum size release build with MSVC-Clang compiler",
+      "binaryDir": "${sourceDir}/build/msvc-clang/minsizerel",
+      "generator": "Ninja",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "MinSizeRel",
+        "CMAKE_C_COMPILER": "clang-cl",
+        "CMAKE_CXX_COMPILER": "clang-cl",
+        "OMNICPP_BUILD_ENGINE": "ON",
+        "OMNICPP_BUILD_GAME": "ON",
+        "OMNICPP_BUILD_TESTS": "OFF"
+      }
+    },
+    {
+      "name": "mingw-gcc-debug",
+      "displayName": "MinGW-GCC Debug",
+      "description": "Debug build with MinGW-GCC compiler",
+      "binaryDir": "${sourceDir}/build/mingw-gcc/debug",
+      "generator": "Ninja",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_C_COMPILER": "gcc",
+        "CMAKE_CXX_COMPILER": "g++",
+        "OMNICPP_BUILD_ENGINE": "ON",
+        "OMNICPP_BUILD_GAME": "ON",
+        "OMNICPP_BUILD_TESTS": "ON"
+      }
+    },
+    {
+      "name": "mingw-gcc-release",
+      "displayName": "MinGW-GCC Release",
+      "description": "Release build with MinGW-GCC compiler",
+      "binaryDir": "${sourceDir}/build/mingw-gcc/release",
+      "generator": "Ninja",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_C_COMPILER": "gcc",
+        "CMAKE_CXX_COMPILER": "g++",
+        "OMNICPP_BUILD_ENGINE": "ON",
+        "OMNICPP_BUILD_GAME": "ON",
+        "OMNICPP_BUILD_TESTS": "OFF"
+      }
+    },
+    {
+      "name": "mingw-gcc-relwithdebinfo",
+      "displayName": "MinGW-GCC RelWithDebInfo",
+      "description": "Release with debug info build with MinGW-GCC compiler",
+      "binaryDir": "${sourceDir}/build/mingw-gcc/relwithdebinfo",
+      "generator": "Ninja",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+        "CMAKE_C_COMPILER": "gcc",
+        "CMAKE_CXX_COMPILER": "g++",
+        "OMNICPP_BUILD_ENGINE": "ON",
+        "OMNICPP_BUILD_GAME": "ON",
+        "OMNICPP_BUILD_TESTS": "OFF"
+      }
+    },
+    {
+      "name": "mingw-gcc-minsizerel",
+      "displayName": "MinGW-GCC MinSizeRel",
+      "description": "Minimum size release build with MinGW-GCC compiler",
+      "binaryDir": "${sourceDir}/build/mingw-gcc/minsizerel",
+      "generator": "Ninja",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "MinSizeRel",
+        "CMAKE_C_COMPILER": "gcc",
+        "CMAKE_CXX_COMPILER": "g++",
+        "OMNICPP_BUILD_ENGINE": "ON",
+        "OMNICPP_BUILD_GAME": "ON",
+        "OMNICPP_BUILD_TESTS": "OFF"
+      }
+    },
+    {
+      "name": "mingw-clang-debug",
+      "displayName": "MinGW-Clang Debug",
+      "description": "Debug build with MinGW-Clang compiler",
+      "binaryDir": "${sourceDir}/build/mingw-clang/debug",
+      "generator": "Ninja",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_C_COMPILER": "clang",
+        "CMAKE_CXX_COMPILER": "clang++",
+        "OMNICPP_BUILD_ENGINE": "ON",
+        "OMNICPP_BUILD_GAME": "ON",
+        "OMNICPP_BUILD_TESTS": "ON"
+      }
+    },
+    {
+      "name": "mingw-clang-release",
+      "displayName": "MinGW-Clang Release",
+      "description": "Release build with MinGW-Clang compiler",
+      "binaryDir": "${sourceDir}/build/mingw-clang/release",
+      "generator": "Ninja",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_C_COMPILER": "clang",
+        "CMAKE_CXX_COMPILER": "clang++",
+        "OMNICPP_BUILD_ENGINE": "ON",
+        "OMNICPP_BUILD_GAME": "ON",
+        "OMNICPP_BUILD_TESTS": "OFF"
+      }
+    },
+    {
+      "name": "mingw-clang-relwithdebinfo",
+      "displayName": "MinGW-Clang RelWithDebInfo",
+      "description": "Release with debug info build with MinGW-Clang compiler",
+      "binaryDir": "${sourceDir}/build/mingw-clang/relwithdebinfo",
+      "generator": "Ninja",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+        "CMAKE_C_COMPILER": "clang",
+        "CMAKE_CXX_COMPILER": "clang++",
+        "OMNICPP_BUILD_ENGINE": "ON",
+        "OMNICPP_BUILD_GAME": "ON",
+        "OMNICPP_BUILD_TESTS": "OFF"
+      }
+    },
+    {
+      "name": "mingw-clang-minsizerel",
+      "displayName": "MinGW-Clang MinSizeRel",
+      "description": "Minimum size release build with MinGW-Clang compiler",
+      "binaryDir": "${sourceDir}/build/mingw-clang/minsizerel",
+      "generator": "Ninja",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "MinSizeRel",
+        "CMAKE_C_COMPILER": "clang",
+        "CMAKE_CXX_COMPILER": "clang++",
+        "OMNICPP_BUILD_ENGINE": "ON",
+        "OMNICPP_BUILD_GAME": "ON",
+        "OMNICPP_BUILD_TESTS": "OFF"
+      }
+    },
+    {
+      "name": "gcc-debug",
+      "displayName": "GCC Debug",
+      "description": "Debug build with GCC compiler",
+      "binaryDir": "${sourceDir}/build/gcc/debug",
+      "generator": "Ninja",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_C_COMPILER": "gcc",
+        "CMAKE_CXX_COMPILER": "g++",
+        "OMNICPP_BUILD_ENGINE": "ON",
+        "OMNICPP_BUILD_GAME": "ON",
+        "OMNICPP_BUILD_TESTS": "ON"
+      }
+    },
+    {
+      "name": "gcc-release",
+      "displayName": "GCC Release",
+      "description": "Release build with GCC compiler",
+      "binaryDir": "${sourceDir}/build/gcc/release",
+      "generator": "Ninja",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_C_COMPILER": "gcc",
+        "CMAKE_CXX_COMPILER": "g++",
+        "OMNICPP_BUILD_ENGINE": "ON",
+        "OMNICPP_BUILD_GAME": "ON",
+        "OMNICPP_BUILD_TESTS": "OFF"
+      }
+    },
+    {
+      "name": "gcc-relwithdebinfo",
+      "displayName": "GCC RelWithDebInfo",
+      "description": "Release with debug info build with GCC compiler",
+      "binaryDir": "${sourceDir}/build/gcc/relwithdebinfo",
+      "generator": "Ninja",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+        "CMAKE_C_COMPILER": "gcc",
+        "CMAKE_CXX_COMPILER": "g++",
+        "OMNICPP_BUILD_ENGINE": "ON",
+        "OMNICPP_BUILD_GAME": "ON",
+        "OMNICPP_BUILD_TESTS": "OFF"
+      }
+    },
+    {
+      "name": "gcc-minsizerel",
+      "displayName": "GCC MinSizeRel",
+      "description": "Minimum size release build with GCC compiler",
+      "binaryDir": "${sourceDir}/build/gcc/minsizerel",
+      "generator": "Ninja",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "MinSizeRel",
+        "CMAKE_C_COMPILER": "gcc",
+        "CMAKE_CXX_COMPILER": "g++",
+        "OMNICPP_BUILD_ENGINE": "ON",
+        "OMNICPP_BUILD_GAME": "ON",
+        "OMNICPP_BUILD_TESTS": "OFF"
+      }
+    },
+    {
+      "name": "clang-debug",
+      "displayName": "Clang Debug",
+      "description": "Debug build with Clang compiler",
+      "binaryDir": "${sourceDir}/build/clang/debug",
+      "generator": "Ninja",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_C_COMPILER": "clang",
+        "CMAKE_CXX_COMPILER": "clang++",
+        "OMNICPP_BUILD_ENGINE": "ON",
+        "OMNICPP_BUILD_GAME": "ON",
+        "OMNICPP_BUILD_TESTS": "ON"
+      }
+    },
+    {
+      "name": "clang-release",
+      "displayName": "Clang Release",
+      "description": "Release build with Clang compiler",
+      "binaryDir": "${sourceDir}/build/clang/release",
+      "generator": "Ninja",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_C_COMPILER": "clang",
+        "CMAKE_CXX_COMPILER": "clang++",
+        "OMNICPP_BUILD_ENGINE": "ON",
+        "OMNICPP_BUILD_GAME": "ON",
+        "OMNICPP_BUILD_TESTS": "OFF"
+      }
+    },
+    {
+      "name": "clang-relwithdebinfo",
+      "displayName": "Clang RelWithDebInfo",
+      "description": "Release with debug info build with Clang compiler",
+      "binaryDir": "${sourceDir}/build/clang/relwithdebinfo",
+      "generator": "Ninja",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+        "CMAKE_C_COMPILER": "clang",
+        "CMAKE_CXX_COMPILER": "clang++",
+        "OMNICPP_BUILD_ENGINE": "ON",
+        "OMNICPP_BUILD_GAME": "ON",
+        "OMNICPP_BUILD_TESTS": "OFF"
+      }
+    },
+    {
+      "name": "clang-minsizerel",
+      "displayName": "Clang MinSizeRel",
+      "description": "Minimum size release build with Clang compiler",
+      "binaryDir": "${sourceDir}/build/clang/minsizerel",
+      "generator": "Ninja",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "MinSizeRel",
+        "CMAKE_C_COMPILER": "clang",
+        "CMAKE_CXX_COMPILER": "clang++",
+        "OMNICPP_BUILD_ENGINE": "ON",
+        "OMNICPP_BUILD_GAME": "ON",
+        "OMNICPP_BUILD_TESTS": "OFF"
+      }
+    },
+    {
+      "name": "wasm-debug",
+      "displayName": "WASM Debug",
+      "description": "Debug build for WebAssembly",
+      "binaryDir": "${sourceDir}/build/wasm/debug",
+      "toolchainFile": "${sourceDir}/cmake/toolchains/emscripten.cmake",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "OMNICPP_BUILD_ENGINE": "ON",
+        "OMNICPP_BUILD_GAME": "ON",
+        "OMNICPP_BUILD_TESTS": "OFF",
+        "OMNICPP_BUILD_EXAMPLES": "OFF"
+      }
+    },
+    {
+      "name": "wasm-release",
+      "displayName": "WASM Release",
+      "description": "Release build for WebAssembly",
+      "binaryDir": "${sourceDir}/build/wasm/release",
+      "toolchainFile": "${sourceDir}/cmake/toolchains/emscripten.cmake",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "OMNICPP_BUILD_ENGINE": "ON",
+        "OMNICPP_BUILD_GAME": "ON",
+        "OMNICPP_BUILD_TESTS": "OFF",
+        "OMNICPP_BUILD_EXAMPLES": "OFF"
+      }
+    },
+    {
+      "name": "wasm-relwithdebinfo",
+      "displayName": "WASM RelWithDebInfo",
+      "description": "Release with debug info build for WebAssembly",
+      "binaryDir": "${sourceDir}/build/wasm/relwithdebinfo",
+      "toolchainFile": "${sourceDir}/cmake/toolchains/emscripten.cmake",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+        "OMNICPP_BUILD_ENGINE": "ON",
+        "OMNICPP_BUILD_GAME": "ON",
+        "OMNICPP_BUILD_TESTS": "OFF",
+        "OMNICPP_BUILD_EXAMPLES": "OFF"
+      }
+    },
+    {
+      "name": "wasm-minsizerel",
+      "displayName": "WASM MinSizeRel",
+      "description": "Minimum size release build for WebAssembly",
+      "binaryDir": "${sourceDir}/build/wasm/minsizerel",
+      "toolchainFile": "${sourceDir}/cmake/toolchains/emscripten.cmake",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "MinSizeRel",
+        "OMNICPP_BUILD_ENGINE": "ON",
+        "OMNICPP_BUILD_GAME": "ON",
+        "OMNICPP_BUILD_TESTS": "OFF",
+        "OMNICPP_BUILD_EXAMPLES": "OFF"
+      }
+    },
+    {
+      "name": "linux-x86_64-debug",
+      "displayName": "Linux x86_64 Debug",
+      "description": "Debug build for Linux x86_64",
+      "binaryDir": "${sourceDir}/build/linux/x86_64/debug",
+      "toolchainFile": "${sourceDir}/cmake/toolchains/x86-linux-gnu.cmake",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "OMNICPP_BUILD_ENGINE": "ON",
+        "OMNICPP_BUILD_GAME": "ON",
+        "OMNICPP_BUILD_TESTS": "ON",
+        "OMNICPP_BUILD_EXAMPLES": "OFF"
+      }
+    },
+    {
+      "name": "linux-x86_64-release",
+      "displayName": "Linux x86_64 Release",
+      "description": "Release build for Linux x86_64",
+      "binaryDir": "${sourceDir}/build/linux/x86_64/release",
+      "toolchainFile": "${sourceDir}/cmake/toolchains/x86-linux-gnu.cmake",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "OMNICPP_BUILD_ENGINE": "ON",
+        "OMNICPP_BUILD_GAME": "ON",
+        "OMNICPP_BUILD_TESTS": "OFF",
+        "OMNICPP_BUILD_EXAMPLES": "OFF"
+      }
+    },
+    {
+      "name": "linux-arm64-debug",
+      "displayName": "Linux ARM64 Debug",
+      "description": "Debug build for Linux ARM64",
+      "binaryDir": "${sourceDir}/build/linux/arm64/debug",
+      "toolchainFile": "${sourceDir}/cmake/toolchains/arm64-linux-gnu.cmake",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "OMNICPP_BUILD_ENGINE": "ON",
+        "OMNICPP_BUILD_GAME": "ON",
+        "OMNICPP_BUILD_TESTS": "ON",
+        "OMNICPP_BUILD_EXAMPLES": "OFF"
+      }
+    },
+    {
+      "name": "linux-arm64-release",
+      "displayName": "Linux ARM64 Release",
+      "description": "Release build for Linux ARM64",
+      "binaryDir": "${sourceDir}/build/linux/arm64/release",
+      "toolchainFile": "${sourceDir}/cmake/toolchains/arm64-linux-gnu.cmake",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "OMNICPP_BUILD_ENGINE": "ON",
+        "OMNICPP_BUILD_GAME": "ON",
+        "OMNICPP_BUILD_TESTS": "OFF",
+        "OMNICPP_BUILD_EXAMPLES": "OFF"
+      }
+    },
+    {
+      "name": "windows-arm64-debug",
+      "displayName": "Windows ARM64 Debug",
+      "description": "Debug build for Windows ARM64",
+      "binaryDir": "${sourceDir}/build/windows/arm64/debug",
+      "toolchainFile": "${sourceDir}/cmake/toolchains/arm64-windows-msvc.cmake",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "OMNICPP_BUILD_ENGINE": "ON",
+        "OMNICPP_BUILD_GAME": "ON",
+        "OMNICPP_BUILD_TESTS": "ON",
+        "OMNICPP_BUILD_EXAMPLES": "OFF"
+      }
+    },
+    {
+      "name": "windows-arm64-release",
+      "displayName": "Windows ARM64 Release",
+      "description": "Release build for Windows ARM64",
+      "binaryDir": "${sourceDir}/build/windows/arm64/release",
+      "toolchainFile": "${sourceDir}/cmake/toolchains/arm64-windows-msvc.cmake",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "OMNICPP_BUILD_ENGINE": "ON",
+        "OMNICPP_BUILD_GAME": "ON",
+        "OMNICPP_BUILD_TESTS": "OFF",
+        "OMNICPP_BUILD_EXAMPLES": "OFF"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "debug",
+      "configurePreset": "debug",
+      "displayName": "Debug Build"
+    },
+    {
+      "name": "release",
+      "configurePreset": "release",
+      "displayName": "Release Build"
+    },
+    {
+      "name": "relwithdebinfo",
+      "configurePreset": "relwithdebinfo",
+      "displayName": "RelWithDebInfo Build"
+    },
+    {
+      "name": "minsizerel",
+      "configurePreset": "minsizerel",
+      "displayName": "MinSizeRel Build"
+    },
+    {
+      "name": "engine-debug",
+      "configurePreset": "engine-debug",
+      "displayName": "Engine Debug Build"
+    },
+    {
+      "name": "engine-release",
+      "configurePreset": "engine-release",
+      "displayName": "Engine Release Build"
+    },
+    {
+      "name": "game-debug",
+      "configurePreset": "game-debug",
+      "displayName": "Game Debug Build"
+    },
+    {
+      "name": "game-release",
+      "configurePreset": "game-release",
+      "displayName": "Game Release Build"
+    },
+    {
+      "name": "msvc-debug",
+      "configurePreset": "msvc-debug",
+      "displayName": "MSVC Debug Build"
+    },
+    {
+      "name": "msvc-release",
+      "configurePreset": "msvc-release",
+      "displayName": "MSVC Release Build"
+    },
+    {
+      "name": "msvc-relwithdebinfo",
+      "configurePreset": "msvc-relwithdebinfo",
+      "displayName": "MSVC RelWithDebInfo Build"
+    },
+    {
+      "name": "msvc-minsizerel",
+      "configurePreset": "msvc-minsizerel",
+      "displayName": "MSVC MinSizeRel Build"
+    },
+    {
+      "name": "msvc-clang-debug",
+      "configurePreset": "msvc-clang-debug",
+      "displayName": "MSVC-Clang Debug Build"
+    },
+    {
+      "name": "msvc-clang-release",
+      "configurePreset": "msvc-clang-release",
+      "displayName": "MSVC-Clang Release Build"
+    },
+    {
+      "name": "msvc-clang-relwithdebinfo",
+      "configurePreset": "msvc-clang-relwithdebinfo",
+      "displayName": "MSVC-Clang RelWithDebInfo Build"
+    },
+    {
+      "name": "msvc-clang-minsizerel",
+      "configurePreset": "msvc-clang-minsizerel",
+      "displayName": "MSVC-Clang MinSizeRel Build"
+    },
+    {
+      "name": "mingw-gcc-debug",
+      "configurePreset": "mingw-gcc-debug",
+      "displayName": "MinGW-GCC Debug Build"
+    },
+    {
+      "name": "mingw-gcc-release",
+      "configurePreset": "mingw-gcc-release",
+      "displayName": "MinGW-GCC Release Build"
+    },
+    {
+      "name": "mingw-gcc-relwithdebinfo",
+      "configurePreset": "mingw-gcc-relwithdebinfo",
+      "displayName": "MinGW-GCC RelWithDebInfo Build"
+    },
+    {
+      "name": "mingw-gcc-minsizerel",
+      "configurePreset": "mingw-gcc-minsizerel",
+      "displayName": "MinGW-GCC MinSizeRel Build"
+    },
+    {
+      "name": "mingw-clang-debug",
+      "configurePreset": "mingw-clang-debug",
+      "displayName": "MinGW-Clang Debug Build"
+    },
+    {
+      "name": "mingw-clang-release",
+      "configurePreset": "mingw-clang-release",
+      "displayName": "MinGW-Clang Release Build"
+    },
+    {
+      "name": "mingw-clang-relwithdebinfo",
+      "configurePreset": "mingw-clang-relwithdebinfo",
+      "displayName": "MinGW-Clang RelWithDebInfo Build"
+    },
+    {
+      "name": "mingw-clang-minsizerel",
+      "configurePreset": "mingw-clang-minsizerel",
+      "displayName": "MinGW-Clang MinSizeRel Build"
+    },
+    {
+      "name": "gcc-debug",
+      "configurePreset": "gcc-debug",
+      "displayName": "GCC Debug Build"
+    },
+    {
+      "name": "gcc-release",
+      "configurePreset": "gcc-release",
+      "displayName": "GCC Release Build"
+    },
+    {
+      "name": "gcc-relwithdebinfo",
+      "configurePreset": "gcc-relwithdebinfo",
+      "displayName": "GCC RelWithDebInfo Build"
+    },
+    {
+      "name": "gcc-minsizerel",
+      "configurePreset": "gcc-minsizerel",
+      "displayName": "GCC MinSizeRel Build"
+    },
+    {
+      "name": "clang-debug",
+      "configurePreset": "clang-debug",
+      "displayName": "Clang Debug Build"
+    },
+    {
+      "name": "clang-release",
+      "configurePreset": "clang-release",
+      "displayName": "Clang Release Build"
+    },
+    {
+      "name": "clang-relwithdebinfo",
+      "configurePreset": "clang-relwithdebinfo",
+      "displayName": "Clang RelWithDebInfo Build"
+    },
+    {
+      "name": "clang-minsizerel",
+      "configurePreset": "clang-minsizerel",
+      "displayName": "Clang MinSizeRel Build"
+    },
+    {
+      "name": "wasm-debug",
+      "configurePreset": "wasm-debug",
+      "displayName": "WASM Debug Build"
+    },
+    {
+      "name": "wasm-release",
+      "configurePreset": "wasm-release",
+      "displayName": "WASM Release Build"
+    },
+    {
+      "name": "wasm-relwithdebinfo",
+      "configurePreset": "wasm-relwithdebinfo",
+      "displayName": "WASM RelWithDebInfo Build"
+    },
+    {
+      "name": "wasm-minsizerel",
+      "configurePreset": "wasm-minsizerel",
+      "displayName": "WASM MinSizeRel Build"
+    },
+    {
+      "name": "linux-x86_64-debug",
+      "configurePreset": "linux-x86_64-debug",
+      "displayName": "Linux x86_64 Debug Build"
+    },
+    {
+      "name": "linux-x86_64-release",
+      "configurePreset": "linux-x86_64-release",
+      "displayName": "Linux x86_64 Release Build"
+    },
+    {
+      "name": "linux-arm64-debug",
+      "configurePreset": "linux-arm64-debug",
+      "displayName": "Linux ARM64 Debug Build"
+    },
+    {
+      "name": "linux-arm64-release",
+      "configurePreset": "linux-arm64-release",
+      "displayName": "Linux ARM64 Release Build"
+    },
+    {
+      "name": "windows-arm64-debug",
+      "configurePreset": "windows-arm64-debug",
+      "displayName": "Windows ARM64 Debug Build"
+    },
+    {
+      "name": "windows-arm64-release",
+      "configurePreset": "windows-arm64-release",
+      "displayName": "Windows ARM64 Release Build"
+    }
+  ]
+}
