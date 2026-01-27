@@ -1,0 +1,10 @@
+usage: OmniCppController.py test [-h]
+                                 {engine,game,standalone,all} {debug,release}
+
+positional arguments:
+  {engine,game,standalone,all}
+                        Target to test
+  {debug,release}       Build configuration
+
+options:
+  -h, --help            show this help message and exit

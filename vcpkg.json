@@ -1,0 +1,88 @@
+{
+  "name": "omnicpp-template",
+  "version": "0.0.3",
+  "description": "OmniCpp - Advanced C++ Development Template with C++23 support",
+  "dependencies": [
+    "vulkan",
+    "vulkan-headers",
+    "vulkan-loader",
+    "vulkan-validationlayers",
+    "shaderc",
+    "spirv-tools",
+    "glslang",
+    "spirv-cross",
+    "fmt",
+    "nlohmann-json",
+    "zlib",
+    "spdlog",
+    "catch2",
+    "gtest",
+    "libpq",
+    "glm",
+    "stb",
+    "cpptrace",
+    "openssl"
+  ],
+  "builtin-baseline": "2024-01-01",
+  "overrides": [
+    {
+      "name": "libpq",
+      "version": "15.4"
+    }
+  ],
+  "features": {
+    "vulkan": {
+      "description": "Enable Vulkan graphics API support",
+      "dependencies": [
+        "vulkan",
+        "vulkan-headers",
+        "vulkan-loader",
+        "vulkan-validationlayers",
+        "shaderc",
+        "spirv-tools",
+        "glslang",
+        "spirv-cross"
+      ]
+    },
+    "opengl": {
+      "description": "Enable OpenGL graphics API support",
+      "dependencies": ["opengl", "glad"]
+    },
+    "qt6": {
+      "description": "Enable Qt6 framework support",
+      "dependencies": ["qt6"]
+    },
+    "testing": {
+      "description": "Enable testing frameworks",
+      "dependencies": ["catch2", "gtest"]
+    },
+    "logging": {
+      "description": "Enable logging support",
+      "dependencies": ["spdlog"]
+    },
+    "math": {
+      "description": "Enable math library support",
+      "dependencies": ["glm"]
+    },
+    "image": {
+      "description": "Enable image loading support",
+      "dependencies": ["stb"]
+    },
+    "networking": {
+      "description": "Enable networking support",
+      "dependencies": ["openssl", "libpq"]
+    },
+    "debugging": {
+      "description": "Enable debugging support",
+      "dependencies": ["cpptrace"]
+    }
+  },
+  "default-features": [
+    "vulkan",
+    "testing",
+    "logging",
+    "math",
+    "image",
+    "debugging"
+  ]
+}

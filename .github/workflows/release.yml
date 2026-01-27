@@ -1,0 +1,59 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (e.g., 1.0.0)'
+        required: true
+        type: string
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install conan
+          pip install cmake
+      
+      - name: Configure CMake
+        run: |
+          python OmniCppController.py configure --build-type Release
+      
+      - name: Build all targets
+        run: |
+          python OmniCppController.py build all "Clean Build Pipeline" default release --compiler gcc
+      
+      - name: Run tests
+        run: |
+          python OmniCppController.py test all release
+      
+      - name: Create packages
+        run: |
+          python OmniCppController.py package all release
+      
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            packages/*
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

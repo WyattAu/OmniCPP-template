@@ -1,0 +1,153 @@
+{
+    "recommendations": [
+        {
+            "name": "ms-vscode.cpptools",
+            "description": "C/C++ extension for IntelliSense, debugging, and code browsing"
+        },
+        {
+            "name": "ms-vscode.cpptools-extension-pack",
+            "description": "C/C++ extension pack with additional tools"
+        },
+        {
+            "name": "ms-vscode.cmake-tools",
+            "description": "CMake Tools extension for CMake support"
+        },
+        {
+            "name": "twxs.cmake",
+            "description": "CMake language support and syntax highlighting"
+        },
+        {
+            "name": "xaver.clang-format",
+            "description": "Clang-format extension for code formatting"
+        },
+        {
+            "name": "cheshirekow.cmake-format",
+            "description": "CMake format extension for formatting CMake files"
+        },
+        {
+            "name": "ms-python.python",
+            "description": "Python extension for Python support"
+        },
+        {
+            "name": "ms-python.pylint",
+            "description": "Pylint extension for Python linting"
+        },
+        {
+            "name": "ms-python.mypy",
+            "description": "mypy extension for Python type checking"
+        },
+        {
+            "name": "ms-python.black-formatter",
+            "description": "Black extension for Python code formatting"
+        },
+        {
+            "name": "ms-python.isort",
+            "description": "isort extension for Python import sorting"
+        },
+        {
+            "name": "ms-python.vscode-pylance",
+            "description": "Pylance extension for fast Python IntelliSense"
+        },
+        {
+            "name": "eamodio.gitlens",
+            "description": "GitLens extension for Git superpowers"
+        },
+        {
+            "name": "github.vscode-pull-request-github",
+            "description": "GitHub Pull Request extension"
+        },
+        {
+            "name": "vscodevim.vim",
+            "description": "Vim extension for Vim keybindings"
+        },
+        {
+            "name": "streetsidesoftware.code-spell-checker",
+            "description": "Spell checker extension"
+        },
+        {
+            "name": "usernamehw.errorlens",
+            "description": "ErrorLens extension for inline error display"
+        },
+        {
+            "name": "oderwat.indent-rainbow",
+            "description": "Indent Rainbow extension for visual indentation"
+        },
+        {
+            "name": "coenraads.bracket-pair-colorizer-2",
+            "description": "Bracket Pair Colorizer extension"
+        },
+        {
+            "name": "shd101wyy.markdown-preview-enhanced",
+            "description": "Markdown Preview Enhanced extension"
+        },
+        {
+            "name": "bierner.markdown-mermaid",
+            "description": "Mermaid diagram support in Markdown"
+        },
+        {
+            "name": "ms-vscode.test-adapter-converter",
+            "description": "Test Adapter Converter for test integration"
+        },
+        {
+            "name": "hbenl.vscode-test-explorer",
+            "description": "Test Explorer UI extension"
+        },
+        {
+            "name": "webfreak.debug",
+            "description": "Debug extension for C/C++"
+        },
+        {
+            "name": "ms-vscode-remote.remote-containers",
+            "description": "Remote - Containers extension"
+        },
+        {
+            "name": "ms-vscode-remote.remote-ssh",
+            "description": "Remote - SSH extension"
+        },
+        {
+            "name": "ms-vscode-remote.remote-wsl",
+            "description": "Remote - WSL extension"
+        },
+        {
+            "name": "ms-vscode.ninja",
+            "description": "Ninja build system support"
+        },
+        {
+            "name": "sonarsource.sonarlint-vscode",
+            "description": "SonarLint extension for code quality"
+        },
+        {
+            "name": "eamodio.gitlens-insiders",
+            "description": "GitLens Insiders for advanced Git features"
+        },
+        {
+            "name": "wakatime.vscode-wakatime",
+            "description": "WakaTime extension for time tracking"
+        },
+        {
+            "name": "ms-vscode.cmake-tools",
+            "description": "CMake Tools extension for CMake project management"
+        },
+        {
+            "name": "ms-vscode.js-debug",
+            "description": "JavaScript debugger for WASM debugging"
+        },
+        {
+            "name": "redhat.vscode-yaml",
+            "description": "YAML extension for YAML file support"
+        },
+        {
+            "name": "vscode.json",
+            "description": "JSON extension for JSON file support"
+        },
+        {
+            "name": "be5invis.vscode-customcss",
+            "description": "Custom CSS for VSCode"
+        }
+    ],
+    "unwantedRecommendations": [
+        "HookyQR.beautify",
+        "esbenp.prettier-vscode",
+        "dbaeumer.vscode-eslint"
+    ]
+}

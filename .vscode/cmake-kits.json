@@ -1,0 +1,332 @@
+[
+  {
+    "name": "Visual Studio Community 2022 Release - x64",
+    "visualStudio": "17",
+    "visualStudioArchitecture": "x64",
+    "preferredGenerator": {
+      "name": "Ninja",
+      "platform": "x64"
+    },
+    "environmentVariables": {
+      "CMAKE_GENERATOR": "Ninja"
+    }
+  },
+  {
+    "name": "Visual Studio Community 2022 Release - x86",
+    "visualStudio": "17",
+    "visualStudioArchitecture": "x86",
+    "preferredGenerator": {
+      "name": "Ninja",
+      "platform": "Win32"
+    },
+    "environmentVariables": {
+      "CMAKE_GENERATOR": "Ninja"
+    }
+  },
+  {
+    "name": "Visual Studio Community 2022 Release - ARM64",
+    "visualStudio": "17",
+    "visualStudioArchitecture": "ARM64",
+    "preferredGenerator": {
+      "name": "Ninja",
+      "platform": "ARM64"
+    },
+    "environmentVariables": {
+      "CMAKE_GENERATOR": "Ninja"
+    }
+  },
+  {
+    "name": "Visual Studio Professional 2022 Release - x64",
+    "visualStudio": "17",
+    "visualStudioArchitecture": "x64",
+    "preferredGenerator": {
+      "name": "Ninja",
+      "platform": "x64"
+    },
+    "environmentVariables": {
+      "CMAKE_GENERATOR": "Ninja"
+    }
+  },
+  {
+    "name": "Visual Studio Enterprise 2022 Release - x64",
+    "visualStudio": "17",
+    "visualStudioArchitecture": "x64",
+    "preferredGenerator": {
+      "name": "Ninja",
+      "platform": "x64"
+    },
+    "environmentVariables": {
+      "CMAKE_GENERATOR": "Ninja"
+    }
+  },
+  {
+    "name": "MinGW-GCC 13.2.0 x86_64-w64-mingw32",
+    "compilers": {
+      "C": "C:/mingw64/bin/gcc.exe",
+      "CXX": "C:/mingw64/bin/g++.exe"
+    },
+    "environmentVariables": {
+      "PATH": "C:/mingw64/bin;${env:PATH}",
+      "CMAKE_GENERATOR": "Ninja"
+    },
+    "preferredGenerator": {
+      "name": "Ninja",
+      "platform": "x64"
+    }
+  },
+  {
+    "name": "MinGW-GCC 12.2.0 x86_64-w64-mingw32",
+    "compilers": {
+      "C": "C:/mingw64/bin/gcc.exe",
+      "CXX": "C:/mingw64/bin/g++.exe"
+    },
+    "environmentVariables": {
+      "PATH": "C:/mingw64/bin;${env:PATH}",
+      "CMAKE_GENERATOR": "Ninja"
+    },
+    "preferredGenerator": {
+      "name": "Ninja",
+      "platform": "x64"
+    }
+  },
+  {
+    "name": "MinGW-GCC 11.3.0 x86_64-w64-mingw32",
+    "compilers": {
+      "C": "C:/mingw64/bin/gcc.exe",
+      "CXX": "C:/mingw64/bin/g++.exe"
+    },
+    "environmentVariables": {
+      "PATH": "C:/mingw64/bin;${env:PATH}",
+      "CMAKE_GENERATOR": "Ninja"
+    },
+    "preferredGenerator": {
+      "name": "Ninja",
+      "platform": "x64"
+    }
+  },
+  {
+    "name": "MinGW-Clang 18.1.0 x86_64-w64-mingw32",
+    "compilers": {
+      "C": "C:/llvm-mingw/bin/clang.exe",
+      "CXX": "C:/llvm-mingw/bin/clang++.exe"
+    },
+    "environmentVariables": {
+      "PATH": "C:/llvm-mingw/bin;${env:PATH}",
+      "CMAKE_GENERATOR": "Ninja"
+    },
+    "preferredGenerator": {
+      "name": "Ninja",
+      "platform": "x64"
+    }
+  },
+  {
+    "name": "MinGW-Clang 17.0.0 x86_64-w64-mingw32",
+    "compilers": {
+      "C": "C:/llvm-mingw/bin/clang.exe",
+      "CXX": "C:/llvm-mingw/bin/clang++.exe"
+    },
+    "environmentVariables": {
+      "PATH": "C:/llvm-mingw/bin;${env:PATH}",
+      "CMAKE_GENERATOR": "Ninja"
+    },
+    "preferredGenerator": {
+      "name": "Ninja",
+      "platform": "x64"
+    }
+  },
+  {
+    "name": "MinGW-Clang 16.0.0 x86_64-w64-mingw32",
+    "compilers": {
+      "C": "C:/llvm-mingw/bin/clang.exe",
+      "CXX": "C:/llvm-mingw/bin/clang++.exe"
+    },
+    "environmentVariables": {
+      "PATH": "C:/llvm-mingw/bin;${env:PATH}",
+      "CMAKE_GENERATOR": "Ninja"
+    },
+    "preferredGenerator": {
+      "name": "Ninja",
+      "platform": "x64"
+    }
+  },
+  {
+    "name": "GCC 13.2.0 x86_64-linux-gnu",
+    "compilers": {
+      "C": "/usr/bin/gcc",
+      "CXX": "/usr/bin/g++"
+    },
+    "environmentVariables": {
+      "CC": "/usr/bin/gcc",
+      "CXX": "/usr/bin/g++",
+      "CMAKE_GENERATOR": "Ninja"
+    },
+    "preferredGenerator": {
+      "name": "Ninja",
+      "platform": "x64"
+    }
+  },
+  {
+    "name": "GCC 12.3.0 x86_64-linux-gnu",
+    "compilers": {
+      "C": "/usr/bin/gcc",
+      "CXX": "/usr/bin/g++"
+    },
+    "environmentVariables": {
+      "CC": "/usr/bin/gcc",
+      "CXX": "/usr/bin/g++",
+      "CMAKE_GENERATOR": "Ninja"
+    },
+    "preferredGenerator": {
+      "name": "Ninja",
+      "platform": "x64"
+    }
+  },
+  {
+    "name": "GCC 11.4.0 x86_64-linux-gnu",
+    "compilers": {
+      "C": "/usr/bin/gcc",
+      "CXX": "/usr/bin/g++"
+    },
+    "environmentVariables": {
+      "CC": "/usr/bin/gcc",
+      "CXX": "/usr/bin/g++",
+      "CMAKE_GENERATOR": "Ninja"
+    },
+    "preferredGenerator": {
+      "name": "Ninja",
+      "platform": "x64"
+    }
+  },
+  {
+    "name": "Clang 18.1.0 x86_64-linux-gnu",
+    "compilers": {
+      "C": "/usr/bin/clang",
+      "CXX": "/usr/bin/clang++"
+    },
+    "environmentVariables": {
+      "CC": "/usr/bin/clang",
+      "CXX": "/usr/bin/clang++",
+      "CMAKE_GENERATOR": "Ninja"
+    },
+    "preferredGenerator": {
+      "name": "Ninja",
+      "platform": "x64"
+    }
+  },
+  {
+    "name": "Clang 17.0.0 x86_64-linux-gnu",
+    "compilers": {
+      "C": "/usr/bin/clang",
+      "CXX": "/usr/bin/clang++"
+    },
+    "environmentVariables": {
+      "CC": "/usr/bin/clang",
+      "CXX": "/usr/bin/clang++",
+      "CMAKE_GENERATOR": "Ninja"
+    },
+    "preferredGenerator": {
+      "name": "Ninja",
+      "platform": "x64"
+    }
+  },
+  {
+    "name": "Clang 16.0.0 x86_64-linux-gnu",
+    "compilers": {
+      "C": "/usr/bin/clang",
+      "CXX": "/usr/bin/clang++"
+    },
+    "environmentVariables": {
+      "CC": "/usr/bin/clang",
+      "CXX": "/usr/bin/clang++",
+      "CMAKE_GENERATOR": "Ninja"
+    },
+    "preferredGenerator": {
+      "name": "Ninja",
+      "platform": "x64"
+    }
+  },
+  {
+    "name": "GCC 13.2.0 aarch64-linux-gnu",
+    "compilers": {
+      "C": "/usr/bin/aarch64-linux-gnu-gcc",
+      "CXX": "/usr/bin/aarch64-linux-gnu-g++"
+    },
+    "environmentVariables": {
+      "CC": "/usr/bin/aarch64-linux-gnu-gcc",
+      "CXX": "/usr/bin/aarch64-linux-gnu-g++",
+      "CMAKE_GENERATOR": "Ninja",
+      "CMAKE_SYSTEM_NAME": "Linux",
+      "CMAKE_SYSTEM_PROCESSOR": "aarch64"
+    },
+    "preferredGenerator": {
+      "name": "Ninja",
+      "platform": "ARM64"
+    }
+  },
+  {
+    "name": "MinGW-GCC 13.2.0 aarch64-w64-mingw32",
+    "compilers": {
+      "C": "C:/mingw64/bin/aarch64-w64-mingw32-gcc.exe",
+      "CXX": "C:/mingw64/bin/aarch64-w64-mingw32-g++.exe"
+    },
+    "environmentVariables": {
+      "PATH": "C:/mingw64/bin;${env:PATH}",
+      "CMAKE_GENERATOR": "Ninja",
+      "CMAKE_SYSTEM_NAME": "Windows",
+      "CMAKE_SYSTEM_PROCESSOR": "ARM64"
+    },
+    "preferredGenerator": {
+      "name": "Ninja",
+      "platform": "ARM64"
+    }
+  },
+  {
+    "name": "Emscripten 3.1.0",
+    "compilers": {
+      "C": "emcc",
+      "CXX": "em++"
+    },
+    "environmentVariables": {
+      "EMSCRIPTEN_ROOT": "/usr/local/lib/emscripten",
+      "CMAKE_GENERATOR": "Ninja",
+      "CMAKE_SYSTEM_NAME": "Emscripten",
+      "CMAKE_C_COMPILER": "emcc",
+      "CMAKE_CXX_COMPILER": "em++"
+    },
+    "preferredGenerator": {
+      "name": "Ninja",
+      "platform": "WASM"
+    }
+  },
+  {
+    "name": "MSVC-Clang 18.1.0 x64",
+    "compilers": {
+      "C": "clang-cl",
+      "CXX": "clang-cl"
+    },
+    "environmentVariables": {
+      "CC": "clang-cl",
+      "CXX": "clang-cl",
+      "CMAKE_GENERATOR": "Ninja"
+    },
+    "preferredGenerator": {
+      "name": "Ninja",
+      "platform": "x64"
+    }
+  },
+  {
+    "name": "OmniCppController Auto-Detect",
+    "compilers": {
+      "C": "auto",
+      "CXX": "auto"
+    },
+    "environmentVariables": {
+      "CMAKE_GENERATOR": "Ninja"
+    },
+    "preferredGenerator": {
+      "name": "Ninja",
+      "platform": "auto"
+    }
+  }
+]
+

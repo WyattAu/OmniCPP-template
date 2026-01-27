@@ -1,0 +1,66 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-added-large-files
+      - id: check-merge-conflict
+      - id: check-case-conflict
+
+  - repo: https://github.com/pre-commit/mirrors-clang-format
+    rev: v18.1.8
+    hooks:
+      - id: clang-format
+        files: \.(c|cc|cpp|cxx|h|hpp|hh|hxx)$
+        exclude: ^(src/modules/.*|include/.*)$
+        args: [--style=file, --fallback-style=none]
+
+  - repo: https://github.com/cheshirekow/cmake-format-precommit
+    rev: v0.6.13
+    hooks:
+      - id: cmake-format
+        files: CMakeLists\.txt|\.cmake$
+        exclude: ^(_deps|cmake/generated)/
+
+  - repo: https://github.com/pocc/pre-commit-hooks
+    rev: v1.3.5
+    hooks:
+      - id: clang-tidy
+        files: \.(c|cc|cpp|cxx)$
+        exclude: ^(_deps|src/modules/.*)$
+        args: [--config-file=.clang-tidy]
+
+  - repo: https://github.com/pocc/pre-commit-hooks
+    rev: v1.3.5
+    hooks:
+      - id: cppcheck
+        files: \.(c|cc|cpp|cxx)$
+        exclude: ^(_deps|src/modules/.*)$
+        args: [--enable=all, --suppress=missingIncludeSystem, --error-exitcode=1]
+
+  - repo: https://github.com/psf/black
+    rev: 25.1.0
+    hooks:
+      - id: black
+        language_version: python3.11
+        files: \.py$
+        exclude: ^(venv/|env/|.mypy_cache/|.pytest_cache/)
+
+  - repo: https://github.com/pycqa/pylint
+    rev: v3.3.1
+    hooks:
+      - id: pylint
+        files: \.py$
+        exclude: ^(venv/|env/|.mypy_cache/|.pytest_cache/)
+        args: [--rcfile=.pylintrc, --max-line-length=100]
+
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.11.1
+    hooks:
+      - id: mypy
+        files: \.py$
+        exclude: ^(venv/|env/|.mypy_cache/|.pytest_cache/)
+        args: [--strict, --ignore-missing-imports]
+        additional_dependencies: [types-toml]

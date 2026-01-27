@@ -1,0 +1,101 @@
+---
+# C++23 Linting Configuration for OmniCpp Template
+# Enable specific checks with C++23 best practices
+Checks: >
+  -*,
+  bugprone-*,
+  cert-*,
+  clang-analyzer-*,
+  concurrency-*,
+  cppcoreguidelines-*,
+  misc-*,
+  modernize-*,
+  performance-*,
+  readability-*,
+  -modernize-use-trailing-return-type,
+  -cppcoreguidelines-avoid-magic-numbers,
+  -cppcoreguidelines-pro-bounds-pointer-arithmetic,
+  -cppcoreguidelines-pro-type-reinterpret-cast,
+  -cppcoreguidelines-avoid-c-arrays,
+  -readability-magic-numbers
+
+# C++23 specific checks
+# These checks are enabled by default in modern clang-tidy versions
+# Additional C++23 checks can be added as they become available
+
+# Treat all warnings as errors in CI
+WarningsAsErrors: "*"
+
+# header-filter ensures we analyze headers in our project,
+# but ignore headers in third_party/ or /usr/include
+HeaderFilterRegex: "src/.*|include/.*"
+
+# Use .clang-format file for formatting style
+FormatStyle: file
+
+# Check options
+CheckOptions:
+  # Modernize checks
+  - key: modernize-use-nullptr.NullMacros
+    value: 'NULL'
+  - key: modernize-use-override.AllowOverrideAndFinal
+    value: '0'
+
+  # Performance checks
+  - key: performance-unnecessary-value-param.AllowedTypes
+    value: ''
+
+  # Readability checks
+  - key: readability-identifier-naming.ClassCase
+    value: CamelCase
+  - key: readability-identifier-naming.StructCase
+    value: CamelCase
+  - key: readability-identifier-naming.FunctionCase
+    value: camelBack
+  - key: readability-identifier-naming.VariableCase
+    value: camelBack
+  - key: readability-identifier-naming.ParameterCase
+    value: camelBack
+  - key: readability-identifier-naming.MemberCase
+    value: camelBack
+  - key: readability-identifier-naming.PrivateMemberPrefix
+    value: ''
+  - key: readability-identifier-naming.ProtectedMemberPrefix
+    value: ''
+  - key: readability-identifier-naming.ConstantCase
+    value: UPPER_CASE
+  - key: readability-identifier-naming.EnumConstantCase
+    value: UPPER_CASE
+  - key: readability-identifier-naming.GlobalConstantCase
+    value: UPPER_CASE
+  - key: readability-identifier-naming.StaticConstantCase
+    value: UPPER_CASE
+  - key: readability-function-size.LineThreshold
+    value: '100'
+  - key: readability-function-size.StatementThreshold
+    value: '800'
+  - key: readability-function-size.BranchThreshold
+    value: '50'
+  - key: readability-function-size.ParameterThreshold
+    value: '10'
+
+  # C++ Core Guidelines checks
+  - key: cppcoreguidelines-special-member-functions.AllowSoleDefaultDtor
+    value: '1'
+
+  # Bugprone checks
+  - key: bugprone-argument-comment.StrictMode
+    value: '0'
+  - key: bugprone-exception-escape.FunctionsThatShouldNotThrow
+    value: ''
+  - key: bugprone-exception-escape.IgnoredFunctions
+    value: ''
+
+# System headers to ignore
+SystemHeaders: false
+
+# Extra arguments to pass to clang-tidy
+ExtraArgs: '-std=c++23'
+
+# Inherit parent config
+InheritParentConfig: false

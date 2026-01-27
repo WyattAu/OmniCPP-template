@@ -1,0 +1,216 @@
+name: Build
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  build-windows-msvc:
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        config: [Debug, Release]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install conan
+          pip install cmake
+      
+      - name: Configure CMake
+        run: |
+          python OmniCppController.py configure --build-type ${{ matrix.config }}
+      
+      - name: Build
+        run: |
+          python OmniCppController.py build engine "Clean Build Pipeline" default ${{ matrix.config }} --compiler msvc
+      
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-msvc-${{ matrix.config }}
+          path: build/
+
+  build-windows-clang-msvc:
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        config: [Debug, Release]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install conan
+          pip install cmake
+      
+      - name: Configure CMake
+        run: |
+          python OmniCppController.py configure --build-type ${{ matrix.config }}
+      
+      - name: Build
+        run: |
+          python OmniCppController.py build engine "Clean Build Pipeline" default ${{ matrix.config }} --compiler clang-msvc
+      
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-clang-msvc-${{ matrix.config }}
+          path: build/
+
+  build-windows-mingw-gcc:
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        config: [Debug, Release]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install conan
+          pip install cmake
+      
+      - name: Configure CMake
+        run: |
+          python OmniCppController.py configure --build-type ${{ matrix.config }}
+      
+      - name: Build
+        run: |
+          python OmniCppController.py build engine "Clean Build Pipeline" default ${{ matrix.config }} --compiler mingw-gcc
+      
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-mingw-gcc-${{ matrix.config }}
+          path: build/
+
+  build-windows-mingw-clang:
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        config: [Debug, Release]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install conan
+          pip install cmake
+      
+      - name: Configure CMake
+        run: |
+          python OmniCppController.py configure --build-type ${{ matrix.config }}
+      
+      - name: Build
+        run: |
+          python OmniCppController.py build engine "Clean Build Pipeline" default ${{ matrix.config }} --compiler mingw-clang
+      
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-mingw-clang-${{ matrix.config }}
+          path: build/
+
+  build-linux-gcc:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        config: [Debug, Release]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install conan
+          pip install cmake
+          sudo apt-get update
+          sudo apt-get install -y build-essential libvulkan-dev libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libgl1-mesa-dev
+      
+      - name: Configure CMake
+        run: |
+          python OmniCppController.py configure --build-type ${{ matrix.config }}
+      
+      - name: Build
+        run: |
+          python OmniCppController.py build engine "Clean Build Pipeline" default ${{ matrix.config }} --compiler gcc
+      
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-gcc-${{ matrix.config }}
+          path: build/
+
+  build-linux-clang:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        config: [Debug, Release]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install conan
+          pip install cmake
+          sudo apt-get update
+          sudo apt-get install -y build-essential libvulkan-dev libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libgl1-mesa-dev clang
+      
+      - name: Configure CMake
+        run: |
+          python OmniCppController.py configure --build-type ${{ matrix.config }}
+      
+      - name: Build
+        run: |
+          python OmniCppController.py build engine "Clean Build Pipeline" default ${{ matrix.config }} --compiler clang
+      
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-clang-${{ matrix.config }}
+          path: build/

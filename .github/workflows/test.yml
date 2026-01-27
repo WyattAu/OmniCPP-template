@@ -1,0 +1,264 @@
+name: Test
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  test-windows-msvc:
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        config: [Debug, Release]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install conan
+          pip install cmake
+          pip install pytest
+      
+      - name: Configure CMake
+        run: |
+          python OmniCppController.py configure --build-type ${{ matrix.config }}
+      
+      - name: Build
+        run: |
+          python OmniCppController.py build engine "Clean Build Pipeline" default ${{ matrix.config }} --compiler msvc
+      
+      - name: Run tests
+        run: |
+          python OmniCppController.py test engine ${{ matrix.config }}
+      
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-msvc-${{ matrix.config }}
+          path: |
+            build/Testing/
+            validation_reports/
+
+  test-windows-clang-msvc:
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        config: [Debug, Release]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install conan
+          pip install cmake
+          pip install pytest
+      
+      - name: Configure CMake
+        run: |
+          python OmniCppController.py configure --build-type ${{ matrix.config }}
+      
+      - name: Build
+        run: |
+          python OmniCppController.py build engine "Clean Build Pipeline" default ${{ matrix.config }} --compiler clang-msvc
+      
+      - name: Run tests
+        run: |
+          python OmniCppController.py test engine ${{ matrix.config }}
+      
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-clang-msvc-${{ matrix.config }}
+          path: |
+            build/Testing/
+            validation_reports/
+
+  test-windows-mingw-gcc:
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        config: [Debug, Release]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install conan
+          pip install cmake
+          pip install pytest
+      
+      - name: Configure CMake
+        run: |
+          python OmniCppController.py configure --build-type ${{ matrix.config }}
+      
+      - name: Build
+        run: |
+          python OmniCppController.py build engine "Clean Build Pipeline" default ${{ matrix.config }} --compiler mingw-gcc
+      
+      - name: Run tests
+        run: |
+          python OmniCppController.py test engine ${{ matrix.config }}
+      
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-mingw-gcc-${{ matrix.config }}
+          path: |
+            build/Testing/
+            validation_reports/
+
+  test-windows-mingw-clang:
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        config: [Debug, Release]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install conan
+          pip install cmake
+          pip install pytest
+      
+      - name: Configure CMake
+        run: |
+          python OmniCppController.py configure --build-type ${{ matrix.config }}
+      
+      - name: Build
+        run: |
+          python OmniCppController.py build engine "Clean Build Pipeline" default ${{ matrix.config }} --compiler mingw-clang
+      
+      - name: Run tests
+        run: |
+          python OmniCppController.py test engine ${{ matrix.config }}
+      
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-mingw-clang-${{ matrix.config }}
+          path: |
+            build/Testing/
+            validation_reports/
+
+  test-linux-gcc:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        config: [Debug, Release]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install conan
+          pip install cmake
+          pip install pytest
+          sudo apt-get update
+          sudo apt-get install -y build-essential libvulkan-dev libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libgl1-mesa-dev
+      
+      - name: Configure CMake
+        run: |
+          python OmniCppController.py configure --build-type ${{ matrix.config }}
+      
+      - name: Build
+        run: |
+          python OmniCppController.py build engine "Clean Build Pipeline" default ${{ matrix.config }} --compiler gcc
+      
+      - name: Run tests
+        run: |
+          python OmniCppController.py test engine ${{ matrix.config }}
+      
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-gcc-${{ matrix.config }}
+          path: |
+            build/Testing/
+            validation_reports/
+
+  test-linux-clang:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        config: [Debug, Release]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install conan
+          pip install cmake
+          pip install pytest
+          sudo apt-get update
+          sudo apt-get install -y build-essential libvulkan-dev libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libgl1-mesa-dev clang
+      
+      - name: Configure CMake
+        run: |
+          python OmniCppController.py configure --build-type ${{ matrix.config }}
+      
+      - name: Build
+        run: |
+          python OmniCppController.py build engine "Clean Build Pipeline" default ${{ matrix.config }} --compiler clang
+      
+      - name: Run tests
+        run: |
+          python OmniCppController.py test engine ${{ matrix.config }}
+      
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-clang-${{ matrix.config }}
+          path: |
+            build/Testing/
+            validation_reports/

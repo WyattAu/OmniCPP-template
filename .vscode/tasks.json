@@ -1,0 +1,2028 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Configure Build (Debug)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "configure",
+        "--build-type",
+        "Debug"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "detail": "Configure CMake project for Debug build using OmniCppController"
+    },
+    {
+      "label": "Configure Build (Release)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "configure",
+        "--build-type",
+        "Release"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "detail": "Configure CMake project for Release build using OmniCppController"
+    },
+    {
+      "label": "Configure Build (RelWithDebInfo)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "configure",
+        "--build-type",
+        "RelWithDebInfo"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "detail": "Configure CMake project for RelWithDebInfo build using OmniCppController"
+    },
+    {
+      "label": "Configure Build (MinSizeRel)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "configure",
+        "--build-type",
+        "MinSizeRel"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "detail": "Configure CMake project for MinSizeRel build using OmniCppController"
+    },
+    {
+      "label": "Configure Build (Windows MSVC - Debug)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "configure",
+        "--compiler",
+        "msvc",
+        "--build-type",
+        "Debug"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "detail": "Configure CMake project with MSVC compiler for Debug build"
+    },
+    {
+      "label": "Configure Build (Windows MSVC - Release)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "configure",
+        "--compiler",
+        "msvc",
+        "--build-type",
+        "Release"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "detail": "Configure CMake project with MSVC compiler for Release build"
+    },
+    {
+      "label": "Configure Build (Windows MSVC-Clang - Debug)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "configure",
+        "--compiler",
+        "msvc-clang",
+        "--build-type",
+        "Debug"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "detail": "Configure CMake project with MSVC-Clang compiler for Debug build"
+    },
+    {
+      "label": "Configure Build (Windows MSVC-Clang - Release)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "configure",
+        "--compiler",
+        "msvc-clang",
+        "--build-type",
+        "Release"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "detail": "Configure CMake project with MSVC-Clang compiler for Release build"
+    },
+    {
+      "label": "Configure Build (Windows MinGW-GCC - Debug)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "configure",
+        "--compiler",
+        "mingw-gcc",
+        "--build-type",
+        "Debug"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "detail": "Configure CMake project with MinGW-GCC compiler for Debug build"
+    },
+    {
+      "label": "Configure Build (Windows MinGW-GCC - Release)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "configure",
+        "--compiler",
+        "mingw-gcc",
+        "--build-type",
+        "Release"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "detail": "Configure CMake project with MinGW-GCC compiler for Release build"
+    },
+    {
+      "label": "Configure Build (Windows MinGW-Clang - Debug)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "configure",
+        "--compiler",
+        "mingw-clang",
+        "--build-type",
+        "Debug"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "detail": "Configure CMake project with MinGW-Clang compiler for Debug build"
+    },
+    {
+      "label": "Configure Build (Windows MinGW-Clang - Release)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "configure",
+        "--compiler",
+        "mingw-clang",
+        "--build-type",
+        "Release"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "detail": "Configure CMake project with MinGW-Clang compiler for Release build"
+    },
+    {
+      "label": "Configure Build (Linux GCC - Debug)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "configure",
+        "--compiler",
+        "gcc",
+        "--build-type",
+        "Debug"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "detail": "Configure CMake project with GCC compiler for Debug build"
+    },
+    {
+      "label": "Configure Build (Linux GCC - Release)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "configure",
+        "--compiler",
+        "gcc",
+        "--build-type",
+        "Release"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "detail": "Configure CMake project with GCC compiler for Release build"
+    },
+    {
+      "label": "Configure Build (Linux Clang - Debug)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "configure",
+        "--compiler",
+        "clang",
+        "--build-type",
+        "Debug"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "detail": "Configure CMake project with Clang compiler for Debug build"
+    },
+    {
+      "label": "Configure Build (Linux Clang - Release)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "configure",
+        "--compiler",
+        "clang",
+        "--build-type",
+        "Release"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "detail": "Configure CMake project with Clang compiler for Release build"
+    },
+    {
+      "label": "Configure Build (WASM - Debug)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "configure",
+        "--target",
+        "wasm",
+        "--build-type",
+        "Debug"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "detail": "Configure CMake project for WASM build using OmniCppController"
+    },
+    {
+      "label": "Configure Build (WASM - Release)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "configure",
+        "--target",
+        "wasm",
+        "--build-type",
+        "Release"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "detail": "Configure CMake project for WASM Release build using OmniCppController"
+    },
+    {
+      "label": "Configure Build (Linux Cross-Compile - Debug)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "configure",
+        "--target",
+        "linux",
+        "--build-type",
+        "Debug"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "detail": "Configure CMake project for Linux cross-compilation using OmniCppController"
+    },
+    {
+      "label": "Configure Build (Linux Cross-Compile - Release)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "configure",
+        "--target",
+        "linux",
+        "--build-type",
+        "Release"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "detail": "Configure CMake project for Linux cross-compilation Release build using OmniCppController"
+    },
+    {
+      "label": "Build Engine (Windows MSVC - Debug)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "engine",
+        "default",
+        "windows-msvc-debug",
+        "debug"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Windows MSVC - Debug)"
+      ],
+      "detail": "Build Engine target with MSVC compiler in Debug mode"
+    },
+    {
+      "label": "Build Engine (Windows MSVC - Release)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "engine",
+        "default",
+        "windows-msvc-release",
+        "release"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Windows MSVC - Release)"
+      ],
+      "detail": "Build Engine target with MSVC compiler in Release mode"
+    },
+    {
+      "label": "Build Engine (Windows MSVC-Clang - Debug)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "engine",
+        "default",
+        "windows-msvc-clang-debug",
+        "debug"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Windows MSVC-Clang - Debug)"
+      ],
+      "detail": "Build Engine target with MSVC-Clang compiler in Debug mode"
+    },
+    {
+      "label": "Build Engine (Windows MSVC-Clang - Release)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "engine",
+        "default",
+        "windows-msvc-clang-release",
+        "release"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Windows MSVC-Clang - Release)"
+      ],
+      "detail": "Build Engine target with MSVC-Clang compiler in Release mode"
+    },
+    {
+      "label": "Build Engine (Windows MinGW-GCC - Debug)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "engine",
+        "default",
+        "windows-mingw-gcc-debug",
+        "debug"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Windows MinGW-GCC - Debug)"
+      ],
+      "detail": "Build Engine target with MinGW-GCC compiler in Debug mode"
+    },
+    {
+      "label": "Build Engine (Windows MinGW-GCC - Release)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "engine",
+        "default",
+        "windows-mingw-gcc-release",
+        "release"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Windows MinGW-GCC - Release)"
+      ],
+      "detail": "Build Engine target with MinGW-GCC compiler in Release mode"
+    },
+    {
+      "label": "Build Engine (Windows MinGW-Clang - Debug)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "engine",
+        "default",
+        "windows-mingw-clang-debug",
+        "debug"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Windows MinGW-Clang - Debug)"
+      ],
+      "detail": "Build Engine target with MinGW-Clang compiler in Debug mode"
+    },
+    {
+      "label": "Build Engine (Windows MinGW-Clang - Release)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "engine",
+        "default",
+        "windows-mingw-clang-release",
+        "release"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Windows MinGW-Clang - Release)"
+      ],
+      "detail": "Build Engine target with MinGW-Clang compiler in Release mode"
+    },
+    {
+      "label": "Build Engine (Linux GCC - Debug)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "engine",
+        "default",
+        "linux-gcc-debug",
+        "debug"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Linux GCC - Debug)"
+      ],
+      "detail": "Build Engine target with GCC compiler in Debug mode"
+    },
+    {
+      "label": "Build Engine (Linux GCC - Release)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "engine",
+        "default",
+        "linux-gcc-release",
+        "release"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Linux GCC - Release)"
+      ],
+      "detail": "Build Engine target with GCC compiler in Release mode"
+    },
+    {
+      "label": "Build Engine (Linux Clang - Debug)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "engine",
+        "default",
+        "linux-clang-debug",
+        "debug"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Linux Clang - Debug)"
+      ],
+      "detail": "Build Engine target with Clang compiler in Debug mode"
+    },
+    {
+      "label": "Build Engine (Linux Clang - Release)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "engine",
+        "default",
+        "linux-clang-release",
+        "release"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Linux Clang - Release)"
+      ],
+      "detail": "Build Engine target with Clang compiler in Release mode"
+    },
+    {
+      "label": "Build Game (Windows MSVC - Debug)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "game",
+        "default",
+        "windows-msvc-debug",
+        "debug"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Windows MSVC - Debug)"
+      ],
+      "detail": "Build Game target with MSVC compiler in Debug mode"
+    },
+    {
+      "label": "Build Game (Windows MSVC - Release)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "game",
+        "default",
+        "windows-msvc-release",
+        "release"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Windows MSVC - Release)"
+      ],
+      "detail": "Build Game target with MSVC compiler in Release mode"
+    },
+    {
+      "label": "Build Game (Windows MSVC-Clang - Debug)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "game",
+        "default",
+        "windows-msvc-clang-debug",
+        "debug"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Windows MSVC-Clang - Debug)"
+      ],
+      "detail": "Build Game target with MSVC-Clang compiler in Debug mode"
+    },
+    {
+      "label": "Build Game (Windows MSVC-Clang - Release)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "game",
+        "default",
+        "windows-msvc-clang-release",
+        "release"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Windows MSVC-Clang - Release)"
+      ],
+      "detail": "Build Game target with MSVC-Clang compiler in Release mode"
+    },
+    {
+      "label": "Build Game (Windows MinGW-GCC - Debug)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "game",
+        "default",
+        "windows-mingw-gcc-debug",
+        "debug"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Windows MinGW-GCC - Debug)"
+      ],
+      "detail": "Build Game target with MinGW-GCC compiler in Debug mode"
+    },
+    {
+      "label": "Build Game (Windows MinGW-GCC - Release)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "game",
+        "default",
+        "windows-mingw-gcc-release",
+        "release"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Windows MinGW-GCC - Release)"
+      ],
+      "detail": "Build Game target with MinGW-GCC compiler in Release mode"
+    },
+    {
+      "label": "Build Game (Windows MinGW-Clang - Debug)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "game",
+        "default",
+        "windows-mingw-clang-debug",
+        "debug"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Windows MinGW-Clang - Debug)"
+      ],
+      "detail": "Build Game target with MinGW-Clang compiler in Debug mode"
+    },
+    {
+      "label": "Build Game (Windows MinGW-Clang - Release)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "game",
+        "default",
+        "windows-mingw-clang-release",
+        "release"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Windows MinGW-Clang - Release)"
+      ],
+      "detail": "Build Game target with MinGW-Clang compiler in Release mode"
+    },
+    {
+      "label": "Build Game (Linux GCC - Debug)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "game",
+        "default",
+        "linux-gcc-debug",
+        "debug"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Linux GCC - Debug)"
+      ],
+      "detail": "Build Game target with GCC compiler in Debug mode"
+    },
+    {
+      "label": "Build Game (Linux GCC - Release)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "game",
+        "default",
+        "linux-gcc-release",
+        "release"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Linux GCC - Release)"
+      ],
+      "detail": "Build Game target with GCC compiler in Release mode"
+    },
+    {
+      "label": "Build Game (Linux Clang - Debug)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "game",
+        "default",
+        "linux-clang-debug",
+        "debug"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Linux Clang - Debug)"
+      ],
+      "detail": "Build Game target with Clang compiler in Debug mode"
+    },
+    {
+      "label": "Build Game (Linux Clang - Release)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "game",
+        "default",
+        "linux-clang-release",
+        "release"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Linux Clang - Release)"
+      ],
+      "detail": "Build Game target with Clang compiler in Release mode"
+    },
+    {
+      "label": "Build Standalone (Windows MSVC - Debug)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "standalone",
+        "default",
+        "windows-msvc-debug",
+        "debug"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Windows MSVC - Debug)"
+      ],
+      "detail": "Build Standalone target with MSVC compiler in Debug mode"
+    },
+    {
+      "label": "Build Standalone (Windows MSVC - Release)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "standalone",
+        "default",
+        "windows-msvc-release",
+        "release"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Windows MSVC - Release)"
+      ],
+      "detail": "Build Standalone target with MSVC compiler in Release mode"
+    },
+    {
+      "label": "Build Standalone (Windows MSVC-Clang - Debug)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "standalone",
+        "default",
+        "windows-msvc-clang-debug",
+        "debug"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Windows MSVC-Clang - Debug)"
+      ],
+      "detail": "Build Standalone target with MSVC-Clang compiler in Debug mode"
+    },
+    {
+      "label": "Build Standalone (Windows MSVC-Clang - Release)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "standalone",
+        "default",
+        "windows-msvc-clang-release",
+        "release"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Windows MSVC-Clang - Release)"
+      ],
+      "detail": "Build Standalone target with MSVC-Clang compiler in Release mode"
+    },
+    {
+      "label": "Build Standalone (Windows MinGW-GCC - Debug)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "standalone",
+        "default",
+        "windows-mingw-gcc-debug",
+        "debug"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Windows MinGW-GCC - Debug)"
+      ],
+      "detail": "Build Standalone target with MinGW-GCC compiler in Debug mode"
+    },
+    {
+      "label": "Build Standalone (Windows MinGW-GCC - Release)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "standalone",
+        "default",
+        "windows-mingw-gcc-release",
+        "release"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Windows MinGW-GCC - Release)"
+      ],
+      "detail": "Build Standalone target with MinGW-GCC compiler in Release mode"
+    },
+    {
+      "label": "Build Standalone (Windows MinGW-Clang - Debug)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "standalone",
+        "default",
+        "windows-mingw-clang-debug",
+        "debug"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Windows MinGW-Clang - Debug)"
+      ],
+      "detail": "Build Standalone target with MinGW-Clang compiler in Debug mode"
+    },
+    {
+      "label": "Build Standalone (Windows MinGW-Clang - Release)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "standalone",
+        "default",
+        "windows-mingw-clang-release",
+        "release"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Windows MinGW-Clang - Release)"
+      ],
+      "detail": "Build Standalone target with MinGW-Clang compiler in Release mode"
+    },
+    {
+      "label": "Build Standalone (Linux GCC - Debug)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "standalone",
+        "default",
+        "linux-gcc-debug",
+        "debug"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Linux GCC - Debug)"
+      ],
+      "detail": "Build Standalone target with GCC compiler in Debug mode"
+    },
+    {
+      "label": "Build Standalone (Linux GCC - Release)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "standalone",
+        "default",
+        "linux-gcc-release",
+        "release"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Linux GCC - Release)"
+      ],
+      "detail": "Build Standalone target with GCC compiler in Release mode"
+    },
+    {
+      "label": "Build Standalone (Linux Clang - Debug)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "standalone",
+        "default",
+        "linux-clang-debug",
+        "debug"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Linux Clang - Debug)"
+      ],
+      "detail": "Build Standalone target with Clang compiler in Debug mode"
+    },
+    {
+      "label": "Build Standalone (Linux Clang - Release)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "standalone",
+        "default",
+        "linux-clang-release",
+        "release"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Linux Clang - Release)"
+      ],
+      "detail": "Build Standalone target with Clang compiler in Release mode"
+    },
+    {
+      "label": "Build Tests (Windows MSVC - Debug)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "tests",
+        "default",
+        "windows-msvc-debug",
+        "debug"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Windows MSVC - Debug)"
+      ],
+      "detail": "Build Tests target with MSVC compiler in Debug mode"
+    },
+    {
+      "label": "Build Tests (Windows MSVC - Release)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "tests",
+        "default",
+        "windows-msvc-release",
+        "release"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Windows MSVC - Release)"
+      ],
+      "detail": "Build Tests target with MSVC compiler in Release mode"
+    },
+    {
+      "label": "Build Tests (Linux GCC - Debug)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "tests",
+        "default",
+        "linux-gcc-debug",
+        "debug"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Linux GCC - Debug)"
+      ],
+      "detail": "Build Tests target with GCC compiler in Debug mode"
+    },
+    {
+      "label": "Build Tests (Linux GCC - Release)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "tests",
+        "default",
+        "linux-gcc-release",
+        "release"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Linux GCC - Release)"
+      ],
+      "detail": "Build Tests target with GCC compiler in Release mode"
+    },
+    {
+      "label": "Build WASM",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "standalone",
+        "default",
+        "wasm-debug",
+        "debug"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (WASM - Debug)"
+      ],
+      "detail": "Build project for WASM using OmniCppController"
+    },
+    {
+      "label": "Build Linux Cross-Compile",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "standalone",
+        "default",
+        "linux-cross-debug",
+        "debug"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Linux Cross-Compile - Debug)"
+      ],
+      "detail": "Build project for Linux cross-compilation using OmniCppController"
+    },
+    {
+      "label": "Clean Build",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "clean"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "detail": "Clean build directory using OmniCppController"
+    },
+    {
+      "label": "Clean Build (Engine)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "clean",
+        "engine"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "detail": "Clean Engine build artifacts using OmniCppController"
+    },
+    {
+      "label": "Clean Build (Game)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "clean",
+        "game"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "detail": "Clean Game build artifacts using OmniCppController"
+    },
+    {
+      "label": "Clean Build (Standalone)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "clean",
+        "standalone"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "detail": "Clean Standalone build artifacts using OmniCppController"
+    },
+    {
+      "label": "Run Tests",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "test",
+        "all",
+        "debug"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "group": {
+        "kind": "test",
+        "isDefault": true
+      },
+      "detail": "Run all tests using OmniCppController"
+    },
+    {
+      "label": "Run Tests (Engine)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "test",
+        "engine",
+        "debug"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "group": {
+        "kind": "test",
+        "isDefault": false
+      },
+      "detail": "Run Engine tests using OmniCppController"
+    },
+    {
+      "label": "Run Tests (Game)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "test",
+        "game",
+        "debug"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "group": {
+        "kind": "test",
+        "isDefault": false
+      },
+      "detail": "Run Game tests using OmniCppController"
+    },
+    {
+      "label": "Run Tests (Standalone)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "test",
+        "standalone",
+        "debug"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "group": {
+        "kind": "test",
+        "isDefault": false
+      },
+      "detail": "Run Standalone tests using OmniCppController"
+    },
+    {
+      "label": "Run Tests with Coverage",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "test",
+        "all",
+        "debug",
+        "--coverage"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "group": {
+        "kind": "test",
+        "isDefault": false
+      },
+      "detail": "Run tests with coverage report using OmniCppController"
+    },
+    {
+      "label": "Format Code",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "format"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "group": {
+        "kind": "none",
+        "isDefault": true
+      },
+      "detail": "Format code using clang-format and black using OmniCppController"
+    },
+    {
+      "label": "Format C++ Code",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "format",
+        "--cpp-only"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "group": {
+        "kind": "none",
+        "isDefault": false
+      },
+      "detail": "Format C++ code using clang-format via OmniCppController"
+    },
+    {
+      "label": "Format Python Code",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "format",
+        "--python-only"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "group": {
+        "kind": "none",
+        "isDefault": false
+      },
+      "detail": "Format Python code using black via OmniCppController"
+    },
+    {
+      "label": "Format Code (Check Only)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "format",
+        "--check"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "group": {
+        "kind": "none",
+        "isDefault": false
+      },
+      "detail": "Check code formatting without modifying files using OmniCppController"
+    },
+    {
+      "label": "Lint Code",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "lint"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "group": {
+        "kind": "none",
+        "isDefault": true
+      },
+      "detail": "Lint code using clang-tidy, pylint, and mypy via OmniCppController"
+    },
+    {
+      "label": "Lint C++ Code",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "lint",
+        "--cpp-only"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "group": {
+        "kind": "none",
+        "isDefault": false
+      },
+      "detail": "Lint C++ code using clang-tidy via OmniCppController"
+    },
+    {
+      "label": "Lint Python Code",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "lint",
+        "--python-only"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "group": {
+        "kind": "none",
+        "isDefault": false
+      },
+      "detail": "Lint Python code using pylint and mypy via OmniCppController"
+    },
+    {
+      "label": "Lint Code (Fix)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "lint",
+        "--fix"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "group": {
+        "kind": "none",
+        "isDefault": false
+      },
+      "detail": "Lint code and apply automatic fixes using OmniCppController"
+    },
+    {
+      "label": "Install Build Artifacts",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "install",
+        "all",
+        "debug"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "detail": "Install build artifacts using OmniCppController"
+    },
+    {
+      "label": "Install Build Artifacts (Engine)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "install",
+        "engine",
+        "debug"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "detail": "Install Engine build artifacts using OmniCppController"
+    },
+    {
+      "label": "Install Build Artifacts (Game)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "install",
+        "game",
+        "debug"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "detail": "Install Game build artifacts using OmniCppController"
+    },
+    {
+      "label": "Install Build Artifacts (Standalone)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "install",
+        "standalone",
+        "debug"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "detail": "Install Standalone build artifacts using OmniCppController"
+    },
+    {
+      "label": "Create Distribution Package",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "package",
+        "all",
+        "release"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "detail": "Create distribution package using OmniCppController"
+    },
+    {
+      "label": "Create Distribution Package (Engine)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "package",
+        "engine",
+        "release"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "detail": "Create Engine distribution package using OmniCppController"
+    },
+    {
+      "label": "Create Distribution Package (Game)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "package",
+        "game",
+        "release"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "detail": "Create Game distribution package using OmniCppController"
+    },
+    {
+      "label": "Create Distribution Package (Standalone)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "package",
+        "standalone",
+        "release"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "detail": "Create Standalone distribution package using OmniCppController"
+    },
+    {
+      "label": "Generate Documentation",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "docs",
+        "generate"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "detail": "Generate project documentation using OmniCppController"
+    },
+    {
+      "label": "Setup Environment",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "setup"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "detail": "Setup development environment using OmniCppController"
+    },
+    {
+      "label": "Validate Environment",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "validate"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "group": {
+        "kind": "test",
+        "isDefault": false
+      },
+      "detail": "Validate development environment using OmniCppController"
+    }
+  ]
+}
