@@ -17,6 +17,80 @@ Before building OmniCppLib, ensure you have the following installed:
 - **Doxygen**: For API documentation generation
 - **MkDocs**: For project documentation (requires Python)
 
+## Vulkan SDK Setup
+
+The project supports two approaches for Vulkan SDK:
+
+### Option 1: System-Wide Vulkan SDK (Recommended for Local Development)
+
+For local development, install the Vulkan SDK system-wide and set the `VULKAN_SDK` environment variable. This approach provides faster builds and access to full Vulkan SDK tools.
+
+#### Windows
+
+1. Download Vulkan SDK from [LunarG](https://vulkan.lunarg.com/)
+2. Install the SDK (default location: `C:\VulkanSDK\1.3.xxx`)
+3. Set environment variable:
+```powershell
+# PowerShell
+$env:VULKAN_SDK="C:\VulkanSDK\1.3.xxx"
+
+# Or permanently via System Properties
+setx VULKAN_SDK "C:\VulkanSDK\1.3.xxx"
+```
+
+#### Linux (Ubuntu/Debian)
+
+```bash
+# Install Vulkan SDK
+sudo apt update
+sudo apt install vulkan-sdk vulkan-tools
+
+# Set environment variable (add to ~/.bashrc or ~/.zshrc)
+export VULKAN_SDK=/usr
+```
+
+#### macOS
+
+```bash
+# Install Vulkan SDK via Homebrew
+brew install vulkan-headers molten-vk
+
+# Set environment variable (add to ~/.zshrc)
+export VULKAN_SDK=/opt/homebrew
+```
+
+### Option 2: Conan-Provided Vulkan SDK (Recommended for CI/CD)
+
+For CI/CD environments, Conan can automatically fetch and install Vulkan SDK components. This approach ensures reproducible builds without manual SDK installation.
+
+When `VULKAN_SDK` is not set, Conan will automatically download and configure:
+- Vulkan headers
+- Vulkan loader
+- Vulkan validation layers
+- Shader compiler (shaderc)
+- SPIRV tools
+- GLSL to SPIRV compiler (glslang)
+- SPIRV cross compiler
+
+### Choosing the Right Approach
+
+| Scenario | Recommended Approach | Reason |
+|-----------|---------------------|---------|
+| Local Development | System-Wide SDK | Faster builds, access to Vulkan tools (vulkaninfo, etc.) |
+| CI/CD Pipelines | Conan-Provided SDK | Reproducible builds, no manual setup |
+| Docker Containers | System-Wide SDK | Single installation, shared across containers |
+
+### Verifying Vulkan Installation
+
+```bash
+# Check if Vulkan SDK is available
+vulkaninfo --summary
+
+# Check VULKAN_SDK environment variable
+echo $VULKAN_SDK  # Linux/macOS
+echo %VULKAN_SDK%  # Windows
+```
+
 ## Installing Prerequisites
 
 ### Windows

@@ -1,0 +1,4 @@
+usage: OmniCppController.py package [-h]
+                                    {engine,game,standalone,all}
+                                    {debug,release}
+OmniCppController.py package: error: the following arguments are required: target, config

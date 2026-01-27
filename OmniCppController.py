@@ -135,7 +135,7 @@ class OmniCppController:
     between CMake, Conan, and build managers.
 
     Attributes:
-        project_root: The root directory of the project.
+        project_root: The root directory of project.
         build_dir: The build directory path.
         install_dir: The installation directory path.
         cmake_manager: The CMake manager instance.
@@ -280,7 +280,7 @@ class OmniCppController:
 
                 # Find Python executable path - use full path to avoid PATH corruption issues
                 # Don't use shutil.which() as it may return corrupted paths
-                # Instead, use the Python executable from the user's local bin directory
+                # Instead, use the Python executable from user's local bin directory
                 python_exe = None
                 # Check if Python is in user's local bin directory
                 user_local_bin = Path.home() / ".local" / "bin"
@@ -1044,299 +1044,21 @@ class OmniCppController:
 
         return shutil.which(command) is not None
 
-    def _detect_compiler(self) -> str:
-        """Detect the default compiler for the current platform.
-
-        Returns:
-            The default compiler name for the current platform.
-
-        Raises:
-            ToolchainError: If platform is not supported.
-        """
-        platform: str = get_system_platform()
-
-        if is_windows():
-            # Default to MSVC on Windows
-            return "msvc"
-        elif is_linux():
-            # Default to GCC on Linux
-            return "gcc"
-        else:
-            raise ToolchainError(f"Unsupported platform: {platform}")
-
 
 def main() -> int:
-    """Main entry point for the OmniCpp controller.
+    """Main entry point for OmniCpp controller.
 
-    This function parses command-line arguments and executes
-    the appropriate command.
+    This function delegates to the modular command dispatcher
+    which provides a single source of truth for CLI parsing.
 
     Returns:
         Exit code (0 for success, non-zero for failure).
     """
-    parser: argparse.ArgumentParser = argparse.ArgumentParser(
-        description="OmniCpp Controller - Build and Package Management System",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="""
-Examples:
-    python OmniCppController.py configure
-    python OmniCppController.py build engine "Clean Build Pipeline" default release --compiler msvc
-    python OmniCppController.py build game "Clean Build Pipeline" default debug --compiler clang-msvc
-    python OmniCppController.py build standalone "Clean Build Pipeline" default release
-    python OmniCppController.py clean
-    python OmniCppController.py install engine release
-    python OmniCppController.py format
-    python OmniCppController.py lint
-        """,
-    )
-
-    # Add version flag
-    parser.add_argument(
-        "--version",
-        action="version",
-        version="%(prog)s 1.0.0",
-    )
-
-    subparsers: Any = parser.add_subparsers(
-        dest="command", help="Available commands"
-    )
-
-    # Configure command
-    configure_parser: argparse.ArgumentParser = subparsers.add_parser(
-        "configure", help="Configure the build system with CMake"
-    )
-    configure_parser.add_argument(
-        "--build-type",
-        choices=["Debug", "Release", "RelWithDebInfo", "MinSizeRel"],
-        default="Release",
-        help="Build configuration (default: Release)",
-    )
-    configure_parser.add_argument(
-        "--generator",
-        help="CMake generator",
-    )
-    configure_parser.add_argument(
-        "--toolchain",
-        help="Toolchain file path",
-    )
-    configure_parser.add_argument(
-        "--preset",
-        help="CMake preset name",
-    )
-
-    # Build command
-    build_parser: argparse.ArgumentParser = subparsers.add_parser(
-        "build", help="Build the project"
-    )
-    build_parser.add_argument(
-        "target",
-        choices=["engine", "game", "standalone", "all"],
-        help="Build target",
-    )
-    build_parser.add_argument(
-        "pipeline",
-        help="Build pipeline name",
-    )
-    build_parser.add_argument(
-        "preset",
-        help="CMake preset name",
-    )
-    build_parser.add_argument(
-        "config",
-        choices=["debug", "release"],
-        help="Build configuration",
-    )
-    build_parser.add_argument(
-        "--compiler",
-        choices=["msvc", "clang-msvc", "mingw-clang", "mingw-gcc", "gcc", "clang"],
-        help="Compiler to use",
-    )
-    build_parser.add_argument(
-        "--clean",
-        action="store_true",
-        help="Clean before building",
-    )
-
-    # Clean command
-    clean_parser: argparse.ArgumentParser = subparsers.add_parser(
-        "clean", help="Clean build artifacts"
-    )
-    clean_parser.add_argument(
-        "target",
-        nargs="?",
-        choices=["engine", "game", "standalone", "all"],
-        help="Target to clean (default: all)",
-    )
-
-    # Install command
-    install_parser: argparse.ArgumentParser = subparsers.add_parser(
-        "install", help="Install build artifacts"
-    )
-    install_parser.add_argument(
-        "target",
-        choices=["engine", "game", "standalone", "all"],
-        help="Target to install",
-    )
-    install_parser.add_argument(
-        "config",
-        choices=["debug", "release"],
-        help="Build configuration",
-    )
-
-    # Test command
-    test_parser: argparse.ArgumentParser = subparsers.add_parser(
-        "test", help="Run tests"
-    )
-    test_parser.add_argument(
-        "target",
-        choices=["engine", "game", "standalone", "all"],
-        help="Target to test",
-    )
-    test_parser.add_argument(
-        "config",
-        choices=["debug", "release"],
-        help="Build configuration",
-    )
-
-    # Package command
-    package_parser: argparse.ArgumentParser = subparsers.add_parser(
-        "package", help="Create distribution packages"
-    )
-    package_parser.add_argument(
-        "target",
-        choices=["engine", "game", "standalone", "all"],
-        help="Target to package",
-    )
-    package_parser.add_argument(
-        "config",
-        choices=["debug", "release"],
-        help="Build configuration",
-    )
-
-    # Format command
-    format_parser: argparse.ArgumentParser = subparsers.add_parser(
-        "format", help="Format code with clang-format and black"
-    )
-    format_parser.add_argument(
-        "--files",
-        nargs="*",
-        help="Specific files to format",
-    )
-    format_parser.add_argument(
-        "--directories",
-        nargs="*",
-        help="Directories to scan for files",
-    )
-    format_parser.add_argument(
-        "--check",
-        action="store_true",
-        help="Only check formatting without modifying files",
-    )
-    format_parser.add_argument(
-        "--dry-run",
-        action="store_true",
-        help="Run in dry-run mode",
-    )
-    format_parser.add_argument(
-        "--cpp-only",
-        action="store_true",
-        help="Only format C++ files",
-    )
-    format_parser.add_argument(
-        "--python-only",
-        action="store_true",
-        help="Only format Python files",
-    )
-
-    # Lint command
-    lint_parser: argparse.ArgumentParser = subparsers.add_parser(
-        "lint", help="Run static analysis with clang-tidy, pylint, and mypy"
-    )
-    lint_parser.add_argument(
-        "--files",
-        nargs="*",
-        help="Specific files to lint",
-    )
-    lint_parser.add_argument(
-        "--directories",
-        nargs="*",
-        help="Directories to scan for files",
-    )
-    lint_parser.add_argument(
-        "--fix",
-        action="store_true",
-        help="Apply automatic fixes",
-    )
-    lint_parser.add_argument(
-        "--cpp-only",
-        action="store_true",
-        help="Only lint C++ files",
-    )
-    lint_parser.add_argument(
-        "--python-only",
-        action="store_true",
-        help="Only lint Python files",
-    )
-
-    # Parse arguments
-    args: argparse.Namespace = parser.parse_args()
-
-    if not args.command:
-        parser.print_help()
-        return 0
-
-    # Create controller and execute command
-    try:
-        controller: OmniCppController = OmniCppController()
-    except Exception as e:
-        self.logger.error(f"Failed to initialize controller: {e}")
-        return 1
-
-    if args.command == "configure":
-        return controller.configure(
-            build_type=args.build_type,
-            generator=args.generator,
-            toolchain=args.toolchain,
-            preset=args.preset,
-        )
-    elif args.command == "build":
-        result: int = controller.build(
-            target=args.target,
-            pipeline=args.pipeline,
-            preset=args.preset,
-            config=args.config,
-            compiler=args.compiler,
-            clean=args.clean,
-        )
-        return result
-    elif args.command == "clean":
-        return controller.clean(target=args.target)
-    elif args.command == "install":
-        return controller.install(target=args.target, config=args.config)
-    elif args.command == "test":
-        return controller.test(target=args.target, config=args.config)
-    elif args.command == "package":
-        return controller.package(target=args.target, config=args.config)
-    elif args.command == "format":
-        return controller.format(
-            files=args.files,
-            directories=args.directories,
-            check=args.check,
-            dry_run=args.dry_run,
-            cpp_only=args.cpp_only,
-            python_only=args.python_only,
-        )
-    elif args.command == "lint":
-        return controller.lint(
-            files=args.files,
-            directories=args.directories,
-            fix=args.fix,
-            cpp_only=args.cpp_only,
-            python_only=args.python_only,
-        )
-    else:
-        parser.print_help()
-        return 0
+    # Import dispatcher here to avoid circular imports
+    from omni_scripts.controller.dispatcher import main as dispatcher_main
+    
+    # Delegate to modular dispatcher
+    return dispatcher_main()
 
 
 if __name__ == "__main__":

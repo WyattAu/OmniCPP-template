@@ -21,6 +21,7 @@ limitations under the License.
 import json
 import os
 import hashlib
+import shutil
 import time
 import subprocess
 from datetime import datetime, timedelta
@@ -36,7 +37,7 @@ try:
     import psutil
     HAS_PSUTIL = True
 except ImportError:
-    psutil = None
+    psutil = None  # type: ignore[assignment]
     HAS_PSUTIL = False
 
 from .utils import FileUtils, SystemUtils
@@ -117,7 +118,7 @@ class HistoricalPerformanceTracker:
         self._performance_data: List[BuildPerformanceData] = []
         self._load_data()
 
-    def _load_data(self):
+    def _load_data(self) -> None:
         """Load historical performance data from disk."""
         if self.performance_file.exists():
             try:
@@ -130,14 +131,14 @@ class HistoricalPerformanceTracker:
                 logging.warning(f"Failed to load performance data: {e}")
                 self._performance_data = []
 
-    def _save_data(self):
+    def _save_data(self) -> None:
         """Save performance data to disk."""
         with self._lock:
             data = [asdict(item) for item in self._performance_data[-1000:]]  # Keep last 1000 builds
             with open(self.performance_file, 'w', encoding='utf-8') as f:
                 json.dump(data, f, indent=2, default=str)
 
-    def record_build_performance(self, performance_data: BuildPerformanceData):
+    def record_build_performance(self, performance_data: BuildPerformanceData) -> None:
         """Record a new build performance data point."""
         with self._lock:
             self._performance_data.append(performance_data)
@@ -200,7 +201,7 @@ class PredictiveFailurePrevention:
         self.failure_patterns: Dict[str, Dict[str, Any]] = {}
         self._load_failure_patterns()
 
-    def _load_failure_patterns(self):
+    def _load_failure_patterns(self) -> None:
         """Load known failure patterns and their prevention strategies."""
         self.failure_patterns = {
             "memory_exhaustion": {
@@ -253,7 +254,7 @@ class PredictiveFailurePrevention:
 
         return sorted(predictions, key=lambda x: x["risk_score"], reverse=True)
 
-    def _calculate_risk_score(self, pattern_name: str, pattern_info: Dict, build_context: Dict, recent_data: List) -> float:
+    def _calculate_risk_score(self, pattern_name: str, pattern_info: Dict[str, Any], build_context: Dict[str, Any], recent_data: List[BuildPerformanceData]) -> float:
         """Calculate risk score for a failure pattern."""
         base_risk = 0.0
 
@@ -300,7 +301,7 @@ class AdvancedCacheManager:
         self._cache_entries: Dict[str, CacheEntry] = {}
         self._load_metadata()
 
-    def _load_metadata(self):
+    def _load_metadata(self) -> None:
         """Load cache metadata from disk."""
         if self.metadata_file.exists():
             try:
@@ -311,16 +312,16 @@ class AdvancedCacheManager:
                     }
             except (json.JSONDecodeError, KeyError) as e:
                 logging.warning(f"Failed to load cache metadata: {e}")
-                self._cache_entries = {}
+                self._cache_entries.clear()
 
-    def _save_metadata(self):
+    def _save_metadata(self) -> None:
         """Save cache metadata to disk."""
         with self._lock:
             data = {key: asdict(entry) for key, entry in self._cache_entries.items()}
             with open(self.metadata_file, 'w', encoding='utf-8') as f:
                 json.dump(data, f, indent=2, default=str)
 
-    def generate_cache_key(self, cache_type: CacheType, **kwargs) -> str:
+    def generate_cache_key(self, cache_type: CacheType, **kwargs: Any) -> str:
         """Generate a cache key based on input parameters."""
         key_components = [cache_type.value]
         key_components.extend(str(kwargs.get(k, "")) for k in sorted(kwargs.keys()))
@@ -329,7 +330,7 @@ class AdvancedCacheManager:
         return hashlib.sha256(key_string.encode()).hexdigest()[:16]
 
     def store_in_cache(self, cache_type: CacheType, key: str, source_path: Path,
-                      dependencies: Set[str] = None) -> bool:
+                      dependencies: Optional[Set[str]] = None) -> bool:
         """Store an item in the cache."""
         if not source_path.exists():
             return False
@@ -402,7 +403,7 @@ class AdvancedCacheManager:
                 logging.error(f"Failed to retrieve from cache: {e}")
                 return False
 
-    def _enforce_cache_limits(self):
+    def _enforce_cache_limits(self) -> None:
         """Enforce cache size limits by removing least recently used items."""
         total_size = sum(entry.size_bytes for entry in self._cache_entries.values())
         max_size_bytes = self.max_cache_size_gb * 1024 * 1024 * 1024
@@ -427,7 +428,7 @@ class AdvancedCacheManager:
                     if cache_path.is_file():
                         cache_path.unlink()
                     else:
-                        FileUtils.remove_directory(cache_path)
+                        shutil.rmtree(cache_path)
 
                 total_size -= entry.size_bytes
                 del self._cache_entries[key]
@@ -443,7 +444,7 @@ class AdvancedCacheManager:
         total_size = sum(entry.size_bytes for entry in self._cache_entries.values())
         total_hits = sum(entry.hits for entry in self._cache_entries.values())
 
-        cache_types = defaultdict(int)
+        cache_types: Dict[str, int] = defaultdict(int)
         for entry in self._cache_entries.values():
             cache_types[entry.cache_type.value] += 1
 
@@ -768,11 +769,11 @@ class MemoryAwareBuildScheduler:
 class BuildProgressMonitor:
     """Build progress monitor with stall detection for clang-msvc builds."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.last_progress_time = time.time()
         self.stall_threshold = 300  # 5 minutes without progress
 
-    def check_for_stalls(self, current_progress: float) -> bool:
+    def check_for_stalls(self, current_progress: float) -> bool:  # noqa: ARG002
         """Detect build stalls and trigger recovery."""
         if time.time() - self.last_progress_time > self.stall_threshold:
             print("Build stall detected, reducing parallelism...")
@@ -833,7 +834,7 @@ def clang_msvc_fallback_to_msvc(build_time_seconds: float, threshold: int = 600)
 
 def apply_clang_msvc_release_optimizations(build_dir: Path) -> Dict[str, Any]:
     """Apply all clang-msvc release optimizations."""
-    optimizations = {}
+    optimizations: Dict[str, Any] = {}
 
     # Get optimal job count
     jobs = get_clang_msvc_release_jobs()
@@ -862,12 +863,12 @@ def apply_clang_msvc_release_optimizations(build_dir: Path) -> Dict[str, Any]:
 class ProcessManager:
     """Aggressive process management for build operations."""
 
-    def __init__(self):
-        self.active_processes: Dict[str, subprocess.Popen] = {}
+    def __init__(self) -> None:
+        self.active_processes: Dict[str, subprocess.Popen[Any]] = {}
         self.process_lock = threading.Lock()
         self.kill_timeout = 30  # seconds to wait before force kill
 
-    def start_process(self, name: str, cmd: str, **kwargs) -> subprocess.Popen:
+    def start_process(self, name: str, cmd: str, **kwargs: Any) -> subprocess.Popen[Any]:
         """Start a process with monitoring."""
         with self.process_lock:
             if name in self.active_processes:
@@ -919,7 +920,7 @@ class ProcessManager:
 
     def get_process_status(self) -> Dict[str, Dict[str, Any]]:
         """Get status of all active processes."""
-        status = {}
+        status: Dict[str, Any] = {}
         with self.process_lock:
             for name, process in self.active_processes.items():
                 try:
@@ -938,7 +939,7 @@ class ProcessManager:
 class BuildIsolationManager:
     """Build isolation mechanisms to prevent conflicts."""
 
-    def __init__(self, workspace_dir: Path):
+    def __init__(self, workspace_dir: Path) -> None:
         self.workspace_dir = workspace_dir
         self.isolation_dir = workspace_dir / ".omnicpp" / "isolation"
         self.isolation_dir.mkdir(parents=True, exist_ok=True)
@@ -1001,14 +1002,14 @@ class BuildIsolationManager:
 class SystemResourceManager:
     """System resource management for build operations."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.min_memory_gb = 2.0
         self.min_disk_gb = 5.0
         self.resource_check_interval = 60  # seconds
 
     def check_system_resources(self) -> Dict[str, Any]:
         """Check if system has adequate resources for building."""
-        status = {
+        status: Dict[str, Any] = {
             "memory_ok": True,
             "disk_ok": True,
             "cpu_ok": True,
@@ -1094,7 +1095,7 @@ def switch_to_msvc_compiler(build_context: Dict[str, Any]) -> bool:
         return False
 
 
-def retry_build(build_func, max_retries: int = 3, *args, **kwargs) -> bool:
+def retry_build(build_func: Any, max_retries: int = 3, *args: Any, **kwargs: Any) -> bool:
     """Retry build function with exponential backoff."""
     for attempt in range(max_retries):
         try:
@@ -1126,7 +1127,6 @@ def force_clean_operation(build_dir: Path, process_manager: ProcessManager) -> b
 
         # Force remove build directory
         if build_dir.exists():
-            import shutil
             shutil.rmtree(build_dir, ignore_errors=True)
             logging.info(f"Force removed build directory: {build_dir}")
 

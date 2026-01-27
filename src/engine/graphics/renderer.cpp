@@ -5,6 +5,7 @@
 
 #include "engine/graphics/renderer.hpp"
 #include <mutex>
+#include <spdlog/spdlog.h>
 
 namespace OmniCpp::Engine::Graphics {
 
@@ -38,12 +39,14 @@ namespace OmniCpp::Engine::Graphics {
     std::lock_guard<std::mutex> lock (m_impl->mutex);
 
     if (m_impl->initialized) {
+      spdlog::warn("Renderer: Already initialized");
       return true;
     }
 
     m_impl->config = config;
     m_impl->initialized = true;
 
+    spdlog::info("Renderer: Initialized");
     return true;
   }
 
@@ -55,6 +58,8 @@ namespace OmniCpp::Engine::Graphics {
     }
 
     m_impl->initialized = false;
+
+    spdlog::info("Renderer: Shutdown");
   }
 
   void Renderer::update () {

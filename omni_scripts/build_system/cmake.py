@@ -130,7 +130,6 @@ class CMakeWrapper:
 
         cmd = " ".join(cmd_parts)
         logger.debug(f"CMake configure command: {cmd}")
-
         try:
             execute_command(cmd, timeout=600)
             logger.info("CMake configuration completed successfully")

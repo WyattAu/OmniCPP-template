@@ -47,6 +47,25 @@ class FormatController(BaseController):
         Raises:
             ControllerError: If arguments are invalid.
         """
+        # Validate that black is available if Python formatting is requested
+        if not self.cpp_only:
+            import shutil
+            try:
+                if shutil.which("black") is None:
+                    raise ControllerError(
+                        message="black formatter not found. Please install black to format Python files.",
+                        command="format",
+                        context={"tool": "black"},
+                        exit_code=2,
+                    )
+            except (OSError, AttributeError) as e:
+                raise ControllerError(
+                    message=f"Failed to check for black formatter: {e}. Please ensure black is installed.",
+                    command="format",
+                    context={"tool": "black", "error": str(e)},
+                    exit_code=2,
+                )
+
         # Validate that cpp_only and python_only are not both specified
         if self.cpp_only and self.python_only:
             raise ControllerError(
@@ -150,6 +169,12 @@ class FormatController(BaseController):
         """
         self.logger.debug(f"Formatting C++ file: {file_path}")
 
+        # Check if clang-format exists before execution
+        import shutil
+        if shutil.which("clang-format") is None:
+            self.logger.warning("clang-format not found, skipping C++ formatting")
+            return 0
+
         try:
             # Build clang-format command
             cmd = ["clang-format"]
@@ -198,6 +223,12 @@ class FormatController(BaseController):
             Exit code (0 for success, non-zero for failure).
         """
         self.logger.debug(f"Formatting Python file: {file_path}")
+
+        # Check if black exists before execution
+        import shutil
+        if shutil.which("black") is None:
+            self.logger.warning("black not found, skipping Python formatting")
+            return 0
 
         try:
             # Build black command

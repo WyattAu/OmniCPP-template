@@ -7,12 +7,14 @@
 #include "engine/ecs/TransformComponent.hpp"
 #include "math.hpp"
 #include <cmath>
+#include <spdlog/spdlog.h>
 
 namespace omnicpp {
 namespace ecs {
 
 TransformComponent::TransformComponent(uint64_t entity_id)
     : Component(entity_id) {
+    spdlog::debug("TransformComponent: Created transform component for entity {}", entity_id);
 }
 
 TransformComponent::TransformComponent(uint64_t entity_id,
@@ -23,6 +25,7 @@ TransformComponent::TransformComponent(uint64_t entity_id,
     , m_position(position)
     , m_rotation(rotation)
     , m_scale(scale) {
+    spdlog::debug("TransformComponent: Created transform component for entity {} with position ({}, {}, {})", entity_id, position.x, position.y, position.z);
 }
 
 void TransformComponent::translate(const Vec3& delta) {
@@ -46,27 +49,27 @@ void TransformComponent::scale(const Vec3& factor) {
 Mat4 TransformComponent::get_transform_matrix() const {
     // Create transformation matrix from position, rotation, and scale
     // This is a simplified implementation
-    Mat4 transform = Mat4::identity();
-    
+    Mat4 transform = Mat4::create_identity();
+
     // Apply translation
-    transform.translate(m_position);
-    
+    transform = transform * Mat4::translation(m_position);
+
     // Apply rotation (simplified - just using rotation around Y axis)
     float angle_rad = m_rotation.y * 3.14159265f / 180.0f;
     float cos_a = std::cos(angle_rad);
     float sin_a = std::sin(angle_rad);
-    
-    Mat4 rotation_matrix = Mat4::identity();
+
+    Mat4 rotation_matrix = Mat4::create_identity();
     rotation_matrix.m[0][0] = cos_a;
     rotation_matrix.m[0][2] = sin_a;
     rotation_matrix.m[2][0] = -sin_a;
     rotation_matrix.m[2][2] = cos_a;
-    
+
     transform = transform * rotation_matrix;
-    
+
     // Apply scale
-    transform.scale(m_scale);
-    
+    transform = transform * Mat4::scale(m_scale);
+
     return transform;
 }
 

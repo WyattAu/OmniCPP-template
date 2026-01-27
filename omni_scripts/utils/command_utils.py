@@ -83,7 +83,7 @@ def execute_command(
 
             if result.returncode == 0:
                 log_info(f"Command completed: {cmd}")
-                return
+                return 0
 
             # Command failed
             error_msg: str = result.stderr.strip() if result.stderr else "Unknown error"

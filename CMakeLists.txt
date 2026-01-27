@@ -7,6 +7,7 @@
 # ============================================================================
 
 cmake_minimum_required(VERSION 4.0)
+set(CMAKE_POLICY_VERSION_MINIMUM 3.5)
 project(OmniCppTemplate
     VERSION 1.0.0
     DESCRIPTION "OmniCpp Template Project"
@@ -27,14 +28,6 @@ include(cmake/PlatformConfig.cmake)
 # Compiler Flags Configuration
 # ============================================================================
 include(cmake/CompilerFlags.cmake)
-
-# ============================================================================
-# Package Manager Integration
-# ============================================================================
-include(cmake/CPM.cmake)
-include(cmake/ConanIntegration.cmake)
-include(cmake/VcpkgIntegration.cmake)
-include(cmake/FindDependencies.cmake)
 
 # ============================================================================
 # Build Options
@@ -63,6 +56,14 @@ option(OMNICPP_USE_STB "Use STB image library" ON)
 option(OMNICPP_USE_CONAN "Use Conan package manager" OFF)
 option(OMNICPP_USE_VCPKG "Use vcpkg package manager" OFF)
 option(OMNICPP_USE_CPM "Use CPM.cmake package manager" ON)
+
+# ============================================================================
+# Package Manager Integration
+# ============================================================================
+include(cmake/CPM.cmake)
+include(cmake/ConanIntegration.cmake)
+include(cmake/VcpkgIntegration.cmake)
+include(cmake/FindDependencies.cmake)
 
 # ============================================================================
 # Output Directories

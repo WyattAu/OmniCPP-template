@@ -28,7 +28,7 @@ class FileUtils:
             with open(file_path, 'rb') as f:
                 for chunk in iter(lambda: f.read(4096), b""):
                     hash_func.update(chunk)
-            return hash_func.hexdigest()  # type: ignore[return-value]
+            return str(hash_func.hexdigest())
         except Exception as e:
             logger.error(f"Failed to calculate {algorithm} hash for {file_path}: {e}")
             return None

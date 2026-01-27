@@ -1,7 +1,8 @@
 /**
  * @file ConsoleLogger.cpp
- * @brief Console logger implementation
+ * @brief Console logger implementation (deprecated - use SpdLogLogger instead)
  * @version 1.0.0
+ * @deprecated This logger is deprecated. Use SpdLogLogger for modern logging.
  */
 
 #include "engine/ILogger.hpp"
@@ -17,7 +18,7 @@ ConsoleLogger::ConsoleLogger() = default;
 ConsoleLogger::~ConsoleLogger() = default;
 
 bool ConsoleLogger::initialize() {
-    std::cout << "Logger initialized" << std::endl;
+    std::cout << "Logger initialized (deprecated - use SpdLogLogger)" << std::endl;
     return true;
 }
 

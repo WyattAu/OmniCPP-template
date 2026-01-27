@@ -9,6 +9,7 @@
 #include "engine/ecs/Entity.hpp"
 #include "engine/ecs/TransformComponent.hpp"
 #include "engine/ecs/MeshComponent.hpp"
+#include <spdlog/spdlog.h>
 
 namespace omnicpp {
 namespace scene {
@@ -16,6 +17,7 @@ namespace scene {
 Scene::Scene(const std::string& name)
     : m_name(name)
     , m_root_node(std::make_unique<SceneNode>("Root")) {
+    spdlog::debug("Scene: Created scene '{}'", name);
 }
 
 Scene::~Scene() = default;
@@ -25,7 +27,7 @@ void Scene::add_entity(std::unique_ptr<ecs::Entity> entity) {
         uint64_t id = entity->get_id();
         m_entities.push_back(std::move(entity));
         m_entity_map[id] = m_entities.back().get();
-        
+
         // Attach entity to root node
         m_root_node->set_entity(m_entities.back().get());
     }
@@ -35,10 +37,10 @@ std::unique_ptr<ecs::Entity> Scene::remove_entity(uint64_t entity_id) {
     auto it = m_entity_map.find(entity_id);
     if (it != m_entity_map.end()) {
         ecs::Entity* entity = it->second;
-        
+
         // Detach from scene node
         m_root_node->set_entity(nullptr);
-        
+
         // Remove from entities vector
         for (auto eit = m_entities.begin(); eit != m_entities.end(); ++eit) {
             if (eit->get() == entity) {
@@ -76,7 +78,7 @@ void Scene::update(float delta_time) {
             if (transform) {
                 transform->on_update(delta_time);
             }
-            
+
             auto mesh = entity->get_component<ecs::MeshComponent>();
             if (mesh) {
                 mesh->on_update(delta_time);

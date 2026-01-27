@@ -398,7 +398,6 @@ def validate_cpp23_support(compiler_info: CompilerInfo) -> ValidationResult:
     # Determine fallback
     fallback = "C++20"
     warnings.append(f"Falling back to {fallback}")
-    
     logger.warning(
         f"{compiler_info.name} {compiler_info.version} does not support C++23, "
         f"falling back to {fallback}"

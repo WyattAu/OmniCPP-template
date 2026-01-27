@@ -113,7 +113,3 @@ if(OMNICPP_ENABLE_FORMATTING)
 else()
     message(STATUS "Code formatting disabled")
 endif()
-
-# Export formatting variables
-set(CLANG_FORMAT_EXECUTABLE ${CLANG_FORMAT_EXECUTABLE} PARENT_SCOPE)
-set(BLACK_EXECUTABLE ${BLACK_EXECUTABLE} PARENT_SCOPE)

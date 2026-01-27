@@ -8,6 +8,7 @@
 #include <cstring>
 #include <mutex>
 #include <unordered_map>
+#include <spdlog/spdlog.h>
 
 namespace OmniCpp::Engine::Memory {
 
@@ -54,6 +55,7 @@ namespace OmniCpp::Engine::Memory {
     std::lock_guard<std::mutex> lock (m_impl->mutex);
 
     if (m_impl->initialized) {
+      spdlog::warn("MemoryManager: Already initialized");
       return true;
     }
 
@@ -61,6 +63,7 @@ namespace OmniCpp::Engine::Memory {
     m_impl->allocations.clear ();
     m_impl->initialized = true;
 
+    spdlog::info("MemoryManager: Initialized");
     return true;
   }
 
@@ -74,34 +77,41 @@ namespace OmniCpp::Engine::Memory {
     // Check for leaks
     if (!m_impl->allocations.empty ()) {
       // Report leaks
+      spdlog::warn("MemoryManager: Detected {} memory leaks", m_impl->allocations.size());
       for (const auto& [ptr, record] : m_impl->allocations) {
         // Leak detected - in production, log this
+        spdlog::error("MemoryManager: Leak detected: {} bytes allocated at {}:{}", record.size, record.file ? record.file : "unknown", record.line);
         (void)ptr; // Suppress unused warning
         (void)record;
       }
+    } else {
+      spdlog::info("MemoryManager: No memory leaks detected");
     }
 
     m_impl->initialized = false;
+    spdlog::info("MemoryManager: Shutdown");
   }
 
   void* MemoryManager::allocate (size_t size, size_t alignment) {
     std::lock_guard<std::mutex> lock (m_impl->mutex);
 
     if (!m_impl->initialized) {
+      spdlog::error("MemoryManager: Not initialized, cannot allocate {} bytes", size);
       return nullptr;
     }
 
     // Allocate aligned memory
     void* ptr = nullptr;
-#ifdef _WIN32
+    #ifdef _WIN32
     ptr = _aligned_malloc (size, alignment);
-#else
+    #else
     if (posix_memalign (alignment, size, &ptr) != 0) {
       ptr = nullptr;
     }
-#endif
+    #endif
 
     if (ptr == nullptr) {
+      spdlog::error("MemoryManager: Failed to allocate {} bytes with alignment {}", size, alignment);
       return nullptr;
     }
 
@@ -114,6 +124,7 @@ namespace OmniCpp::Engine::Memory {
     m_impl->stats.current_usage += size;
     m_impl->stats.allocation_count++;
 
+    spdlog::trace("MemoryManager: Allocated {} bytes at {}", size, ptr);
     return ptr;
   }
 
@@ -127,6 +138,7 @@ namespace OmniCpp::Engine::Memory {
     auto it = m_impl->allocations.find (ptr);
     if (it == m_impl->allocations.end ()) {
       // Unknown pointer - ignore or handle error
+      spdlog::warn("MemoryManager: Attempting to deallocate unknown pointer {}", ptr);
       return;
     }
 
@@ -137,12 +149,14 @@ namespace OmniCpp::Engine::Memory {
     // Remove from tracking
     m_impl->allocations.erase (it);
 
-// Free memory
-#ifdef _WIN32
+    spdlog::trace("MemoryManager: Deallocated {} bytes at {}", it->second.size, ptr);
+
+    // Free memory
+    #ifdef _WIN32
     _aligned_free (ptr);
-#else
+    #else
     free (ptr);
-#endif
+    #endif
   }
 
   const MemoryStats& MemoryManager::get_stats () const noexcept {

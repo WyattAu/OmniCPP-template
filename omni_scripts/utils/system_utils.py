@@ -5,6 +5,7 @@ System utility functions for OmniCPP project.
 Provides system detection, command execution, and platform-specific operations.
 """
 
+import ctypes
 import logging
 import os
 import platform
@@ -13,6 +14,11 @@ import subprocess
 import sys
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
+
+try:
+    import psutil
+except ImportError:
+    psutil = None  # type: ignore[assignment]
 
 logger = logging.getLogger(__name__)
 
@@ -191,39 +197,38 @@ class SystemUtils:
     @staticmethod
     def get_system_memory_gb() -> float:
         """Get system memory in GB"""
-        try:
-            import psutil
+        if psutil is not None:
             return psutil.virtual_memory().total / (1024**3)
-        except ImportError:
-            # Fallback for systems without psutil
-            if platform.system() == 'Windows':
-                try:
-                    result = subprocess.run(
-                        ['wmic', 'ComputerSystem', 'get', 'TotalPhysicalMemory'],
-                        capture_output=True,
-                        text=True
-                    )
-                    if result.returncode == 0:
-                        # Parse memory size
-                        for line in result.stdout.splitlines():
-                            line = line.strip()
-                            if line.isdigit():
-                                return float(int(line) / (1024**3))
-                except Exception:
-                    pass
-            elif platform.system() == 'Linux':
-                try:
-                    with open('/proc/meminfo', 'r') as f:
-                        for line in f:
-                            if line.startswith('MemTotal:'):
-                                # Extract memory in kB and convert to GB
-                                mem_kb = int(line.split()[1])
-                                return float(mem_kb / (1024**2))
-                except Exception:
-                    pass
 
-        return 0.0  # type: ignore[return-value]
+        # Fallback for systems without psutil
+        if platform.system() == 'Windows':
+            try:
+                result = subprocess.run(
+                    ['wmic', 'ComputerSystem', 'get', 'TotalPhysicalMemory'],
+                    capture_output=True,
+                    text=True
+                )
+                if result.returncode == 0:
+                    # Parse memory size
+                    for line in result.stdout.splitlines():
+                        line = line.strip()
+                        if line.isdigit():
+                            return float(int(line) / (1024**3))
+            except Exception:
+                pass
 
+        elif platform.system() == 'Linux':
+            try:
+                with open('/proc/meminfo', 'r') as f:
+                    for line in f:
+                        if line.startswith('MemTotal:'):
+                            # Extract memory in kB and convert to GB
+                            mem_kb = int(line.split()[1])
+                            return float(mem_kb / (1024**2))
+            except Exception:
+                pass
+
+        return 0.0
     @staticmethod
     def get_cpu_count() -> int:
         """Get number of CPU cores"""
@@ -234,12 +239,11 @@ class SystemUtils:
         """Check if running with administrator privileges"""
         try:
             if platform.system() == 'Windows':
-                import ctypes
-                return ctypes.windll.shell32.IsUserAnAdmin()
+                return bool(ctypes.windll.shell32.IsUserAnAdmin() != 0)
             else:
                 # os.geteuid() is only available on Unix-like systems
                 if hasattr(os, 'geteuid'):
-                    return os.geteuid() == 0  # type: ignore[attr-defined]
+                    return bool(getattr(os, 'geteuid', lambda: 1)() == 0)
                 else:
                     # Fallback for systems without geteuid
                     return False

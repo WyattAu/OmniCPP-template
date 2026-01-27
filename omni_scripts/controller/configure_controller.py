@@ -42,6 +42,7 @@ class ConfigureController(BaseController):
         self.generator = getattr(args, "generator", None)
         self.toolchain = getattr(args, "toolchain", None)
         self.preset = getattr(args, "preset", None)
+        self.compiler = getattr(args, "compiler", None)
         self.configure_conan = getattr(args, "configure_conan", False)
         self.configure_vcpkg = getattr(args, "configure_vcpkg", False)
 
@@ -53,6 +54,9 @@ class ConfigureController(BaseController):
         """
         # Validate build type
         self.validate_build_type(self.build_type)
+
+        # Validate compiler if specified
+        self.validate_compiler(self.compiler)
 
         # Validate that at least one of generator, toolchain, or preset is specified
         if not self.generator and not self.toolchain and not self.preset:

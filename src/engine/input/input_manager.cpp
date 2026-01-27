@@ -6,6 +6,7 @@
 #include "engine/input/input_manager.hpp"
 #include <array>
 #include <mutex>
+#include <spdlog/spdlog.h>
 
 namespace OmniCpp::Engine::Input {
 
@@ -42,6 +43,7 @@ namespace OmniCpp::Engine::Input {
     std::lock_guard<std::mutex> lock (m_impl->mutex);
 
     if (m_impl->initialized) {
+      spdlog::warn("InputManager: Already initialized");
       return true;
     }
 
@@ -49,6 +51,7 @@ namespace OmniCpp::Engine::Input {
     m_impl->mouse_button_states.fill (false);
     m_impl->initialized = true;
 
+    spdlog::info("InputManager: Initialized");
     return true;
   }
 
@@ -62,6 +65,8 @@ namespace OmniCpp::Engine::Input {
     m_impl->key_states.fill (false);
     m_impl->mouse_button_states.fill (false);
     m_impl->initialized = false;
+
+    spdlog::info("InputManager: Shutdown");
   }
 
   void InputManager::update () {

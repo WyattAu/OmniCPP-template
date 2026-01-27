@@ -39,7 +39,7 @@ if(OMNICPP_USE_GLM)
     if(OMNICPP_USE_CPM)
         CPMAddPackage(
             NAME glm
-            VERSION 0.9.9.8
+            GIT_TAG 1.0.1
             GITHUB_REPOSITORY g-truc/glm
         )
     else()
@@ -57,7 +57,7 @@ if(OMNICPP_USE_STB)
     if(OMNICPP_USE_CPM)
         CPMAddPackage(
             NAME stb
-            VERSION 0.0.0
+            GIT_TAG master
             GITHUB_REPOSITORY nothings/stb
         )
     else()

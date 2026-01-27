@@ -88,7 +88,7 @@ class OmniCppTemplate(ConanFile):
 
         # Image library
         if self.options.with_image:
-            self.requires("stb/[~2023]")               # STB image library
+            self.requires("stb/[>=2023]")               # STB image library
 
         # Testing frameworks
         if self.options.with_testing:
@@ -106,14 +106,23 @@ class OmniCppTemplate(ConanFile):
             self.requires("libpq/15.4", override=True, visible=False)
 
         # Vulkan support
+        # Check for system-wide Vulkan SDK installation
+        # If VULKAN_SDK is set, use system SDK instead of Conan dependencies
+        use_system_vulkan = os.environ.get("VULKAN_SDK") is not None
+
         if self.options.with_vulkan:
-            self.requires("vulkan-headers/[~1.3]")     # Vulkan headers
-            self.requires("vulkan-loader/[~1.3]")      # Vulkan loader
-            self.requires("vulkan-validationlayers/[~1.3]")  # Vulkan validation layers
-            self.requires("shaderc/[~2023]")            # Shader compiler
-            self.requires("spirv-tools/[~2023]")        # SPIRV tools
-            self.requires("glslang/[~13]")             # GLSL to SPIRV compiler
-            self.requires("spirv-cross/[~2023]")        # SPIRV cross compiler
+            if use_system_vulkan:
+                self.output.info("VULKAN_SDK environment variable detected. Using system-wide Vulkan SDK.")
+                self.output.info("Skipping Vulkan dependencies from Conan.")
+            else:
+                self.output.info("VULKAN_SDK not set. Using Conan-provided Vulkan SDK.")
+                self.requires("vulkan-headers/1.3.296.0", options={"build": "None"})     # Vulkan headers
+                self.requires("vulkan-loader/[>=1.3]", options={"build": "None"})      # Vulkan loader
+                self.requires("vulkan-validationlayers/1.3.296.0", options={"build": "None"})  # Vulkan validation layers
+                self.requires("shaderc/[~2023]", options={"build": "None"})            # Shader compiler
+                self.requires("spirv-tools/[~2023]", options={"build": "None"})        # SPIRV tools
+                self.requires("glslang/[~13]", options={"build": "None"})             # GLSL to SPIRV compiler
+                self.requires("spirv-cross/[~2023]", options={"build": "None"})        # SPIRV cross compiler
 
         # OpenGL support
         if self.options.with_opengl:

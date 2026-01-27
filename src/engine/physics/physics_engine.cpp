@@ -5,6 +5,7 @@
 
 #include "engine/physics/physics_engine.hpp"
 #include <mutex>
+#include <spdlog/spdlog.h>
 
 namespace OmniCpp::Engine::Physics {
 
@@ -39,12 +40,14 @@ namespace OmniCpp::Engine::Physics {
     std::lock_guard<std::mutex> lock (m_impl->mutex);
 
     if (m_impl->initialized) {
+      spdlog::warn("PhysicsEngine: Already initialized");
       return true;
     }
 
     m_impl->config = config;
     m_impl->initialized = true;
 
+    spdlog::info("PhysicsEngine: Initialized with gravity {}", config.gravity);
     return true;
   }
 
@@ -56,6 +59,8 @@ namespace OmniCpp::Engine::Physics {
     }
 
     m_impl->initialized = false;
+
+    spdlog::info("PhysicsEngine: Shutdown");
   }
 
   void PhysicsEngine::update (float delta_time) {
@@ -66,6 +71,7 @@ namespace OmniCpp::Engine::Physics {
   void PhysicsEngine::set_gravity (float gravity) {
     std::lock_guard<std::mutex> lock (m_impl->mutex);
     m_impl->config.gravity = gravity;
+    spdlog::debug("PhysicsEngine: Set gravity to {}", gravity);
   }
 
   float PhysicsEngine::get_gravity () const {

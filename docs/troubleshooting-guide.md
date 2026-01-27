@@ -244,6 +244,113 @@ export VULKAN_SDK=/usr/local/vulkansdk
 vulkaninfo
 ```
 
+### VULKAN_SDK Environment Variable Not Recognized
+
+**Symptom**: Conan still downloads Vulkan dependencies despite having Vulkan SDK installed, or build fails to find Vulkan.
+
+**Cause**: `VULKAN_SDK` environment variable not set or not visible to build system.
+
+**Solution**:
+1. Verify `VULKAN_SDK` is set:
+```bash
+# Windows (PowerShell)
+echo $env:VULKAN_SDK
+
+# Windows (CMD)
+echo %VULKAN_SDK%
+
+# Linux/macOS
+echo $VULKAN_SDK
+```
+
+2. Set `VULKAN_SDK` permanently:
+```bash
+# Windows (PowerShell - add to profile)
+[System.Environment]::SetEnvironmentVariable('VULKAN_SDK', 'C:\VulkanSDK\1.3.xxx', 'User')
+
+# Linux/macOS - add to ~/.bashrc or ~/.zshrc
+echo 'export VULKAN_SDK=/usr/local/vulkansdk' >> ~/.bashrc
+source ~/.bashrc
+```
+
+3. Reconfigure build:
+```bash
+# Clean CMake cache
+rm -rf build/CMakeCache.txt
+rm -rf build/CMakeFiles
+
+# Reconfigure
+cmake -B build -S .
+```
+
+### Choosing Between System SDK and Conan
+
+**Symptom**: Confusion about which Vulkan SDK approach to use.
+
+**Cause**: Unclear when to use system-wide SDK vs Conan-provided SDK.
+
+**Solution**:
+
+| Scenario | Recommended Approach | How to Configure |
+|-----------|---------------------|-------------------|
+| Local Development | System-Wide SDK | Set `VULKAN_SDK` environment variable |
+| CI/CD Pipelines | Conan-Provided SDK | Do NOT set `VULKAN_SDK` |
+| Docker Containers | System-Wide SDK | Set `VULKAN_SDK` in Dockerfile |
+
+**Switching Approaches**:
+
+To switch from Conan to System SDK:
+```bash
+# Set VULKAN_SDK
+export VULKAN_SDK=/path/to/vulkan/sdk
+
+# Clean and rebuild
+rm -rf build
+cmake -B build -S .
+cmake --build build
+```
+
+To switch from System SDK to Conan:
+```bash
+# Unset VULKAN_SDK
+unset VULKAN_SDK  # Linux/macOS
+set VULKAN_SDK=  # Windows CMD
+
+# Clean and rebuild
+rm -rf build
+cmake -B build -S .
+cmake --build build
+```
+
+### Conan Vulkan Build Fails
+
+**Symptom**: Conan fails to build Vulkan packages from source.
+
+**Cause**: Building Vulkan from source can take significant time and may fail on some platforms.
+
+**Solution**:
+1. Use system-wide Vulkan SDK instead (recommended):
+```bash
+# Set VULKAN_SDK to skip Conan Vulkan dependencies
+export VULKAN_SDK=/path/to/vulkan/sdk
+```
+
+2. Or configure Conan to use pre-built binaries:
+```bash
+# In Conan profile
+[buildenv]
+CONAN_PREFER_BINARY=True
+
+# Or when running Conan install
+conan install . --build=missing -o "*/*:build=None"
+```
+
+3. Check Conan logs for specific errors:
+```bash
+# Run with verbose output
+conan install . --build=missing --verbose
+```
+
 ### Vulkan Validation Errors
 
 **Symptom**: `VK_ERROR_VALIDATION_FAILED` or validation layer errors

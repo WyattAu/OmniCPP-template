@@ -43,6 +43,14 @@ else()
     add_executable(omnicpp_pong
         Pong3D.cpp
     )
+
+    # Ensure console application (not GUI)
+    if(WIN32)
+        set_target_properties(omnicpp_pong PROPERTIES
+            WIN32_EXECUTABLE FALSE
+            LINK_FLAGS "/SUBSYSTEM:CONSOLE /ENTRY:mainCRTStartup"
+        )
+    endif()
 endif()
 
 # Link against engine library

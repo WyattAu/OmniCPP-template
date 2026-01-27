@@ -36,6 +36,7 @@ class PackageController(BaseController):
         super().__init__(args)
         self.target = getattr(args, "target", "all")
         self.config = getattr(args, "config", "release")
+        self.compiler = getattr(args, "compiler", None)
         self.format = getattr(args, "format", None)
         self.output_dir = getattr(args, "output_dir", None)
 
@@ -51,6 +52,9 @@ class PackageController(BaseController):
 
         # Validate config
         self.validate_config(self.config)
+
+        # Validate compiler if specified
+        self.validate_compiler(self.compiler)
 
         # Validate format if specified
         if self.format:
@@ -244,10 +248,10 @@ class PackageController(BaseController):
             for package_file in package_files:
                 if isinstance(package_info["packages"], list):
                     package_info["packages"].append({
-                    "path": str(package_file),
-                    "name": package_file.name,
-                    "size_mb": package_file.stat().st_size / (1024 * 1024),
-                })
+                        "path": str(package_file),
+                        "name": package_file.name,
+                        "size_mb": package_file.stat().st_size / (1024 * 1024),
+                    })
 
         return package_info
 

@@ -14,9 +14,11 @@
 #include "engine/IResourceManager.hpp"
 #include "engine/ILogger.hpp"
 #include "engine/IPlatform.hpp"
+#include "engine/logging/SpdLogLogger.hpp"
 
 #include <memory>
 #include <stdexcept>
+#include <spdlog/spdlog.h>
 
 namespace omnicpp {
 
@@ -29,103 +31,78 @@ public:
     ~EngineImpl() override = default;
 
     bool initialize(const EngineConfig& config) override {
-        // Initialize logger first
-        if (config.logger) {
-            m_logger.reset(config.logger);
-            if (!m_logger->initialize()) {
-                return false;
-            }
-            m_logger->log(LogLevel::INFO, "Engine initialization started", "ENGINE");
+        // Initialize spdlog logger
+        auto spdlog_logger = std::make_unique<SpdLogLogger>("omnicpp_engine");
+        if (!spdlog_logger->initialize("config/logging_cpp.json")) {
+            std::cerr << "Failed to initialize logger" << std::endl;
+            return false;
         }
+        m_logger = std::move(spdlog_logger);
+
+        spdlog::info("Engine initialization started");
 
         // Initialize platform
         if (config.platform) {
             m_platform.reset(config.platform);
             if (!m_platform->initialize()) {
-                if (m_logger) {
-                    m_logger->log(LogLevel::ERROR, "Failed to initialize platform", "ENGINE");
-                }
+                spdlog::error("Failed to initialize platform");
                 return false;
             }
-            if (m_logger) {
-                m_logger->log(LogLevel::INFO, "Platform initialized", "ENGINE");
-            }
+            spdlog::info("Platform initialized");
         }
 
         // Initialize renderer
         if (config.renderer) {
             m_renderer.reset(config.renderer);
             if (!m_renderer->initialize()) {
-                if (m_logger) {
-                    m_logger->log(LogLevel::ERROR, "Failed to initialize renderer", "ENGINE");
-                }
+                spdlog::error("Failed to initialize renderer");
                 return false;
             }
-            if (m_logger) {
-                m_logger->log(LogLevel::INFO, "Renderer initialized", "ENGINE");
-            }
+            spdlog::info("Renderer initialized");
         }
 
         // Initialize input manager
         if (config.input_manager) {
             m_input_manager.reset(config.input_manager);
             if (!m_input_manager->initialize()) {
-                if (m_logger) {
-                    m_logger->log(LogLevel::ERROR, "Failed to initialize input manager", "ENGINE");
-                }
+                spdlog::error("Failed to initialize input manager");
                 return false;
             }
-            if (m_logger) {
-                m_logger->log(LogLevel::INFO, "Input manager initialized", "ENGINE");
-            }
+            spdlog::info("Input manager initialized");
         }
 
         // Initialize audio manager
         if (config.audio_manager) {
             m_audio_manager.reset(config.audio_manager);
             if (!m_audio_manager->initialize()) {
-                if (m_logger) {
-                    m_logger->log(LogLevel::ERROR, "Failed to initialize audio manager", "ENGINE");
-                }
+                spdlog::error("Failed to initialize audio manager");
                 return false;
             }
-            if (m_logger) {
-                m_logger->log(LogLevel::INFO, "Audio manager initialized", "ENGINE");
-            }
+            spdlog::info("Audio manager initialized");
         }
 
         // Initialize physics engine
         if (config.physics_engine) {
             m_physics_engine.reset(config.physics_engine);
             if (!m_physics_engine->initialize()) {
-                if (m_logger) {
-                    m_logger->log(LogLevel::ERROR, "Failed to initialize physics engine", "ENGINE");
-                }
+                spdlog::error("Failed to initialize physics engine");
                 return false;
             }
-            if (m_logger) {
-                m_logger->log(LogLevel::INFO, "Physics engine initialized", "ENGINE");
-            }
+            spdlog::info("Physics engine initialized");
         }
 
         // Initialize resource manager
         if (config.resource_manager) {
             m_resource_manager.reset(config.resource_manager);
             if (!m_resource_manager->initialize()) {
-                if (m_logger) {
-                    m_logger->log(LogLevel::ERROR, "Failed to initialize resource manager", "ENGINE");
-                }
+                spdlog::error("Failed to initialize resource manager");
                 return false;
             }
-            if (m_logger) {
-                m_logger->log(LogLevel::INFO, "Resource manager initialized", "ENGINE");
-            }
+            spdlog::info("Resource manager initialized");
         }
 
         m_initialized = true;
-        if (m_logger) {
-            m_logger->log(LogLevel::INFO, "Engine initialization complete", "ENGINE");
-        }
+        spdlog::info("Engine initialization complete");
         return true;
     }
 
@@ -134,9 +111,7 @@ public:
             return;
         }
 
-        if (m_logger) {
-            m_logger->log(LogLevel::INFO, "Engine shutdown started", "ENGINE");
-        }
+        spdlog::info("Engine shutdown started");
 
         // Shutdown in reverse order
         if (m_resource_manager) {
@@ -157,10 +132,9 @@ public:
         if (m_platform) {
             m_platform->shutdown();
         }
-        if (m_logger) {
-            m_logger->log(LogLevel::INFO, "Engine shutdown complete", "ENGINE");
-            m_logger->shutdown();
-        }
+
+        spdlog::info("Engine shutdown complete");
+        spdlog::shutdown();
 
         m_initialized = false;
     }
@@ -234,7 +208,7 @@ private:
     std::unique_ptr<IAudioManager> m_audio_manager;
     std::unique_ptr<IPhysicsEngine> m_physics_engine;
     std::unique_ptr<IResourceManager> m_resource_manager;
-    std::unique_ptr<ILogger> m_logger;
+    std::unique_ptr<SpdLogLogger> m_logger;
     std::unique_ptr<IPlatform> m_platform;
     bool m_initialized = false;
 };

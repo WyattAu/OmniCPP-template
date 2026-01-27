@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <cctype>
 #include <sstream>
+#include <spdlog/spdlog.h>
 
 namespace OmniCpp::Engine::Utils {
 
@@ -14,6 +15,7 @@ namespace OmniCpp::Engine::Utils {
     std::string result = str;
     std::transform (result.begin (), result.end (), result.begin (),
         [] (unsigned char c) { return std::tolower (c); });
+    spdlog::trace("StringUtils: Converted '{}' to lowercase", str);
     return result;
   }
 
@@ -21,11 +23,14 @@ namespace OmniCpp::Engine::Utils {
     std::string result = str;
     std::transform (result.begin (), result.end (), result.begin (),
         [] (unsigned char c) { return std::toupper (c); });
+    spdlog::trace("StringUtils: Converted '{}' to uppercase", str);
     return result;
   }
 
   std::string StringUtils::trim (const std::string& str) {
-    return trim_right (trim_left (str));
+    std::string result = trim_right (trim_left (str));
+    spdlog::trace("StringUtils: Trimmed whitespace from '{}'", str);
+    return result;
   }
 
   std::string StringUtils::trim_left (const std::string& str) {
@@ -49,6 +54,7 @@ namespace OmniCpp::Engine::Utils {
       result.push_back (item);
     }
 
+    spdlog::trace("StringUtils: Split '{}' into {} parts", str, result.size());
     return result;
   }
 
@@ -66,25 +72,33 @@ namespace OmniCpp::Engine::Utils {
       ss << parts[i];
     }
 
-    return ss.str ();
+    std::string result = ss.str ();
+    spdlog::trace("StringUtils: Joined {} parts with delimiter '{}'", parts.size(), delimiter);
+    return result;
   }
 
   bool StringUtils::starts_with (const std::string& str, const std::string& prefix) {
     if (prefix.size () > str.size ()) {
       return false;
     }
-    return std::equal (prefix.begin (), prefix.end (), str.begin ());
+    bool result = std::equal (prefix.begin (), prefix.end (), str.begin ());
+    spdlog::trace("StringUtils: Checking if '{}' starts with '{}': {}", str, prefix, result);
+    return result;
   }
 
   bool StringUtils::ends_with (const std::string& str, const std::string& suffix) {
     if (suffix.size () > str.size ()) {
       return false;
     }
-    return std::equal (suffix.rbegin (), suffix.rend (), str.rbegin ());
+    bool result = std::equal (suffix.rbegin (), suffix.rend (), str.rbegin ());
+    spdlog::trace("StringUtils: Checking if '{}' ends with '{}': {}", str, suffix, result);
+    return result;
   }
 
   bool StringUtils::contains (const std::string& str, const std::string& substr) {
-    return str.find (substr) != std::string::npos;
+    bool result = str.find (substr) != std::string::npos;
+    spdlog::trace("StringUtils: Checking if '{}' contains '{}': {}", str, substr, result);
+    return result;
   }
 
   std::string StringUtils::replace (const std::string& str, const std::string& from,
@@ -95,6 +109,7 @@ namespace OmniCpp::Engine::Utils {
     }
     std::string result = str;
     result.replace (pos, from.size (), to);
+    spdlog::trace("StringUtils: Replaced first occurrence of '{}' with '{}' in '{}'", from, to, str);
     return result;
   }
 
@@ -106,12 +121,15 @@ namespace OmniCpp::Engine::Utils {
 
     std::string result = str;
     size_t pos = 0;
+    int count = 0;
 
     while ((pos = result.find (from, pos)) != std::string::npos) {
       result.replace (pos, from.size (), to);
       pos += to.size ();
+      count++;
     }
 
+    spdlog::trace("StringUtils: Replaced {} occurrences of '{}' with '{}' in '{}'", count, from, to, str);
     return result;
   }
 
@@ -119,8 +137,10 @@ namespace OmniCpp::Engine::Utils {
     if (a.size () != b.size ()) {
       return false;
     }
-    return std::equal (a.begin (), a.end (), b.begin (),
+    bool result = std::equal (a.begin (), a.end (), b.begin (),
         [] (unsigned char ca, unsigned char cb) { return std::tolower (ca) == std::tolower (cb); });
+    spdlog::trace("StringUtils: Comparing '{}' and '{}' ignoring case: {}", a, b, result);
+    return result;
   }
 
 } // namespace OmniCpp::Engine::Utils

@@ -208,7 +208,7 @@ class CMakeManager:
                 if qt_cmake_path.exists():
                     cmake_prefix_paths.append(str(qt_cmake_path.parent.parent.parent))
                     log_info(f"Found Qt6 at: {qt_cmake_path}")
-        
+
         # Add Qt6 path from vcpkg if available
         vcpkg_qt_path = self.workspace_dir / "vcpkg_installed" / "x64-windows" / "share" / "Qt6"
         if vcpkg_qt_path.exists():
@@ -216,7 +216,7 @@ class CMakeManager:
             if qt6_config.exists():
                 cmake_prefix_paths.append(str(vcpkg_qt_path))
                 log_info(f"Found Qt6 (vcpkg) at: {vcpkg_qt_path}")
-        
+
         # Add Vulkan SDK path if installed manually
         vulkan_path = os.environ.get("VULKAN_SDK", "C:/VulkanSDK")
         if Path(vulkan_path).exists():
@@ -227,7 +227,7 @@ class CMakeManager:
                 latest_vulkan = max(vulkan_versions, key=lambda x: [int(v) for v in x.name.split('.')])
                 cmake_prefix_paths.append(str(latest_vulkan))
                 log_info(f"Found Vulkan SDK at: {latest_vulkan}")
-        
+
         # Add CMAKE_PREFIX_PATH if any paths were found
         if cmake_prefix_paths:
             cmake_prefix_path = ";".join(cmake_prefix_paths)
@@ -441,15 +441,15 @@ class CMakeManager:
                 shutil.rmtree(build_dir)
                 log_success("Build directory cleaned")
             except PermissionError as e:
-                error_msg: str = (
+                perm_error_msg: str = (
                     f"Permission denied cleaning {build_dir}: {e}"
                 )
-                log_error(error_msg)
-                raise OSError(error_msg) from e
+                log_error(perm_error_msg)
+                raise OSError(perm_error_msg) from e
             except OSError as e:
-                error_msg: str = f"Failed to clean build directory {build_dir}: {e}"
-                log_error(error_msg)
-                raise OSError(error_msg) from e
+                os_error_msg: str = f"Failed to clean build directory {build_dir}: {e}"
+                log_error(os_error_msg)
+                raise OSError(os_error_msg) from e
         else:
             log_warning("Build directory does not exist")
 

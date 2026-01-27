@@ -5,6 +5,17 @@
 # https://conan.io/
 # ============================================================================
 
+# Check for system-wide Vulkan SDK installation
+# If VULKAN_SDK is set, use system SDK instead of Conan dependencies
+if(DEFINED ENV{VULKAN_SDK})
+    message(STATUS "VULKAN_SDK environment variable detected: $ENV{VULKAN_SDK}")
+    message(STATUS "Using system-wide Vulkan SDK. Conan will skip Vulkan dependencies.")
+    set(OMNICPP_USE_SYSTEM_VULKAN ON)
+else()
+    message(STATUS "VULKAN_SDK not set. Conan will provide Vulkan SDK.")
+    set(OMNICPP_USE_SYSTEM_VULKAN OFF)
+endif()
+
 # Find Conan executable
 find_program(CONAN_EXECUTABLE conan)
 
@@ -103,7 +114,3 @@ if(OMNICPP_USE_CONAN)
 else()
     message(STATUS "Conan integration disabled")
 endif()
-
-# Export Conan variables
-set(CONAN_EXECUTABLE ${CONAN_EXECUTABLE} PARENT_SCOPE)
-set(CONAN_INSTALL_DIR ${CONAN_INSTALL_DIR} PARENT_SCOPE)

@@ -19,6 +19,7 @@
 #include "engine/window/window_manager.hpp"
 #include <chrono>
 #include <thread>
+#include <spdlog/spdlog.h>
 
 namespace OmniCpp::Engine::Core {
 

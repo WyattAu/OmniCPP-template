@@ -15,6 +15,7 @@
 #include "engine/IPlatform.hpp"
 #include <iostream>
 #include <memory>
+#include <spdlog/spdlog.h>
 
 // Platform-specific dynamic loading
 #ifdef _WIN32
@@ -86,7 +87,7 @@ int main(int argc, char* argv[]) {
     // Create subsystems
     auto logger = std::make_unique<ConsoleLogger>();
     auto platform = std::make_unique<Platform>();
-    
+
     // Create engine configuration
     EngineConfig config;
     config.enable_vulkan = true;

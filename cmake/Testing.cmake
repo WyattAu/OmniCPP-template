@@ -56,7 +56,3 @@ if(OMNICPP_BUILD_TESTS)
 else()
     message(STATUS "Testing disabled")
 endif()
-
-# Export testing variables
-set(OMNICPP_TEST_TIMEOUT ${OMNICPP_TEST_TIMEOUT} PARENT_SCOPE)
-set(OMNICPP_TEST_LABELS ${OMNICPP_TEST_LABELS} PARENT_SCOPE)

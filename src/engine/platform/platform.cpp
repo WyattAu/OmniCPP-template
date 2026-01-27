@@ -6,6 +6,7 @@
 #include "engine/platform/platform.hpp"
 #include <chrono>
 #include <mutex>
+#include <spdlog/spdlog.h>
 
 #ifdef _WIN32
   #include <windows.h>
@@ -45,6 +46,7 @@ namespace OmniCpp::Engine::Platform {
     std::lock_guard<std::mutex> lock (m_impl->mutex);
 
     if (m_impl->initialized) {
+      spdlog::warn("Platform: Already initialized");
       return true;
     }
 
@@ -53,7 +55,7 @@ namespace OmniCpp::Engine::Platform {
 #elif defined(__linux__)
     m_impl->platform_type = PlatformType::Linux;
 #elif defined(__APPLE__)
-  #include <TargetConditionals.h>
+    #include <TargetConditionals.h>
   #if TARGET_OS_MAC
     m_impl->platform_type = PlatformType::MacOS;
   #elif TARGET_OS_IPHONE
@@ -67,6 +69,7 @@ namespace OmniCpp::Engine::Platform {
 
     m_impl->initialized = true;
 
+    spdlog::info("Platform: Initialized as {}", get_platform_name());
     return true;
   }
 
@@ -78,6 +81,8 @@ namespace OmniCpp::Engine::Platform {
     }
 
     m_impl->initialized = false;
+
+    spdlog::info("Platform: Shutdown");
   }
 
   PlatformType Platform::get_platform_type () const {

@@ -489,16 +489,37 @@ python OmniCppController.py test engine debug
 
 # Run game tests
 python OmniCppController.py test standalone release
+
+# Run unit tests (Google Test)
+python OmniCppController.py test unit debug
+
+# Run integration tests
+python OmniCppController.py test integration release
 ```
 
 ### Test Infrastructure
 
 The project includes comprehensive test infrastructure:
 
-- **Unit Tests** - Component-level testing
+- **Unit Tests** - Component-level testing using Google Test framework
+  - SpdLogLogger tests
+  - Engine Core tests
+  - Input Manager tests
+  - Resource Manager tests
+  - Physics Engine tests
+  - Audio Manager tests
+  - ECS (Entity Component System) tests
 - **Integration Tests** - End-to-end testing
 - **Coverage Tests** - Code coverage measurement
 - **Validation Tests** - Build consistency, cross-platform validation, toolchain validation
+
+### Test Framework
+
+The project uses **Google Test** framework for C++ unit testing:
+- Modern C++23 test infrastructure
+- Comprehensive test coverage for all major subsystems
+- Automated test discovery and execution
+- Detailed test reporting with assertions
 
 ### Test Reports
 

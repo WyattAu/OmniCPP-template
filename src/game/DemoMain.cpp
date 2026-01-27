@@ -15,6 +15,7 @@
 #include "engine/IPlatform.hpp"
 #include <iostream>
 #include <memory>
+#include <spdlog/spdlog.h>
 
 // Platform-specific dynamic loading
 #ifdef _WIN32
@@ -82,7 +83,7 @@ int main(int argc, char* argv[]) {
     // In a full implementation, these would be created by the game
     auto logger = std::make_unique<ConsoleLogger>();
     auto platform = std::make_unique<Platform>();
-    
+
     // Create engine configuration
     EngineConfig config;
     config.logger = logger.get();

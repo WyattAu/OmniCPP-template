@@ -21,6 +21,7 @@
 #include <cmath>
 #include <cstdlib>
 #include <ctime>
+#include <spdlog/spdlog.h>
 
 namespace omnicpp {
 namespace game {
@@ -32,9 +33,10 @@ PongGame::PongGame(Engine* engine)
     , m_running(false)
     , m_player_score(0)
     , m_ai_score(0) {
-    
+
     // Initialize random seed
     std::srand(static_cast<unsigned int>(std::time(nullptr)));
+    spdlog::debug("PongGame: Constructor called");
 }
 
 PongGame::~PongGame() {
@@ -42,7 +44,7 @@ PongGame::~PongGame() {
 }
 
 bool PongGame::initialize() {
-    std::cout << "Initializing 3D Pong game..." << std::endl;
+    spdlog::info("PongGame: Initializing 3D Pong game...");
 
     // Get engine subsystems
     auto renderer = m_engine->get_renderer();
@@ -50,7 +52,7 @@ bool PongGame::initialize() {
     auto resource_manager = m_engine->get_resource_manager();
 
     if (!renderer || !input_manager || !resource_manager) {
-        std::cerr << "Failed to get engine subsystems" << std::endl;
+        spdlog::error("PongGame: Failed to get engine subsystems");
         return false;
     }
 
@@ -73,12 +75,12 @@ bool PongGame::initialize() {
 
     // Initialize game state
     m_initialized = true;
-    std::cout << "3D Pong game initialized successfully" << std::endl;
-    std::cout << "Controls:" << std::endl;
-    std::cout << "  W - Move paddle up" << std::endl;
-    std::cout << "  S - Move paddle down" << std::endl;
-    std::cout << "  ESC - Exit game" << std::endl;
-    std::cout << "First to " << WINNING_SCORE << " points wins!" << std::endl;
+    spdlog::info("PongGame: 3D Pong game initialized successfully");
+    spdlog::info("PongGame: Controls:");
+    spdlog::info("PongGame:   W - Move paddle up");
+    spdlog::info("PongGame:   S - Move paddle down");
+    spdlog::info("PongGame:   ESC - Exit game");
+    spdlog::info("PongGame: First to {} points wins!", WINNING_SCORE);
 
     return true;
 }
@@ -88,7 +90,7 @@ void PongGame::shutdown() {
         return;
     }
 
-    std::cout << "Shutting down 3D Pong game..." << std::endl;
+    spdlog::info("PongGame: Shutting down 3D Pong game...");
 
     m_scene_manager->unload_scene();
     m_scene_manager.reset();
@@ -98,6 +100,7 @@ void PongGame::shutdown() {
     m_ball.reset();
 
     m_initialized = false;
+    spdlog::info("PongGame: Shutdown complete");
 }
 
 void PongGame::create_scene() {
@@ -183,10 +186,10 @@ void PongGame::reset_ball() {
 
     // Random initial direction (left or right)
     float direction = (std::rand() % 2 == 0) ? 1.0f : -1.0f;
-    
+
     // Random angle between -45 and 45 degrees
     float angle = ((std::rand() % 90) - 45.0f) * (3.14159265f / 180.0f);
-    
+
     m_ball_state.velocity_x = direction * BALL_SPEED * std::cos(angle);
     m_ball_state.velocity_y = BALL_SPEED * std::sin(angle);
     m_ball_state.velocity_z = 0.0f;
@@ -216,7 +219,7 @@ void PongGame::update(float delta_time) {
 void PongGame::update_player_paddle(float delta_time) {
     auto input_manager = m_engine->get_input_manager();
     auto paddle_transform = m_player_paddle->get_component<ecs::TransformComponent>();
-    
+
     if (!paddle_transform) {
         return;
     }
@@ -231,7 +234,7 @@ void PongGame::update_player_paddle(float delta_time) {
 
     // Clamp paddle position to bounds
     float half_height = m_player_paddle_state.height / 2.0f;
-    m_player_paddle_state.y = std::max(m_bounds.bottom + half_height, 
+    m_player_paddle_state.y = std::max(m_bounds.bottom + half_height,
                                        std::min(m_bounds.top - half_height, m_player_paddle_state.y));
 
     // Update entity transform
@@ -240,7 +243,7 @@ void PongGame::update_player_paddle(float delta_time) {
 
 void PongGame::update_ai_paddle(float delta_time) {
     auto paddle_transform = m_ai_paddle->get_component<ecs::TransformComponent>();
-    
+
     if (!paddle_transform) {
         return;
     }
@@ -261,7 +264,7 @@ void PongGame::update_ai_paddle(float delta_time) {
 
     // Clamp paddle position to bounds
     float half_height = m_ai_paddle_state.height / 2.0f;
-    m_ai_paddle_state.y = std::max(m_bounds.bottom + half_height, 
+    m_ai_paddle_state.y = std::max(m_bounds.bottom + half_height,
                                    std::min(m_bounds.top - half_height, m_ai_paddle_state.y));
 
     // Update entity transform
@@ -270,7 +273,7 @@ void PongGame::update_ai_paddle(float delta_time) {
 
 void PongGame::update_ball(float delta_time) {
     auto ball_transform = m_ball->get_component<ecs::TransformComponent>();
-    
+
     if (!ball_transform) {
         return;
     }
@@ -314,17 +317,17 @@ void PongGame::check_collisions() {
         m_ball_state.y + m_ball_state.radius > m_player_paddle_state.y - player_half_height &&
         m_ball_state.z - m_ball_state.radius < m_player_paddle_state.z + player_half_depth &&
         m_ball_state.z + m_ball_state.radius > m_player_paddle_state.z - player_half_depth) {
-        
+
         // Ball hit player paddle
         m_ball_state.x = m_player_paddle_state.x + player_half_width + m_ball_state.radius;
         m_ball_state.velocity_x = std::abs(m_ball_state.velocity_x) + BALL_SPEED_INCREMENT;
-        
+
         // Add some angle based on where ball hit paddle
         float hit_offset = (m_ball_state.y - m_player_paddle_state.y) / player_half_height;
         m_ball_state.velocity_y += hit_offset * 2.0f;
-        
+
         // Normalize velocity
-        float speed = std::sqrt(m_ball_state.velocity_x * m_ball_state.velocity_x + 
+        float speed = std::sqrt(m_ball_state.velocity_x * m_ball_state.velocity_x +
                                m_ball_state.velocity_y * m_ball_state.velocity_y);
         m_ball_state.velocity_x = (m_ball_state.velocity_x / speed) * std::abs(m_ball_state.velocity_x);
         m_ball_state.velocity_y = (m_ball_state.velocity_y / speed) * std::abs(m_ball_state.velocity_x);
@@ -341,17 +344,17 @@ void PongGame::check_collisions() {
         m_ball_state.y + m_ball_state.radius > m_ai_paddle_state.y - ai_half_height &&
         m_ball_state.z - m_ball_state.radius < m_ai_paddle_state.z + ai_half_depth &&
         m_ball_state.z + m_ball_state.radius > m_ai_paddle_state.z - ai_half_depth) {
-        
+
         // Ball hit AI paddle
         m_ball_state.x = m_ai_paddle_state.x - ai_half_width - m_ball_state.radius;
         m_ball_state.velocity_x = -std::abs(m_ball_state.velocity_x) - BALL_SPEED_INCREMENT;
-        
+
         // Add some angle based on where ball hit paddle
         float hit_offset = (m_ball_state.y - m_ai_paddle_state.y) / ai_half_height;
         m_ball_state.velocity_y += hit_offset * 2.0f;
-        
+
         // Normalize velocity
-        float speed = std::sqrt(m_ball_state.velocity_x * m_ball_state.velocity_x + 
+        float speed = std::sqrt(m_ball_state.velocity_x * m_ball_state.velocity_x +
                                m_ball_state.velocity_y * m_ball_state.velocity_y);
         m_ball_state.velocity_x = (m_ball_state.velocity_x / speed) * std::abs(m_ball_state.velocity_x);
         m_ball_state.velocity_y = (m_ball_state.velocity_y / speed) * std::abs(m_ball_state.velocity_x);
@@ -361,13 +364,13 @@ void PongGame::check_collisions() {
     if (m_ball_state.x < m_bounds.left) {
         // AI scores
         m_ai_score++;
-        std::cout << "AI scores! Score: Player " << m_player_score << " - AI " << m_ai_score << std::endl;
+        spdlog::info("PongGame: AI scores! Score: Player {} - AI {}", m_player_score, m_ai_score);
         reset_ball();
         update_score();
     } else if (m_ball_state.x > m_bounds.right) {
         // Player scores
         m_player_score++;
-        std::cout << "Player scores! Score: Player " << m_player_score << " - AI " << m_ai_score << std::endl;
+        spdlog::info("PongGame: Player scores! Score: Player {} - AI {}", m_player_score, m_ai_score);
         reset_ball();
         update_score();
     }
@@ -376,12 +379,12 @@ void PongGame::check_collisions() {
 void PongGame::update_score() {
     // Check for win condition
     if (m_player_score >= WINNING_SCORE) {
-        std::cout << "PLAYER WINS!" << std::endl;
-        std::cout << "Final Score: Player " << m_player_score << " - AI " << m_ai_score << std::endl;
+        spdlog::info("PongGame: PLAYER WINS!");
+        spdlog::info("PongGame: Final Score: Player {} - AI {}", m_player_score, m_ai_score);
         m_running = false;
     } else if (m_ai_score >= WINNING_SCORE) {
-        std::cout << "AI WINS!" << std::endl;
-        std::cout << "Final Score: Player " << m_player_score << " - AI " << m_ai_score << std::endl;
+        spdlog::info("PongGame: AI WINS!");
+        spdlog::info("PongGame: Final Score: Player {} - AI {}", m_player_score, m_ai_score);
         m_running = false;
     }
 }
@@ -398,6 +401,7 @@ void PongGame::render() {
 void PongGame::handle_input(const input::InputEvent& event) {
     if (event.type == input::EventType::KEY_PRESS) {
         if (event.key_code == input::KeyCode::ESCAPE) {
+            spdlog::info("PongGame: ESCAPE pressed, stopping game");
             m_running = false;
         }
     }
@@ -405,11 +409,11 @@ void PongGame::handle_input(const input::InputEvent& event) {
 
 int PongGame::run() {
     if (!m_initialized) {
-        std::cerr << "Game not initialized" << std::endl;
+        spdlog::error("PongGame: Game not initialized");
         return 1;
     }
 
-    std::cout << "Starting 3D Pong game loop..." << std::endl;
+    spdlog::info("PongGame: Starting 3D Pong game loop...");
     m_running = true;
 
     // Game loop
@@ -430,7 +434,7 @@ int PongGame::run() {
         m_engine->update(delta_time);
     }
 
-    std::cout << "3D Pong game loop ended" << std::endl;
+    spdlog::info("PongGame: 3D Pong game loop ended");
     return 0;
 }
 

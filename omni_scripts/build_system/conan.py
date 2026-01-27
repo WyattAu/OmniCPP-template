@@ -83,6 +83,19 @@ class ConanWrapper:
         Raises:
             ConanError: If Conan install fails.
         """
+        # Check for system-wide Vulkan SDK installation
+        # If VULKAN_SDK is set, use system SDK instead of Conan dependencies
+        use_system_vulkan = os.environ.get("VULKAN_SDK") is not None
+        if use_system_vulkan:
+            logger.info("VULKAN_SDK environment variable detected.")
+            logger.info("Using system-wide Vulkan SDK. Conan will skip Vulkan dependencies.")
+            # Add option to disable Vulkan in Conan
+            if extra_args is None:
+                extra_args = []
+            extra_args.extend(["-o", "omnicpp-template/*:with_vulkan=False"])
+        else:
+            logger.info("VULKAN_SDK not set. Conan will provide Vulkan SDK.")
+
         logger.info(f"Installing Conan dependencies with profile: {profile}")
 
         # Build Conan command
@@ -116,7 +129,6 @@ class ConanWrapper:
 
         cmd = " ".join(cmd_parts)
         logger.debug(f"Conan install command: {cmd}")
-
         try:
             execute_command(cmd, timeout=600)
             logger.info("Conan install completed successfully")

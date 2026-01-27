@@ -14,8 +14,10 @@ from typing import Optional
 from omni_scripts.controller.base import setup_controller_logging
 from omni_scripts.controller.cli import parse_args
 from omni_scripts.exceptions import ControllerError
-from omni_scripts.controller.config_controller import ConfigController
 from omni_scripts.controller.build_controller import BuildController
+from omni_scripts.controller.configure_controller import ConfigureController
+from omni_scripts.controller.install_controller import InstallController
+from omni_scripts.controller.package_controller import PackageController
 from omni_scripts.controller.test_controller import TestController
 
 
@@ -131,31 +133,14 @@ class CommandDispatcher:
         """
         self.logger.info("Handling configure command")
 
-        # Validate that at least one of generator, toolchain, or preset is specified
-        if not any([
-            hasattr(self.args, "generator") and self.args.generator,
-            hasattr(self.args, "toolchain") and self.args.toolchain,
-            hasattr(self.args, "preset") and self.args.preset,
-        ]):
-            raise ControllerError(
-                message="At least one of --generator, --toolchain, or --preset must be specified",
-                command="configure",
-                context={
-                    "generator": getattr(self.args, "generator", None),
-                    "toolchain": getattr(self.args, "toolchain", None),
-                    "preset": getattr(self.args, "preset", None),
-                },
-                exit_code=2,
-            )
-
-        # Import and use config controller for configure command
+        # Import and use configure controller for configure command
         try:
-            from omni_scripts.controller.config_controller import ConfigController
+            from omni_scripts.controller.configure_controller import ConfigureController
 
-            controller = ConfigController(self.args)
+            controller = ConfigureController(self.args)
             return controller.execute()
         except ImportError as e:
-            self.logger.error(f"ConfigController not implemented yet: {e}")
+            self.logger.error(f"ConfigureController not implemented yet: {e}")
             self.logger.info("Configure command will be implemented in future")
             return 0
 
@@ -205,14 +190,14 @@ class CommandDispatcher:
         """
         self.logger.info("Handling install command")
 
-        # Import and use build controller (install is part of build operations)
+        # Import and use install controller for install command
         try:
-            from omni_scripts.controller.build_controller import BuildController
+            from omni_scripts.controller.install_controller import InstallController
 
-            controller = BuildController(self.args)
+            controller = InstallController(self.args)
             return controller.execute()
         except ImportError as e:
-            self.logger.error(f"BuildController not implemented yet: {e}")
+            self.logger.error(f"InstallController not implemented yet: {e}")
             self.logger.info("Install command will be implemented in future")
             return 0
 
@@ -243,14 +228,14 @@ class CommandDispatcher:
         """
         self.logger.info("Handling package command")
 
-        # Import and use build controller (package is part of build operations)
+        # Import and use package controller for package command
         try:
-            from omni_scripts.controller.build_controller import BuildController
+            from omni_scripts.controller.package_controller import PackageController
 
-            controller = BuildController(self.args)
+            controller = PackageController(self.args)
             return controller.execute()
         except ImportError as e:
-            self.logger.error(f"BuildController not implemented yet: {e}")
+            self.logger.error(f"PackageController not implemented yet: {e}")
             self.logger.info("Package command will be implemented in future")
             return 0
 

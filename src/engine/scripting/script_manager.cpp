@@ -6,6 +6,7 @@
 #include "engine/scripting/script_manager.hpp"
 #include <mutex>
 #include <unordered_map>
+#include <spdlog/spdlog.h>
 
 namespace OmniCpp::Engine::Scripting {
 
@@ -43,12 +44,14 @@ namespace OmniCpp::Engine::Scripting {
     std::lock_guard<std::mutex> lock (m_impl->mutex);
 
     if (m_impl->initialized) {
+      spdlog::warn("ScriptManager: Already initialized");
       return true;
     }
 
     m_impl->scripts.clear ();
     m_impl->initialized = true;
 
+    spdlog::info("ScriptManager: Initialized");
     return true;
   }
 
@@ -61,6 +64,8 @@ namespace OmniCpp::Engine::Scripting {
 
     m_impl->scripts.clear ();
     m_impl->initialized = false;
+
+    spdlog::info("ScriptManager: Shutdown");
   }
 
   void ScriptManager::update (float delta_time) {
@@ -72,11 +77,13 @@ namespace OmniCpp::Engine::Scripting {
     std::lock_guard<std::mutex> lock (m_impl->mutex);
 
     if (!m_impl->initialized) {
+      spdlog::error("ScriptManager: Not initialized, cannot load script: {}", name);
       return false;
     }
 
     Impl::ScriptInfo info{ path };
     m_impl->scripts[name] = info;
+    spdlog::debug("ScriptManager: Loaded script '{}' from '{}'", name, path);
     return true;
   }
 
@@ -84,14 +91,17 @@ namespace OmniCpp::Engine::Scripting {
     std::lock_guard<std::mutex> lock (m_impl->mutex);
 
     if (!m_impl->initialized) {
+      spdlog::error("ScriptManager: Not initialized, cannot unload script: {}", name);
       return false;
     }
 
     auto it = m_impl->scripts.find (name);
     if (it != m_impl->scripts.end ()) {
       m_impl->scripts.erase (it);
+      spdlog::debug("ScriptManager: Unloaded script '{}'", name);
       return true;
     }
+    spdlog::warn("ScriptManager: Script '{}' not found", name);
     return false;
   }
 
@@ -99,11 +109,17 @@ namespace OmniCpp::Engine::Scripting {
     std::lock_guard<std::mutex> lock (m_impl->mutex);
 
     if (!m_impl->initialized) {
+      spdlog::error("ScriptManager: Not initialized, cannot execute script: {}", name);
       return false;
     }
 
     auto it = m_impl->scripts.find (name);
-    return it != m_impl->scripts.end ();
+    if (it != m_impl->scripts.end ()) {
+      spdlog::debug("ScriptManager: Executing script '{}'", name);
+      return true;
+    }
+    spdlog::warn("ScriptManager: Script '{}' not found", name);
+    return false;
   }
 
 } // namespace OmniCpp::Engine::Scripting

@@ -134,11 +134,11 @@ void Game::handle_input() {
 
 int Game::run() {
     if (!m_initialized) {
-        std::cerr << "Game not initialized" << std::endl;
+        spdlog::error("Game: Game not initialized");
         return 1;
     }
 
-    std::cout << "Starting game loop..." << std::endl;
+    spdlog::info("Game: Starting game loop...");
     m_running = true;
 
     // Simple game loop
@@ -148,7 +148,7 @@ int Game::run() {
         render();
     }
 
-    std::cout << "Game loop ended" << std::endl;
+    spdlog::info("Game: Game loop ended");
     return 0;
 }
 
@@ -157,21 +157,24 @@ void Game::shutdown() {
         return;
     }
 
-    std::cout << "Shutting down game..." << std::endl;
+    spdlog::info("Game: Shutting down game...");
     m_running = false;
     unload_engine();
     m_initialized = false;
-    std::cout << "Game shutdown complete" << std::endl;
+    spdlog::info("Game: Game shutdown complete");
 }
 
 } // namespace omnicpp
 
 // Main entry point
 int main(int argc, char* argv[]) {
+    (void)argc;
+    (void)argv;
+
     omnicpp::Game game;
 
     if (!game.initialize()) {
-        std::cerr << "Failed to initialize game" << std::endl;
+        spdlog::error("Game: Failed to initialize game");
         return 1;
     }
 

@@ -5,6 +5,7 @@
  */
 
 #include "engine/IRenderer.hpp"
+#include <spdlog/spdlog.h>
 
 namespace omnicpp {
 
@@ -14,10 +15,12 @@ public:
     ~RendererStub() override = default;
 
     bool initialize() override {
+        spdlog::info("Renderer initialized");
         return true;
     }
 
     void shutdown() override {
+        spdlog::info("Renderer shutdown");
     }
 
     bool begin_frame() override {
@@ -25,9 +28,10 @@ public:
     }
 
     void end_frame() override {
+        m_frame_number++;
     }
 
-    uint32_t get_frame_number() const override {
+    uint32_t get_frame_number() const noexcept override {
         return m_frame_number;
     }
 

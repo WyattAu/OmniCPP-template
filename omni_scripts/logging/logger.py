@@ -78,7 +78,8 @@ def setup_logging(
             max_bytes=_config["max_bytes"],
             backup_count=_config["backup_count"],
             format_string=_config["format"],
-            datefmt=_config["datefmt"]
+            datefmt=_config["datefmt"],
+            use_json=_config.get("use_json", False)
         )
         if file_handler:
             _root_logger.addHandler(file_handler)

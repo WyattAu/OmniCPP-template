@@ -36,6 +36,7 @@ class InstallController(BaseController):
         super().__init__(args)
         self.target = getattr(args, "target", "all")
         self.config = getattr(args, "config", "release")
+        self.compiler = getattr(args, "compiler", None)
         self.install_dependencies = getattr(args, "install_dependencies", False)
         self.install_prefix = getattr(args, "prefix", None)
 
@@ -51,6 +52,9 @@ class InstallController(BaseController):
 
         # Validate config
         self.validate_config(self.config)
+
+        # Validate compiler if specified
+        self.validate_compiler(self.compiler)
 
         # Validate prefix if specified
         if self.install_prefix:

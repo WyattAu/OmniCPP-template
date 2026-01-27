@@ -167,6 +167,12 @@ Examples:
         help="CMake preset name",
     )
 
+    parser.add_argument(
+        "--compiler",
+        choices=BaseController.VALID_COMPILERS,
+        help="Compiler to use (auto-detected if not specified)",
+    )
+
 
 def _add_build_command(subparsers: argparse._SubParsersAction[Any]) -> None:
     """Add the build command subparser.
@@ -321,6 +327,12 @@ Examples:
         help="Build configuration (debug or release)",
     )
 
+    parser.add_argument(
+        "--compiler",
+        choices=BaseController.VALID_COMPILERS,
+        help="Compiler to use (auto-detected if not specified)",
+    )
+
 
 def _add_test_command(subparsers: argparse._SubParsersAction[Any]) -> None:
     """Add the test command subparser.
@@ -366,6 +378,12 @@ Examples:
         help="Build configuration (debug or release)",
     )
 
+    parser.add_argument(
+        "--compiler",
+        choices=BaseController.VALID_COMPILERS,
+        help="Compiler to use (auto-detected if not specified)",
+    )
+
 
 def _add_package_command(subparsers: argparse._SubParsersAction[Any]) -> None:
     """Add the package command subparser.
@@ -409,6 +427,12 @@ Examples:
         "config",
         choices=BaseController.VALID_CONFIGS,
         help="Build configuration (debug or release)",
+    )
+
+    parser.add_argument(
+        "--compiler",
+        choices=BaseController.VALID_COMPILERS,
+        help="Compiler to use (auto-detected if not specified)",
     )
 
 
@@ -579,7 +603,8 @@ def parse_args(args: Optional[list[str]] = None) -> argparse.Namespace:
         Parsed arguments as a Namespace object.
     """
     parser = create_parser()
-    return parser.parse_args(args)
+    parsed_args = parser.parse_args(args)
+    return parsed_args
 
 
 __all__ = [

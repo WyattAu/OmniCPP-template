@@ -45,6 +45,25 @@ class LintController(BaseController):
         Raises:
             ControllerError: If arguments are invalid.
         """
+        # Validate that pylint is available if Python linting is requested
+        if not self.cpp_only:
+            import shutil
+            try:
+                if shutil.which("pylint") is None:
+                    raise ControllerError(
+                        message="pylint linter not found. Please install pylint to lint Python files.",
+                        command="lint",
+                        context={"tool": "pylint"},
+                        exit_code=2,
+                    )
+            except (OSError, AttributeError) as e:
+                raise ControllerError(
+                    message=f"Failed to check for pylint linter: {e}. Please ensure pylint is installed.",
+                    command="lint",
+                    context={"tool": "pylint", "error": str(e)},
+                    exit_code=2,
+                )
+
         # Validate that cpp_only and python_only are not both specified
         if self.cpp_only and self.python_only:
             raise ControllerError(
@@ -148,6 +167,12 @@ class LintController(BaseController):
         """
         self.logger.debug(f"Linting C++ file: {file_path}")
 
+        # Check if clang-tidy exists before execution
+        import shutil
+        if shutil.which("clang-tidy") is None:
+            self.logger.warning("clang-tidy not found, skipping C++ linting")
+            return 0
+
         try:
             # Build clang-tidy command
             cmd = ["clang-tidy"]
@@ -193,6 +218,12 @@ class LintController(BaseController):
             Exit code (0 for success, non-zero for failure).
         """
         self.logger.debug(f"Linting Python file: {file_path}")
+
+        # Check if pylint exists before execution
+        import shutil
+        if shutil.which("pylint") is None:
+            self.logger.warning("pylint not found, skipping Python linting")
+            return 0
 
         try:
             # Build pylint command

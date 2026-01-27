@@ -47,7 +47,6 @@ set(TEST_NAMESPACE omnicpp)
 # ==============================================================================
 # Common build options
 # ==============================================================================
-
 option(ENABLE_TESTS "Build and run unit tests with Catch2" OFF)
 option(ENABLE_CCACHE "Use ccache compiler cache" ON)
 option(BUILD_SHARED_LIBS "Build shared (.so) libraries" OFF)
@@ -66,6 +65,7 @@ option(SANITIZE_MEMORY "Enable memory sanitizer" OFF)
 # ==============================================================================
 if(ENABLE_CCACHE)
     find_program(CCACHE_PROGRAM ccache)
+
     if(CCACHE_PROGRAM)
         set(CMAKE_C_COMPILER_LAUNCHER ${CCACHE_PROGRAM})
         set(CMAKE_CXX_COMPILER_LAUNCHER ${CCACHE_PROGRAM})
@@ -126,6 +126,7 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 # Cross-compilation indicator (global)
 # ==============================================================================
 set(omnicpp_CROSSCOMPILING OFF)
+
 if(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
     set(omnicpp_CROSSCOMPILING ON)
 elseif(CMAKE_CROSSCOMPILING)
@@ -133,6 +134,7 @@ elseif(CMAKE_CROSSCOMPILING)
 elseif(NOT CMAKE_HOST_SYSTEM_NAME STREQUAL CMAKE_SYSTEM_NAME)
     set(omnicpp_CROSSCOMPILING ON)
 endif()
+
 set(omnicpp_CROSSCOMPILING
     "${omnicpp_CROSSCOMPILING}"
     CACHE BOOL "Building with cross-compilation")
@@ -159,6 +161,7 @@ include(${CMAKE_CURRENT_LIST_DIR}/../generated/CPM.cmake)
 
 # Common dependencies - prioritize vcpkg, fallback to CPM
 find_package(fmt QUIET)
+
 if(NOT fmt_FOUND)
     CPMAddPackage(
         NAME fmt
@@ -168,37 +171,46 @@ if(NOT fmt_FOUND)
 endif()
 
 find_package(nlohmann_json QUIET)
+
 if(NOT nlohmann_json_FOUND)
-    CPMAddPackage("gh:nlohmann/json@3.12.0")
+    CPMAddPackage(
+        NAME nlohmann_json
+        URL https://github.com/nlohmann/json/archive/refs/tags/v3.13.0.tar.gz
+        VERSION 3.13.0
+        FORCE
+        EXCLUDE_FROM_ALL
+    )
 endif()
 
 # find_package(ZLIB QUIET)
 # if(NOT ZLIB_FOUND)
-#     CPMAddPackage(
-#         NAME zlib
-#         GITHUB_REPOSITORY madler/zlib
-#         GIT_TAG v1.3
-#     )
+# CPMAddPackage(
+# NAME zlib
+# GITHUB_REPOSITORY madler/zlib
+# GIT_TAG v1.3
+# )
 # endif()
-
 find_package(spdlog QUIET)
+
 if(NOT spdlog_FOUND)
     CPMAddPackage("gh:gabime/spdlog@1.14.1")
 endif()
 
 find_package(Catch2 QUIET)
+
 if(NOT Catch2_FOUND)
     CPMAddPackage("gh:catchorg/Catch2@3.7.1")
 endif()
 
 find_package(GTest QUIET)
+
 if(NOT GTest_FOUND)
     CPMAddPackage("gh:google/googletest@1.15.0")
 endif()
 
 # find_package(PostgreSQL QUIET)
 # if(NOT PostgreSQL_FOUND)
-#     CPMAddPackage("gh:postgresql/postgresql@15.4")
+# CPMAddPackage("gh:postgresql/postgresql@15.4")
 # endif()
 
 # ==============================================================================

@@ -244,10 +244,10 @@ class BuildManager:
                     shutil.rmtree(build_dir)
                     cleaned_count += 1
                 except PermissionError as e:
-                    error_msg: str = (
+                    perm_error_msg: str = (
                         f"Permission denied removing {build_dir}: {e}"
                     )
-                    log_error(error_msg)
+                    log_error(perm_error_msg)
                     raise BuildError(
                         f"Failed to clean build directory: {build_dir}",
                         context={
@@ -257,8 +257,8 @@ class BuildManager:
                         },
                     ) from e
                 except OSError as e:
-                    error_msg: str = f"Failed to remove {build_dir}: {e}"
-                    log_error(error_msg)
+                    os_error_msg: str = f"Failed to remove {build_dir}: {e}"
+                    log_error(os_error_msg)
                     raise BuildError(
                         f"Failed to clean build directory: {build_dir}",
                         context={"target": target, "error": str(e)},
@@ -299,14 +299,14 @@ class BuildManager:
             )
 
             log_info(f"Installing dependencies for {target} in {build_dir}")
-            
+
             # Check if build_dir is None
             if build_dir is None:
                 raise BuildError(
                     f"Build directory is None for target: {target}",
                     context={"target": target, "error": "Build directory is None"},
                 )
-            
+
             try:
                 self.conan_manager.install(
                     build_dir,
@@ -348,31 +348,31 @@ class BuildManager:
             BuildError: If source or build directories are invalid.
         """
         log_info(f"Configuring build system for {context.product}")
-        
+
         targets_to_configure: List[str] = []
         if context.lib_flag:
             targets_to_configure.append("engine")
         if context.st_flag:
             targets_to_configure.append("game")
-        
+
         for target in targets_to_configure:
             build_dir: Optional[Path] = self._get_build_dir(
                 target, context.arch, context.build_type, context.compiler
             )
             source_dir: Path = self._get_source_dir(target)
-            
+
             # Determine if building as library or standalone
             build_library: bool = (target == "engine")
-            
+
             log_info(f"Configuring {target} in {build_dir}")
-            
+
             # Check if build_dir is None
             if build_dir is None:
                 raise BuildError(
                     f"Build directory is None for target: {target}",
                     context={"target": target, "error": "Build directory is None"},
                 )
-            
+
             try:
                 self.cmake_manager.configure(
                     source_dir=source_dir,
@@ -423,18 +423,18 @@ class BuildManager:
             )
 
             log_info(f"Building {target} in {build_dir}")
-            
+
             # Check if build_dir is None
             if build_dir is None:
                 raise BuildError(
                     f"Build directory is None for target: {target}",
                     context={"target": target, "error": "Build directory is None"},
                 )
-            
+
             # Get CMake target name
             cmake_target: str = self._get_cmake_target_name(target)
             log_info(f"Building CMake target: {cmake_target}")
-            
+
             try:
                 self.cmake_manager.build(
                     build_dir=build_dir,
@@ -485,14 +485,14 @@ class BuildManager:
             )
 
             log_info(f"Installing {target} from {build_dir}")
-            
+
             # Check if build_dir is None
             if build_dir is None:
                 raise BuildError(
                     f"Build directory is None for target: {target}",
                     context={"target": target, "error": "Build directory is None"},
                 )
-            
+
             try:
                 self.cmake_manager.install(
                     build_dir=build_dir,
@@ -692,7 +692,7 @@ class BuildManager:
             "library": "omnicpp_library",
             "standalone": "omnicpp_standalone",
         }
-        
+
         if target in target_mapping:
             return target_mapping[target]
         else:

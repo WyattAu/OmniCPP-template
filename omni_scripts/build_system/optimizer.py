@@ -100,7 +100,7 @@ class BuildOptimizer:
                 memory_status = MEMORYSTATUSEX()
                 memory_status.dwLength = ctypes.sizeof(MEMORYSTATUSEX)
                 kernel32.GlobalMemoryStatusEx(ctypes.byref(memory_status))
-                return memory_status.ullAvailPhys / (1024 ** 3)  # type: ignore[attr-defined]
+                return memory_status.ullAvailPhys / (1024 ** 3)  # type: ignore[no-any-return]
             else:
                 # Linux/macOS
                 with open("/proc/meminfo", "r") as f:
@@ -108,9 +108,11 @@ class BuildOptimizer:
                         if line.startswith("MemAvailable:"):
                             mem_kb = int(line.split()[1])
                             return mem_kb / (1024 ** 2)
+                # Default fallback if MemAvailable not found
+                return 8.0
         except Exception as e:
             logger.warning(f"Failed to detect memory: {e}")
-            return 8.0  # type: ignore[return-value]
+            return 8.0
 
     def calculate_optimal_jobs(
         self,

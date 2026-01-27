@@ -30,10 +30,14 @@ add_library(omnicpp_engine SHARED
     Logger.cpp
     Platform.cpp
 
+    # Logging
+    logging/SpdLogLogger.cpp
+
     # ECS
     ecs/Entity.cpp
     ecs/Component.cpp
     ecs/TransformComponent.cpp
+    ecs/MeshComponent.cpp
 
     # Scene
     scene/SceneNode.cpp
@@ -87,6 +91,23 @@ endif()
 target_link_libraries(omnicpp_engine PUBLIC Vulkan::Vulkan)
 target_compile_definitions(omnicpp_engine PUBLIC OMNICPP_HAS_VULKAN)
 
+# spdlog integration (required)
+if(OMNICPP_USE_SPDLOG AND TARGET spdlog::spdlog)
+    target_link_libraries(omnicpp_engine PUBLIC spdlog::spdlog)
+    target_compile_definitions(omnicpp_engine PUBLIC OMNICPP_USE_SPDLOG)
+endif()
+
+# nlohmann/json for logging configuration
+if(OMNICPP_USE_SPDLOG)
+    CPMAddPackage(
+        NAME nlohmann_json
+        VERSION 3.11.3
+        GITHUB_REPOSITORY nlohmann/json
+        OPTIONS "CMAKE_POLICY_VERSION_MINIMUM=3.5"
+    )
+    target_link_libraries(omnicpp_engine PUBLIC nlohmann_json::nlohmann_json)
+endif()
+
 # Additional dependencies
 find_package(Threads REQUIRED)
 target_link_libraries(omnicpp_engine PUBLIC Threads::Threads)
@@ -123,17 +144,11 @@ install(TARGETS omnicpp_engine
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
     INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-)
+    )
 
 install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../../include/engine
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-)
-
-install(EXPORT OmniCppEngineTargets
-    FILE OmniCppEngineTargets.cmake
-    NAMESPACE OmniCpp::
-    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/OmniCppEngine
-)
+    )
 
 # Create package config
 include(CMakePackageConfigHelpers)

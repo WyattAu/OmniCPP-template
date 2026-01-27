@@ -2,10 +2,10 @@
  * @file Engine.hpp
  * @brief OmniCpp Engine API - Public interface for dynamic engine library
  * @version 1.0.0
- * 
+ *
  * This header defines the public API for the OmniCpp game engine library.
  * The library is designed to be dynamically loaded at runtime by game applications.
- * 
+ *
  * @copyright Copyright 2025 OmniCpp Project
  * @license Apache-2.0
  */
@@ -13,6 +13,7 @@
 #ifndef OMNICPP_ENGINE_HPP
 #define OMNICPP_ENGINE_HPP
 
+#include "engine/IEngine.hpp"
 #include <memory>
 #include <string>
 #include <cstdint>
@@ -36,23 +37,7 @@
 // Forward declarations
 namespace omnicpp {
 
-// Engine configuration
-struct EngineConfig {
-    bool enable_vulkan;
-    bool enable_audio;
-    bool enable_physics;
-    uint32_t max_frames_per_second;
-    bool enable_validation_layers;
-    bool enable_debug_renderer;
-};
-
-// Forward declare engine interface
-class IRenderer;
-class IInputManager;
-class IAudioManager;
-class IPhysicsEngine;
-class IResourceManager;
-class ILogger;
+// EngineConfig is defined in IEngine.hpp
 
 /**
  * @brief Create engine instance with specified configuration
@@ -134,7 +119,7 @@ extern "C" OMNICPP_EXPORT void engine_render(IEngine* engine);
 
 /**
  * @brief Get engine version string
- * 
+ *
  * @return Version string in format "MAJOR.MINOR.PATCH"
  */
 extern "C" OMNICPP_EXPORT const char* engine_get_version();

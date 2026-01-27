@@ -5,6 +5,7 @@
  */
 
 #include "engine/scene/SceneManager.hpp"
+#include <spdlog/spdlog.h>
 
 namespace omnicpp {
 namespace scene {
@@ -14,6 +15,7 @@ void SceneManager::add_scene(std::unique_ptr<Scene> scene) {
         const std::string& name = scene->get_name();
         m_scenes.push_back(std::move(scene));
         m_scene_map[name] = m_scenes.back().get();
+        spdlog::debug("SceneManager: Added scene '{}'", name);
     }
 }
 
@@ -21,25 +23,27 @@ std::unique_ptr<Scene> SceneManager::remove_scene(const std::string& name) {
     auto it = m_scene_map.find(name);
     if (it != m_scene_map.end()) {
         Scene* scene = it->second;
-        
+
         // Remove from map
         m_scene_map.erase(it);
-        
+
         // Remove from vector
         for (auto sit = m_scenes.begin(); sit != m_scenes.end(); ++sit) {
             if (sit->get() == scene) {
                 auto removed = std::move(*sit);
                 m_scenes.erase(sit);
-                
+
                 // If this was the active scene, clear it
                 if (m_active_scene == scene) {
                     m_active_scene = nullptr;
                 }
-                
+
+                spdlog::debug("SceneManager: Removed scene '{}'", name);
                 return removed;
             }
         }
     }
+    spdlog::warn("SceneManager: Scene '{}' not found", name);
     return nullptr;
 }
 

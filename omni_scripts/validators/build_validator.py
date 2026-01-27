@@ -53,7 +53,7 @@ class BuildArtifact:
             return self.path.suffix.lower() in ['.exe', '.dll']
         else:
             # On Unix-like systems, check if file is executable
-            return self.path.is_file() and (self.path.stat().st_mode & 0o111)  # type: ignore[attr-defined, return-value]
+            return self.path.is_file() and bool(self.path.stat().st_mode & 0o111)
 
     def _is_library(self) -> bool:
         """Check if file is a valid library"""

@@ -5,6 +5,7 @@
 
 #include "engine/window/window_manager.hpp"
 #include <mutex>
+#include <spdlog/spdlog.h>
 
 namespace OmniCpp::Engine::Window {
 
@@ -40,6 +41,7 @@ namespace OmniCpp::Engine::Window {
     std::lock_guard<std::mutex> lock (m_impl->mutex);
 
     if (m_impl->initialized) {
+      spdlog::warn("WindowManager: Already initialized");
       return true;
     }
 
@@ -47,6 +49,7 @@ namespace OmniCpp::Engine::Window {
     m_impl->should_close = false;
     m_impl->initialized = true;
 
+    spdlog::info("WindowManager: Initialized with title '{}', size {}x{}", config.title, config.width, config.height);
     return true;
   }
 
@@ -58,6 +61,8 @@ namespace OmniCpp::Engine::Window {
     }
 
     m_impl->initialized = false;
+
+    spdlog::info("WindowManager: Shutdown");
   }
 
   void WindowManager::update () {

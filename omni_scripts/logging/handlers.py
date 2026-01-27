@@ -182,7 +182,7 @@ class FileHandler(RotatingFileHandler):
 
         # Create and set the formatter
         if use_json:
-            formatter: logging.Formatter = JsonFormatter(indent=None, ensure_ascii=False)  # type: ignore[assignment]
+            formatter: logging.Formatter = JsonFormatter(indent=None, ensure_ascii=False)
         else:
             formatter = CustomFormatter(
                 format_string=format_string,

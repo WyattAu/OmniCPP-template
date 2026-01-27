@@ -11,7 +11,13 @@ import sys
 import subprocess
 import platform
 from pathlib import Path
-from typing import Dict, List, Tuple, Optional
+from typing import List, Tuple, Optional
+
+# Add parent directory to path to import omni_scripts
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
+from omni_scripts.validators import ConfigValidator, BuildValidator, DependencyValidator
+
 
 class ToolchainValidator:
     """Validates and installs cross-compilation toolchains."""
@@ -57,7 +63,7 @@ class ToolchainValidator:
 
     def _install_with_pm(self, pm: str, tools: List[str]) -> bool:
         """Install tools using the specified package manager."""
-        package_map = {
+        package_map: dict[str, dict[str, str]] = {
             "apt": {
                 "aarch64-linux-gnu-gcc": "gcc-aarch64-linux-gnu",
                 "aarch64-linux-gnu-g++": "g++-aarch64-linux-gnu",
@@ -78,11 +84,11 @@ class ToolchainValidator:
             }
         }
 
-        packages = []
+        packages: list[str] = []
         for tool in tools:
             pkg = package_map.get(pm, {}).get(tool)
             if pkg:
-                packages.append(pkg)
+                packages.append(pkg)  # type: ignore[arg-type]
 
         if not packages:
             return False
@@ -99,7 +105,7 @@ class ToolchainValidator:
         if not self.is_linux:
             return ""
 
-        commands = []
+        commands: list[str] = []
         for pm in ["apt", "dnf", "pacman"]:
             if self._has_package_manager(pm):
                 package_map = {
@@ -125,9 +131,9 @@ class ToolchainValidator:
                 packages = [pkg for tool in missing_tools if (pkg := package_map[pm].get(tool))]
                 if packages:
                     cmd = f"{pm} install {' '.join(packages)}"
-                    commands.append(cmd)
+                    commands.append(cmd)  # type: ignore[arg-type]
 
-        return " | ".join(commands) if commands else ""
+        return " | ".join(commands) if commands else ""  # type: ignore[arg-type]
 
 
 class EnvironmentValidator:
@@ -144,6 +150,11 @@ class EnvironmentValidator:
             "failed": [],
             "warnings": []
         }
+
+        # Initialize validators from omni_scripts
+        self.config_validator = ConfigValidator()
+        self.build_validator = BuildValidator()
+        self.dependency_validator = DependencyValidator()
 
     def run_command(self, cmd: str, shell: bool = False) -> Tuple[bool, str]:
         """Run a command and return success status and output."""
@@ -163,10 +174,10 @@ class EnvironmentValidator:
         """Check if a command is available."""
         success, _ = self.run_command(f"which {command}" if not self.is_windows else f"where {command}")
         if success:
-            self.results["passed"].append(f"✅ {description}: {command}")
+            self.results["passed"].append(f"✅ {description}: {command}")  # type: ignore[arg-type]
             return True
         else:
-            self.results["failed"].append(f"❌ {description}: {command} not found")
+            self.results["failed"].append(f"❌ {description}: {command} not found")  # type: ignore[arg-type]
             return False
 
     def check_version(self, command: str, description: str, min_version: Optional[str] = None) -> bool:
@@ -175,31 +186,31 @@ class EnvironmentValidator:
         if success:
             version = output.split()[0] if output else "unknown"
             if min_version and version < min_version:
-                self.results["warnings"].append(f"⚠️  {description}: {command} version {version} < {min_version}")
+                self.results["warnings"].append(f"⚠️  {description}: {command} version {version} < {min_version}")  # type: ignore[arg-type]
                 return False
             else:
-                self.results["passed"].append(f"✅ {description}: {command} {version}")
+                self.results["passed"].append(f"✅ {description}: {command} {version}")  # type: ignore[arg-type]
                 return True
         else:
-            self.results["failed"].append(f"❌ {description}: {command} not found")
+            self.results["failed"].append(f"❌ {description}: {command} not found")  # type: ignore[arg-type]
             return False
 
     def check_file(self, path: str, description: str) -> bool:
         """Check if a file exists."""
         if os.path.exists(path):
-            self.results["passed"].append(f"✅ {description}: {path}")
+            self.results["passed"].append(f"✅ {description}: {path}")  # type: ignore[arg-type]
             return True
         else:
-            self.results["failed"].append(f"❌ {description}: {path} not found")
+            self.results["failed"].append(f"❌ {description}: {path} not found")  # type: ignore[arg-type]
             return False
 
     def check_directory(self, path: str, description: str) -> bool:
         """Check if a directory exists."""
         if os.path.isdir(path):
-            self.results["passed"].append(f"✅ {description}: {path}")
+            self.results["passed"].append(f"✅ {description}: {path}")  # type: ignore[arg-type]
             return True
         else:
-            self.results["failed"].append(f"❌ {description}: {path} not found")
+            self.results["failed"].append(f"❌ {description}: {path} not found")  # type: ignore[arg-type]
             return False
 
     def validate_essential_tools(self) -> None:
@@ -225,21 +236,21 @@ class EnvironmentValidator:
         compilers = []
 
         if self.is_windows:
-            compilers.extend([
+            compilers.extend([  # type: ignore[arg-type]
                 ("cl", "MSVC compiler"),
                 ("clang-cl", "Clang-MSVC compiler"),
                 ("gcc", "MinGW GCC compiler")
             ])
         else:
-            compilers.extend([
+            compilers.extend([  # type: ignore[arg-type]
                 ("gcc", "GCC compiler"),
                 ("g++", "G++ compiler"),
                 ("clang", "Clang compiler"),
                 ("clang++", "Clang++ compiler")
             ])
 
-        for cmd, desc in compilers:
-            self.check_command(cmd, desc)
+        for cmd, desc in compilers:  # type: ignore[assignment]
+            self.check_command(cmd, desc)  # type: ignore[arg-type]
 
     def validate_package_managers(self) -> None:
         """Validate package managers."""
@@ -264,7 +275,7 @@ class EnvironmentValidator:
                 break
 
         if not vcpkg_found:
-            self.results["warnings"].append("⚠️  vcpkg not found in common locations")
+            self.results["warnings"].append("⚠️  vcpkg not found in common locations")  # type: ignore[arg-type]
 
     def validate_qt_vulkan(self) -> None:
         """Validate Qt and Vulkan development setup."""
@@ -285,7 +296,7 @@ class EnvironmentValidator:
                 break
 
         if not vulkan_found:
-            self.results["warnings"].append("⚠️  Vulkan SDK not found - required for Qt/Vulkan builds")
+            self.results["warnings"].append("⚠️  Vulkan SDK not found - required for Qt/Vulkan builds")  # type: ignore[arg-type]
 
     def validate_cross_compilation(self) -> None:
         """Validate cross-compilation toolchains."""
@@ -299,11 +310,11 @@ class EnvironmentValidator:
 
         for arch, tools in toolchains.items():
             toolchain_ok = True
-            missing_tools = []
+            missing_tools: list[str] = []
             for tool in tools:
                 if not self.check_command(tool, f"{arch} toolchain"):
                     toolchain_ok = False
-                    missing_tools.append(tool)
+                    missing_tools.append(tool)  # type: ignore[arg-type]
 
             if not toolchain_ok:
                 # Try to install missing tools
@@ -312,20 +323,20 @@ class EnvironmentValidator:
                     if validator.install_missing_tools():
                         # Re-check after installation
                         toolchain_ok = True
-                        missing_tools = []
+                        missing_tools: list[str] = []
                         for tool in tools:
                             if not self.check_command(tool, f"{arch} toolchain"):
-                                missing_tools.append(tool)
+                                missing_tools.append(tool)  # type: ignore[arg-type]
                         if missing_tools:
                             toolchain_ok = False
 
                 if not toolchain_ok:
                     # Provide installation commands in error messages
                     install_cmds = self._get_installation_commands(arch, missing_tools)
-                    error_msg = f"⚠️  {arch} toolchain incomplete - missing: {', '.join(missing_tools)}"
+                    error_msg = f"⚠️  {arch} toolchain incomplete - missing: {', '.join(missing_tools)}"  # type: ignore[arg-type]
                     if install_cmds:
                         error_msg += f". Install with: {install_cmds}"
-                    self.results["warnings"].append(error_msg)
+                    self.results["warnings"].append(error_msg)  # type: ignore[arg-type]
 
     def validate_development_tools(self) -> None:
         """Validate additional development tools."""
@@ -341,41 +352,132 @@ class EnvironmentValidator:
         for cmd, desc in tools:
             self.check_command(cmd, desc)
 
-    def print_summary(self) -> None:
+    def validate_project_configuration(self) -> None:
+        """Validate project configuration files using omni_scripts validators."""
+        print("📋 Validating Project Configuration...")
+
+        project_root = Path.cwd()
+
+        # Validate configuration files
+        config_results = self.config_validator.validate_project_configs(project_root)
+
+        for result in config_results:
+            if result.is_valid:
+                self.results["passed"].append(f"✅ Configuration valid: {result.file_path.name}")  # type: ignore[arg-type]
+            else:
+                self.results["failed"].append(f"❌ Configuration invalid: {result.file_path.name}")  # type: ignore[arg-type]
+                for error in result.errors:
+                    self.results["failed"].append(f"   - {error}")  # type: ignore[arg-type]
+            for warning in result.warnings:
+                self.results["warnings"].append(f"⚠️  {result.file_path.name}: {warning}")  # type: ignore[arg-type]
+
+    def validate_dependencies(self) -> None:
+        """Validate project dependencies using omni_scripts validators."""
+        print("📦 Validating Dependencies...")
+
+        project_root = Path.cwd()
+
+        # Validate dependencies
+        dep_result = self.dependency_validator.validate_all_dependencies(project_root)
+
+        if dep_result.is_valid:
+            self.results["passed"].append(f"✅ All dependencies valid ({len(dep_result.dependencies)} found)")  # type: ignore[arg-type]
+        else:
+            self.results["failed"].append(f"❌ Dependency validation failed")  # type: ignore[arg-type]
+            for error in dep_result.errors:
+                self.results["failed"].append(f"   - {error}")  # type: ignore[arg-type]
+
+        for conflict in dep_result.conflicts:
+            self.results["warnings"].append(f"⚠️  Dependency conflict: {conflict}")  # type: ignore[arg-type]
+
+        for issue in dep_result.security_issues:
+            self.results["failed"].append(f"❌ Security issue: {issue}")  # type: ignore[arg-type]
+
+        for issue in dep_result.license_issues:
+            self.results["warnings"].append(f"⚠️  License issue: {issue}")  # type: ignore[arg-type]
+
+        for warning in dep_result.warnings:
+            self.results["warnings"].append(f"⚠️  {warning}")  # type: ignore[arg-type]
+
+    def print_summary(self) -> bool:
         """Print validation summary."""
         print("\n" + "="*60)
         print("ENVIRONMENT VALIDATION SUMMARY")
         print("="*60)
 
-        if self.results["passed"]:
-            print(f"\n✅ PASSED ({len(self.results['passed'])}):")
-            for item in self.results["passed"]:
-                print(f"  {item}")
+        if self.results["passed"]:  # type: ignore[index]
+            print(f"\n✅ PASSED ({len(self.results['passed'])}):")  # type: ignore[arg-type]
+            for item in self.results["passed"]:  # type: ignore[index]
+                print(f"  {item}")  # type: ignore[arg-type]
 
-        if self.results["warnings"]:
-            print(f"\n⚠️  WARNINGS ({len(self.results['warnings'])}):")
-            for item in self.results["warnings"]:
-                print(f"  {item}")
+        if self.results["warnings"]:  # type: ignore[index]
+            print(f"\n⚠️  WARNINGS ({len(self.results['warnings'])}):")  # type: ignore[arg-type]
+            for item in self.results["warnings"]:  # type: ignore[index]
+                print(f"  {item}")  # type: ignore[arg-type]
 
-        if self.results["failed"]:
-            print(f"\n❌ FAILED ({len(self.results['failed'])}):")
-            for item in self.results["failed"]:
-                print(f"  {item}")
+        if self.results["failed"]:  # type: ignore[index]
+            print(f"\n❌ FAILED ({len(self.results['failed'])}):")  # type: ignore[arg-type]
+            for item in self.results["failed"]:  # type: ignore[index]
+                print(f"  {item}")  # type: ignore[arg-type]
 
-        print(f"\nTotal checks: {len(self.results['passed']) + len(self.results['failed']) + len(self.results['warnings'])}")
-        print(f"Passed: {len(self.results['passed'])}, Warnings: {len(self.results['warnings'])}, Failed: {len(self.results['failed'])}")
+        print(f"\nTotal checks: {len(self.results['passed']) + len(self.results['failed']) + len(self.results['warnings'])}")  # type: ignore[arg-type]
+        print(f"Passed: {len(self.results['passed'])}, Warnings: {len(self.results['warnings'])}, Failed: {len(self.results['failed'])}")  # type: ignore[arg-type]
 
-        if self.results["failed"]:
+        if self.results["failed"]:  # type: ignore[index]
             print("\n❌ Some essential tools are missing. Please install them before building.")
             print("See docs/troubleshooting.md for installation instructions.")
             return False
-        elif self.results["warnings"]:
+        elif self.results["warnings"]:  # type: ignore[index]
             print("\n⚠️  Environment is functional but some optional tools are missing.")
             print("Qt/Vulkan builds may require additional setup.")
             return True
         else:
             print("\n✅ Environment validation passed! Ready for OmniCpp development.")
             return True
+
+    def _get_installation_commands(self, arch: str, missing_tools: List[str]) -> str:
+        """Get installation commands for missing tools."""
+        if not self.is_linux:
+            return ""
+
+        commands: list[str] = []
+        for pm in ["apt", "dnf", "pacman"]:
+            if self._has_package_manager(pm):
+                package_map = {
+                    "apt": {
+                        "aarch64-linux-gnu-gcc": "gcc-aarch64-linux-gnu",
+                        "aarch64-linux-gnu-g++": "g++-aarch64-linux-gnu",
+                        "x86_64-linux-gnu-gcc": "gcc-x86-64-linux-gnu",
+                        "x86_64-linux-gnu-g++": "g++-x86-64-linux-gnu"
+                    },
+                    "dnf": {
+                        "aarch64-linux-gnu-gcc": "gcc-aarch64-linux-gnu",
+                        "aarch64-linux-gnu-g++": "gcc-c++-aarch64-linux-gnu",
+                        "x86_64-linux-gnu-gcc": "gcc-x86_64-linux-gnu",
+                        "x86_64-linux-gnu-g++": "gcc-c++-x86_64-linux-gnu"
+                    },
+                    "pacman": {
+                        "aarch64-linux-gnu-gcc": "aarch64-linux-gnu-gcc",
+                        "aarch64-linux-gnu-g++": "aarch64-linux-gnu-gcc",
+                        "x86_64-linux-gnu-gcc": "x86_64-linux-gnu-gcc",
+                        "x86_64-linux-gnu-g++": "x86_64-linux-gnu-gcc"
+                    }
+                }
+                packages = [pkg for tool in missing_tools if (pkg := package_map[pm].get(tool))]
+                if packages:
+                    cmd = f"{pm} install {' '.join(packages)}"
+                    commands.append(cmd)  # type: ignore[arg-type]
+
+        return " | ".join(commands) if commands else ""  # type: ignore[arg-type]
+
+    def _has_package_manager(self, pm: str) -> bool:
+        """Check if package manager is available."""
+        try:
+            subprocess.run([pm, "--version"], capture_output=True, check=True)
+            return True
+        except (subprocess.CalledProcessError, FileNotFoundError):
+            return False
+
 
 def main():
     """Main validation function."""
@@ -391,11 +493,13 @@ def main():
     validator.validate_qt_vulkan()
     validator.validate_cross_compilation()
     validator.validate_development_tools()
+    validator.validate_project_configuration()
+    validator.validate_dependencies()
 
     # Print summary and return exit code
     success = validator.print_summary()
     sys.exit(0 if success else 1)
 
+
 if __name__ == "__main__":
-    main()</content>
-</xai:function_call">The file scripts/validate_environment.py has been created successfully.
+    main()

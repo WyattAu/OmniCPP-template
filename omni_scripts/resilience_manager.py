@@ -39,7 +39,7 @@ try:
     import psutil
     HAS_PSUTIL = True
 except ImportError:
-    psutil = None
+    psutil = None  # type: ignore[assignment]
     HAS_PSUTIL = False
 
 from .build_optimizer import (
@@ -129,7 +129,7 @@ class RetryManager:
         Returns:
             Tuple of (success, result, metadata)
         """
-        metadata = {
+        metadata: Dict[str, Any] = {
             "attempts": 0,
             "total_delay": 0.0,
             "failures": [],
@@ -137,7 +137,7 @@ class RetryManager:
         }
 
         for attempt in range(self.policy.max_attempts):
-            metadata["attempts"] += 1  # type: ignore[operator]
+            metadata["attempts"] += 1
 
             try:
                 start_time = time.time()
@@ -150,8 +150,8 @@ class RetryManager:
                     return True, result, metadata
 
             except Exception as e:
-                error_info = {
-                    "attempt": attempt + 1,  # type: ignore[operator]
+                error_info: Dict[str, Any] = {
+                    "attempt": attempt + 1,
                     "error": str(e),
                     "timestamp": datetime.now().isoformat()
                 }
@@ -163,7 +163,7 @@ class RetryManager:
                 # Don't retry on the last attempt
                 if attempt < self.policy.max_attempts - 1:
                     delay = self._calculate_delay(attempt)
-                    metadata["total_delay"] += delay  # type: ignore[operator]
+                    metadata["total_delay"] += delay
                     logging.info(f"Waiting {delay:.1f}s before retry...")
                     time.sleep(delay)
 
@@ -423,11 +423,11 @@ class TimeoutHandler:
         config = self.timeout_configs.get(config_key, self.timeout_configs["default"])
 
         return {
-            "clean": config.clean,
-            "configure": config.configure,
-            "build": config.build,
-            "total": config.total
-        }  # type: ignore[dict-item]
+            "clean": str(config.clean),
+            "configure": str(config.configure),
+            "build": str(config.build),
+            "total": str(config.total)
+        }
 
     def handle_timeout(self, build_context: Dict[str, Any], elapsed_time: float) -> Dict[str, Any]:
         """Handle a timeout scenario and suggest recovery actions."""

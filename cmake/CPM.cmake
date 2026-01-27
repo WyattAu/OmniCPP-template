@@ -15,7 +15,7 @@ if(NOT EXISTS "${CPM_DOWNLOAD_LOCATION}")
     file(DOWNLOAD
         https://github.com/cpm-cmake/CPM.cmake/releases/download/v${CPM_VERSION}/CPM.cmake
         "${CPM_DOWNLOAD_LOCATION}"
-        EXPECTED_HASH SHA256=5b975f3d8b9c8e7f6b5e8f8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8
+        EXPECTED_HASH SHA256=c8cdc32c03816538ce22781ed72964dc864b2a34a310d3b7104812a5ca2d835d
         SHOW_PROGRESS
     )
 

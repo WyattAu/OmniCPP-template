@@ -55,7 +55,3 @@ if(OMNICPP_USE_VCPKG)
 else()
     message(STATUS "vcpkg integration disabled")
 endif()
-
-# Export vcpkg variables
-set(OMNICPP_VCPKG_ENABLED ${OMNICPP_VCPKG_ENABLED} PARENT_SCOPE)
-set(VCPKG_TARGET_TRIPLET ${VCPKG_TARGET_TRIPLET} PARENT_SCOPE)

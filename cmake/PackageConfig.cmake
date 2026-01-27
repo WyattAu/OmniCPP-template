@@ -141,7 +141,7 @@ set(CPACK_SOURCE_IGNORE_FILES
     "*.pyc"
     "__pycache__"
     ".pytest_cache"
-)
+    )
 
 # ============================================================================
 # Package Configuration Summary
@@ -157,9 +157,3 @@ message(STATUS "Components: ${CPACK_COMPONENTS_ALL}")
 message(STATUS "Checksum: ${CPACK_PACKAGE_CHECKSUM}")
 message(STATUS "==========================")
 message(STATUS "")
-
-# Export package variables
-set(CPACK_PACKAGE_NAME ${CPACK_PACKAGE_NAME} PARENT_SCOPE)
-set(CPACK_PACKAGE_VERSION ${CPACK_PACKAGE_VERSION} PARENT_SCOPE)
-set(CPACK_GENERATOR ${CPACK_GENERATOR} PARENT_SCOPE)
-set(CPACK_PACKAGE_DIRECTORY ${CPACK_PACKAGE_DIRECTORY} PARENT_SCOPE)

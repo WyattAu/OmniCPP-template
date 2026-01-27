@@ -6,6 +6,7 @@
 #include "engine/resources/resource_manager.hpp"
 #include <mutex>
 #include <unordered_map>
+#include <spdlog/spdlog.h>
 
 namespace OmniCpp::Engine::Resources {
 
@@ -44,12 +45,14 @@ namespace OmniCpp::Engine::Resources {
     std::lock_guard<std::mutex> lock (m_impl->mutex);
 
     if (m_impl->initialized) {
+      spdlog::warn("ResourceManager: Already initialized");
       return true;
     }
 
     m_impl->resources.clear ();
     m_impl->initialized = true;
 
+    spdlog::info("ResourceManager: Initialized");
     return true;
   }
 
@@ -62,6 +65,8 @@ namespace OmniCpp::Engine::Resources {
 
     m_impl->resources.clear ();
     m_impl->initialized = false;
+
+    spdlog::info("ResourceManager: Shutdown");
   }
 
   void ResourceManager::update () {
@@ -70,15 +75,17 @@ namespace OmniCpp::Engine::Resources {
   }
 
   bool ResourceManager::load_resource (const std::string& name, const std::string& path,
-      ResourceType type) {
+       ResourceType type) {
     std::lock_guard<std::mutex> lock (m_impl->mutex);
 
     if (!m_impl->initialized) {
+      spdlog::error("ResourceManager: Not initialized, cannot load resource: {}", name);
       return false;
     }
 
     Impl::ResourceInfo info{ path, type };
     m_impl->resources[name] = info;
+    spdlog::debug("ResourceManager: Loaded resource '{}' from '{}' (type: {})", name, path, static_cast<int>(type));
     return true;
   }
 
@@ -86,14 +93,17 @@ namespace OmniCpp::Engine::Resources {
     std::lock_guard<std::mutex> lock (m_impl->mutex);
 
     if (!m_impl->initialized) {
+      spdlog::error("ResourceManager: Not initialized, cannot unload resource: {}", name);
       return false;
     }
 
     auto it = m_impl->resources.find (name);
     if (it != m_impl->resources.end ()) {
       m_impl->resources.erase (it);
+      spdlog::debug("ResourceManager: Unloaded resource '{}'", name);
       return true;
     }
+    spdlog::warn("ResourceManager: Resource '{}' not found", name);
     return false;
   }
 

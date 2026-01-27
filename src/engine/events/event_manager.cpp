@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <mutex>
 #include <unordered_map>
+#include <spdlog/spdlog.h>
 
 namespace OmniCpp::Engine::Events {
 
@@ -42,12 +43,14 @@ namespace OmniCpp::Engine::Events {
     std::lock_guard<std::mutex> lock (m_impl->mutex);
 
     if (m_impl->initialized) {
+      spdlog::warn("EventManager: Already initialized");
       return true;
     }
 
     m_impl->subscribers.clear ();
     m_impl->initialized = true;
 
+    spdlog::info("EventManager: Initialized");
     return true;
   }
 
@@ -60,17 +63,21 @@ namespace OmniCpp::Engine::Events {
 
     m_impl->subscribers.clear ();
     m_impl->initialized = false;
+
+    spdlog::info("EventManager: Shutdown");
   }
 
   void EventManager::publish (Event& event) {
     std::lock_guard<std::mutex> lock (m_impl->mutex);
 
     if (!m_impl->initialized) {
+      spdlog::error("EventManager: Not initialized, cannot publish event");
       return;
     }
 
     auto it = m_impl->subscribers.find (event.get_type ());
     if (it != m_impl->subscribers.end ()) {
+      spdlog::debug("EventManager: Publishing event type {} to {} subscribers", static_cast<int>(event.get_type()), it->second.size());
       for (const auto& callback : it->second) {
         callback (event);
       }
@@ -81,16 +88,19 @@ namespace OmniCpp::Engine::Events {
     std::lock_guard<std::mutex> lock (m_impl->mutex);
 
     if (!m_impl->initialized) {
+      spdlog::error("EventManager: Not initialized, cannot subscribe to event type {}", static_cast<int>(type));
       return;
     }
 
     m_impl->subscribers[type].push_back (callback);
+    spdlog::debug("EventManager: Subscribed to event type {}", static_cast<int>(type));
   }
 
   void EventManager::unsubscribe (EventType type, EventCallback callback) {
     std::lock_guard<std::mutex> lock (m_impl->mutex);
 
     if (!m_impl->initialized) {
+      spdlog::error("EventManager: Not initialized, cannot unsubscribe from event type {}", static_cast<int>(type));
       return;
     }
 
@@ -99,6 +109,7 @@ namespace OmniCpp::Engine::Events {
       auto& callbacks = it->second;
       auto new_end = std::remove (callbacks.begin (), callbacks.end (), callback);
       callbacks.erase (new_end, callbacks.end ());
+      spdlog::debug("EventManager: Unsubscribed from event type {}", static_cast<int>(type));
     }
   }
 

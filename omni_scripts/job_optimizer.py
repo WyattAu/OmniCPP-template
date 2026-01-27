@@ -25,18 +25,12 @@ from pathlib import Path
 from typing import Dict, Any, Optional
 import psutil
 
-try:
-    from .build_optimizer import HistoricalPerformanceTracker
-except ImportError:
-    HistoricalPerformanceTracker: Optional[Any] = None
-
-
 class JobOptimizer:
     """Optimizes parallel job counts for build operations."""
 
     def __init__(self, workspace_dir: Path) -> None:
         self.workspace_dir = workspace_dir
-        self.performance_tracker: Optional[Any] = HistoricalPerformanceTracker(workspace_dir / ".omnicpp" / "optimization") if HistoricalPerformanceTracker else None
+        self.performance_tracker: Optional[Any] = None
 
     def get_system_resources(self) -> Dict[str, Any]:
         """Get current system resource information."""

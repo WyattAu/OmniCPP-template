@@ -87,7 +87,7 @@ public:
      * @brief Static identity matrix
      * @return Identity matrix
      */
-    static Mat4 identity() {
+    static Mat4 create_identity() {
         return Mat4();
     }
 
@@ -192,14 +192,14 @@ public:
 
     /**
      * @brief Create translation matrix
-     * @param translation Translation vector
+     * @param translation_vec Translation vector
      * @return Translation matrix
      */
-    static Mat4 translation(const Vec3& translation) {
+    static Mat4 translation(const Vec3& translation_vec) {
         Mat4 result;
-        result.m[3][0] = translation.x;
-        result.m[3][1] = translation.y;
-        result.m[3][2] = translation.z;
+        result.m[3][0] = translation_vec.x;
+        result.m[3][1] = translation_vec.y;
+        result.m[3][2] = translation_vec.z;
         return result;
     }
 
@@ -256,32 +256,32 @@ public:
      * @param euler Rotation vector (pitch, yaw, roll) in radians
      * @return Rotation matrix
      */
-    static Mat4 rotation(const Vec3& euler) {
+    static Mat4 rotation_from_euler(const Vec3& euler) {
         return rotation_x(euler.x) * rotation_y(euler.y) * rotation_z(euler.z);
     }
 
     /**
      * @brief Create scale matrix
-     * @param scale Scale vector
+     * @param scale_vec Scale vector
      * @return Scale matrix
      */
-    static Mat4 scale(const Vec3& scale) {
+    static Mat4 scale(const Vec3& scale_vec) {
         Mat4 result;
-        result.m[0][0] = scale.x;
-        result.m[1][1] = scale.y;
-        result.m[2][2] = scale.z;
+        result.m[0][0] = scale_vec.x;
+        result.m[1][1] = scale_vec.y;
+        result.m[2][2] = scale_vec.z;
         return result;
     }
 
     /**
      * @brief Create transformation matrix from position, rotation, and scale
      * @param position Position vector
-     * @param rotation Rotation vector (Euler angles in radians)
-     * @param scale Scale vector
+     * @param euler_angles Rotation vector (Euler angles in radians)
+     * @param scale_vec Scale vector
      * @return Transformation matrix
      */
-    static Mat4 transform(const Vec3& position, const Vec3& rotation, const Vec3& scale) {
-        return translation(position) * rotation(rotation) * scale(scale);
+    static Mat4 transform(const Vec3& position, const Vec3& euler_angles, const Vec3& scale_vec) {
+        return translation(position) * rotation_from_euler(euler_angles) * scale(scale_vec);
     }
 
     /**
@@ -410,7 +410,7 @@ public:
         if (std::abs(det) < 1e-6f) {
             return result; // Return identity if singular
         }
-        
+
         // For now, return identity (full implementation is complex)
         // TODO: Implement proper matrix inversion
         return result;
