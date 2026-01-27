@@ -36,7 +36,7 @@ jobs:
           python OmniCppController.py build engine "Clean Build Pipeline" default ${{ matrix.config }} --compiler msvc
       
       - name: Upload artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: build-msvc-${{ matrix.config }}
           path: build/
@@ -70,7 +70,7 @@ jobs:
           python OmniCppController.py build engine "Clean Build Pipeline" default ${{ matrix.config }} --compiler clang-msvc
       
       - name: Upload artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: build-clang-msvc-${{ matrix.config }}
           path: build/
@@ -104,7 +104,7 @@ jobs:
           python OmniCppController.py build engine "Clean Build Pipeline" default ${{ matrix.config }} --compiler mingw-gcc
       
       - name: Upload artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: build-mingw-gcc-${{ matrix.config }}
           path: build/
@@ -138,7 +138,7 @@ jobs:
           python OmniCppController.py build engine "Clean Build Pipeline" default ${{ matrix.config }} --compiler mingw-clang
       
       - name: Upload artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: build-mingw-clang-${{ matrix.config }}
           path: build/
@@ -174,7 +174,7 @@ jobs:
           python OmniCppController.py build engine "Clean Build Pipeline" default ${{ matrix.config }} --compiler gcc
       
       - name: Upload artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: build-gcc-${{ matrix.config }}
           path: build/
@@ -210,7 +210,7 @@ jobs:
           python OmniCppController.py build engine "Clean Build Pipeline" default ${{ matrix.config }} --compiler clang
       
       - name: Upload artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: build-clang-${{ matrix.config }}
           path: build/
