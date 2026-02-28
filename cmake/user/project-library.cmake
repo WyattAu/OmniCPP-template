@@ -102,6 +102,7 @@ target_compile_options(
 )
 
 # C++ standard
+# Using C++23 as per ADR-016: C++23 Without Modules
 target_compile_features(${LIBRARY_NAME} PUBLIC cxx_std_23)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)

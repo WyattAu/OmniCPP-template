@@ -1,45 +1,33 @@
-cmake_minimum_required(VERSION 4.0)
-set(CMAKE_POLICY_VERSION_MINIMUM 3.5)
+cmake_minimum_required(VERSION 3.28...4.0)
 project(OmniCppTests VERSION 1.0.0 LANGUAGES CXX)
 
 # C++ standard
+# Using C++23 as per ADR-016: C++23 Without Modules
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 # Find dependencies
-find_package(Vulkan)
+# Vulkan is configured in cmake/FindDependencies.cmake for Nix environment
 find_package(Qt6 COMPONENTS Core Gui Widgets)
 find_package(Threads REQUIRED)
 
-# Find Google Test
-find_package(GTest QUIET)
-
-if(NOT GTest_FOUND)
-    # Use CPM to fetch Google Test if not found
-    include(${CMAKE_SOURCE_DIR}/cmake/CPM.cmake)
-    CPMAddPackage(
-        NAME googletest
-        GITHUB_REPOSITORY google/googletest
-        VERSION 1.14.0
-        GIT_TAG v1.14.0
-        OPTIONS "INSTALL_GTEST OFF"
-    )
-endif()
+# Find Google Test - use the one already found by parent CMakeLists.txt
+# The parent CMakeLists.txt (FindDependencies.cmake) already handles GTest via CPM
+# so we don't need to find it again here
 
 # Include directories
-include_directories(${CMAKE_SOURCE_DIR}/../include)
+include_directories(${CMAKE_SOURCE_DIR}/include)
 
 # Unit test executable
 add_executable(omnicpp_unit_tests
-    unit/test_spdlog_logger.cpp
-    unit/test_engine_core.cpp
+    unit/test_quill_logger.cpp
     unit/test_input_manager.cpp
     unit/test_resource_manager.cpp
     unit/test_physics_engine.cpp
     unit/test_audio_manager.cpp
     unit/test_ecs.cpp
-)
+    )
 
 target_link_libraries(omnicpp_unit_tests
     PRIVATE

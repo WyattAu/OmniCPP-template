@@ -5,7 +5,7 @@
  */
 
 #include "engine/IInputManager.hpp"
-#include <spdlog/spdlog.h>
+#include "engine/logging/Log.hpp"
 
 namespace omnicpp {
 
@@ -15,12 +15,12 @@ public:
     ~InputManagerStub() override = default;
 
     bool initialize() override {
-        spdlog::info("Input manager initialized");
+        omnicpp::log::info("Input manager initialized");
         return true;
     }
 
     void shutdown() override {
-        spdlog::info("Input manager shutdown");
+        omnicpp::log::info("Input manager shutdown");
     }
 
     void process_events([[maybe_unused]] float delta_time) noexcept override {
@@ -30,11 +30,11 @@ public:
         return m_state;
     }
 
-    bool is_key_pressed(uint32_t key_code) const noexcept override {
+    bool is_key_pressed([[maybe_unused]] uint32_t key_code) const noexcept override {
         return false;
     }
 
-    bool is_mouse_button_pressed(uint32_t button) const noexcept override {
+    bool is_mouse_button_pressed([[maybe_unused]] uint32_t button) const noexcept override {
         return false;
     }
 

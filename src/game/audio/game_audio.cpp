@@ -4,45 +4,45 @@
  */
 
 #include "game/audio/game_audio.hpp"
-#include <spdlog/spdlog.h>
+#include "engine/logging/Log.hpp"
 #include <string>
 
 namespace OmniCpp::Game::Audio {
 
   GameAudio::GameAudio () : m_initialized (false) {
-    spdlog::info ("GameAudio instance created");
+    omnicpp::log::info ("GameAudio instance created");
   }
 
   GameAudio::~GameAudio () {
     if (m_initialized) {
-      spdlog::warn ("GameAudio destroyed without explicit shutdown");
+      omnicpp::log::warn ("GameAudio destroyed without explicit shutdown");
     }
-    spdlog::info ("GameAudio instance destroyed");
+    omnicpp::log::info ("GameAudio instance destroyed");
   }
 
   void GameAudio::initialize () {
     if (m_initialized) {
-      spdlog::warn ("GameAudio already initialized, skipping");
+      omnicpp::log::warn ("GameAudio already initialized, skipping");
       return;
     }
 
-    spdlog::info ("Initializing game audio...");
+    omnicpp::log::info ("Initializing game audio...");
 
     // TODO: Initialize audio subsystem
     // TODO: Setup audio device
     // TODO: Load audio resources
 
     m_initialized = true;
-    spdlog::info ("GameAudio initialized successfully");
+    omnicpp::log::info ("GameAudio initialized successfully");
   }
 
   void GameAudio::play_sound (const std::string& sound_id) {
     if (!m_initialized) {
-      spdlog::error ("Cannot play sound: GameAudio not initialized");
+      omnicpp::log::error ("Cannot play sound: GameAudio not initialized");
       return;
     }
 
-    spdlog::debug ("Playing sound: {}", sound_id);
+    omnicpp::log::debug ("Playing sound: {}", sound_id);
 
     // TODO: Play sound by ID
     // TODO: Handle sound playback

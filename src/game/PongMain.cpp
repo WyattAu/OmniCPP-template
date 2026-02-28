@@ -15,7 +15,7 @@
 #include "engine/IPlatform.hpp"
 #include <iostream>
 #include <memory>
-#include <spdlog/spdlog.h>
+#include "engine/logging/Log.hpp"
 
 // Platform-specific dynamic loading
 #ifdef _WIN32

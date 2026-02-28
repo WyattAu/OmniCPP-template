@@ -4,24 +4,25 @@
  */
 
 #include "engine/core/engine.hpp"
-#include "engine/audio/audio_manager.hpp"
+#include "engine/audio/AudioManager.hpp"
 #include "engine/events/event_manager.hpp"
 #include "engine/graphics/renderer.hpp"
-#include "engine/input/input_manager.hpp"
+#include "engine/input/InputManager.hpp"
 #include "engine/logging/logger.hpp"
 #include "engine/memory/memory_manager.hpp"
 #include "engine/network/network_manager.hpp"
-#include "engine/physics/physics_engine.hpp"
+#include "engine/physics/PhysicsEngine.hpp"
 #include "engine/platform/platform.hpp"
-#include "engine/resources/resource_manager.hpp"
-#include "engine/scene/scene_manager.hpp"
-#include "engine/scripting/script_manager.hpp"
+#include "engine/resources/ResourceManager.hpp"
+#include "engine/scene/SceneManager.hpp"
+#include "engine/scripting/ScriptManager.hpp"
 #include "engine/window/window_manager.hpp"
 #include <chrono>
 #include <thread>
-#include <spdlog/spdlog.h>
+#include "engine/logging/Log.hpp"
 
-namespace OmniCpp::Engine::Core {
+namespace omnicpp {
+namespace core {
 
   /**
    * @brief Private implementation structure (Pimpl idiom)
@@ -29,19 +30,19 @@ namespace OmniCpp::Engine::Core {
   struct Engine::Impl {
     EngineConfig config;
     bool running{ false };
-    std::unique_ptr<Logging::Logger> logger;
-    std::unique_ptr<Memory::MemoryManager> memory_manager;
-    std::unique_ptr<Events::EventManager> event_manager;
-    std::unique_ptr<Input::InputManager> input_manager;
-    std::unique_ptr<Window::WindowManager> window_manager;
-    std::unique_ptr<Graphics::Renderer> renderer;
-    std::unique_ptr<Audio::AudioManager> audio_manager;
-    std::unique_ptr<Resources::ResourceManager> resource_manager;
-    std::unique_ptr<Physics::PhysicsEngine> physics_engine;
-    std::unique_ptr<Scene::SceneManager> scene_manager;
-    std::unique_ptr<Scripting::ScriptManager> script_manager;
-    std::unique_ptr<Network::NetworkManager> network_manager;
-    std::unique_ptr<Platform::Platform> platform;
+    std::unique_ptr<logging::Logger> logger;
+    std::unique_ptr<memory::MemoryManager> memory_manager;
+    std::unique_ptr<events::EventManager> event_manager;
+    std::unique_ptr<input::InputManager> input_manager;
+    std::unique_ptr<window::WindowManager> window_manager;
+    std::unique_ptr<graphics::Renderer> renderer;
+    std::unique_ptr<audio::AudioManager> audio_manager;
+    std::unique_ptr<resources::ResourceManager> resource_manager;
+    std::unique_ptr<physics::PhysicsEngine> physics_engine;
+    std::unique_ptr<scene::SceneManager> scene_manager;
+    std::unique_ptr<scripting::ScriptManager> script_manager;
+    std::unique_ptr<network::NetworkManager> network_manager;
+    std::unique_ptr<platform::Platform> platform;
 
     std::chrono::steady_clock::time_point last_frame_time;
     float accumulated_time{ 0.0f };
@@ -335,4 +336,5 @@ namespace OmniCpp::Engine::Core {
     return m_impl->config;
   }
 
-} // namespace OmniCpp::Engine::Core
+} // namespace core
+} // namespace omnicpp

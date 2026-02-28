@@ -1,6 +1,6 @@
-#include <spdlog/spdlog.h>
+#include "engine/logging/Log.hpp"
 
 int main() {
-    spdlog::info("Hello, World!");
+    omnicpp::log::info("Hello, World!");
     return 0;
 }

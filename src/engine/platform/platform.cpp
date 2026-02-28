@@ -6,7 +6,7 @@
 #include "engine/platform/platform.hpp"
 #include <chrono>
 #include <mutex>
-#include <spdlog/spdlog.h>
+#include "engine/logging/Log.hpp"
 
 #ifdef _WIN32
   #include <windows.h>
@@ -46,7 +46,7 @@ namespace OmniCpp::Engine::Platform {
     std::lock_guard<std::mutex> lock (m_impl->mutex);
 
     if (m_impl->initialized) {
-      spdlog::warn("Platform: Already initialized");
+      omnicpp::log::warn("Platform: Already initialized");
       return true;
     }
 
@@ -69,7 +69,7 @@ namespace OmniCpp::Engine::Platform {
 
     m_impl->initialized = true;
 
-    spdlog::info("Platform: Initialized as {}", get_platform_name());
+    omnicpp::log::info("Platform: Initialized as {}", get_platform_name());
     return true;
   }
 
@@ -82,7 +82,7 @@ namespace OmniCpp::Engine::Platform {
 
     m_impl->initialized = false;
 
-    spdlog::info("Platform: Shutdown");
+    omnicpp::log::info("Platform: Shutdown");
   }
 
   PlatformType Platform::get_platform_type () const {

@@ -3,12 +3,13 @@
  * @brief Resource management implementation
  */
 
-#include "engine/resources/resource_manager.hpp"
+#include "engine/resources/ResourceManager.hpp"
 #include <mutex>
 #include <unordered_map>
-#include <spdlog/spdlog.h>
+#include "engine/logging/Log.hpp"
 
-namespace OmniCpp::Engine::Resources {
+namespace omnicpp {
+namespace resources {
 
   /**
    * @brief Private implementation structure (Pimpl idiom)
@@ -45,14 +46,14 @@ namespace OmniCpp::Engine::Resources {
     std::lock_guard<std::mutex> lock (m_impl->mutex);
 
     if (m_impl->initialized) {
-      spdlog::warn("ResourceManager: Already initialized");
+      omnicpp::log::warn("ResourceManager: Already initialized");
       return true;
     }
 
     m_impl->resources.clear ();
     m_impl->initialized = true;
 
-    spdlog::info("ResourceManager: Initialized");
+    omnicpp::log::info("ResourceManager: Initialized");
     return true;
   }
 
@@ -66,7 +67,7 @@ namespace OmniCpp::Engine::Resources {
     m_impl->resources.clear ();
     m_impl->initialized = false;
 
-    spdlog::info("ResourceManager: Shutdown");
+    omnicpp::log::info("ResourceManager: Shutdown");
   }
 
   void ResourceManager::update () {
@@ -79,13 +80,13 @@ namespace OmniCpp::Engine::Resources {
     std::lock_guard<std::mutex> lock (m_impl->mutex);
 
     if (!m_impl->initialized) {
-      spdlog::error("ResourceManager: Not initialized, cannot load resource: {}", name);
+      omnicpp::log::error("ResourceManager: Not initialized, cannot load resource: {}", name);
       return false;
     }
 
     Impl::ResourceInfo info{ path, type };
     m_impl->resources[name] = info;
-    spdlog::debug("ResourceManager: Loaded resource '{}' from '{}' (type: {})", name, path, static_cast<int>(type));
+    omnicpp::log::debug("ResourceManager: Loaded resource '{}' from '{}' (type: {})", name, path, static_cast<int>(type));
     return true;
   }
 
@@ -93,17 +94,17 @@ namespace OmniCpp::Engine::Resources {
     std::lock_guard<std::mutex> lock (m_impl->mutex);
 
     if (!m_impl->initialized) {
-      spdlog::error("ResourceManager: Not initialized, cannot unload resource: {}", name);
+      omnicpp::log::error("ResourceManager: Not initialized, cannot unload resource: {}", name);
       return false;
     }
 
     auto it = m_impl->resources.find (name);
     if (it != m_impl->resources.end ()) {
       m_impl->resources.erase (it);
-      spdlog::debug("ResourceManager: Unloaded resource '{}'", name);
+      omnicpp::log::debug("ResourceManager: Unloaded resource '{}'", name);
       return true;
     }
-    spdlog::warn("ResourceManager: Resource '{}' not found", name);
+    omnicpp::log::warn("ResourceManager: Resource '{}' not found", name);
     return false;
   }
 
@@ -112,4 +113,5 @@ namespace OmniCpp::Engine::Resources {
     return m_impl->resources.find (name) != m_impl->resources.end ();
   }
 
-} // namespace OmniCpp::Engine::Resources
+} // namespace resources
+} // namespace omnicpp

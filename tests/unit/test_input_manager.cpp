@@ -10,141 +10,127 @@
 namespace omnicpp {
 namespace test {
 
+using input::InputManager;
+using input::KeyCode;
+using input::MouseButton;
+using input::InputEvent;
+using input::InputCallback;
+
 class InputManagerTest : public ::testing::Test {
 protected:
     void SetUp() override {
-        input_manager_ = std::make_unique<InputManager>();
+        input_manager = std::make_unique<InputManager>();
     }
 
     void TearDown() override {
-        if (input_manager_) {
-            input_manager_->shutdown();
+        if (input_manager) {
+            input_manager->shutdown();
         }
     }
 
-    std::unique_ptr<InputManager> input_manager_;
+    std::unique_ptr<InputManager> input_manager;
 };
 
 TEST_F(InputManagerTest, DefaultInitialization) {
-    ASSERT_TRUE(input_manager_->initialize());
+    ASSERT_TRUE(input_manager->initialize());
 }
 
 TEST_F(InputManagerTest, MultipleInitialization) {
-    ASSERT_TRUE(input_manager_->initialize());
-    input_manager_->shutdown();
+    ASSERT_TRUE(input_manager->initialize());
+    input_manager->shutdown();
 
     // Re-initialize should work
-    ASSERT_TRUE(input_manager_->initialize());
-    input_manager_->shutdown();
+    ASSERT_TRUE(input_manager->initialize());
+    input_manager->shutdown();
 }
 
 TEST_F(InputManagerTest, ShutdownWithoutInitialize) {
     // Should not crash
-    input_manager_->shutdown();
+    input_manager->shutdown();
 }
 
-TEST_F(InputManagerTest, UpdateWithoutInitialize) {
+TEST_F(InputManagerTest, ProcessEventsWithoutInitialize) {
     // Should not crash
-    input_manager_->update();
+    input_manager->process_events();
+}
+
+TEST_F(InputManagerTest, ProcessEventsAfterInitialize) {
+    ASSERT_TRUE(input_manager->initialize());
+    
+    // Should not crash
+    input_manager->process_events();
 }
 
 TEST_F(InputManagerTest, IsKeyPressed) {
-    ASSERT_TRUE(input_manager_->initialize());
+    ASSERT_TRUE(input_manager->initialize());
 
     // Test key press check (should return false for unpressed keys)
-    bool pressed = input_manager_->is_key_pressed(KeyCode::KEY_A);
+    bool pressed = input_manager->is_key_pressed(KeyCode::A);
     // We don't assert the value as it depends on the actual input state
+    (void)pressed;
 }
 
 TEST_F(InputManagerTest, IsMouseButtonPressed) {
-    ASSERT_TRUE(input_manager_->initialize());
+    ASSERT_TRUE(input_manager->initialize());
 
     // Test mouse button press check
-    bool pressed = input_manager_->is_mouse_button_pressed(MouseButton::LEFT);
+    bool pressed = input_manager->is_mouse_button_pressed(MouseButton::LEFT);
     // We don't assert the value as it depends on the actual input state
+    (void)pressed;
 }
 
 TEST_F(InputManagerTest, GetMousePosition) {
-    ASSERT_TRUE(input_manager_->initialize());
+    ASSERT_TRUE(input_manager->initialize());
 
-    auto position = input_manager_->get_mouse_position();
+    float x, y;
+    input_manager->get_mouse_position(x, y);
     // We don't assert the value as it depends on the actual input state
+    (void)x;
+    (void)y;
 }
 
 TEST_F(InputManagerTest, GetMouseDelta) {
-    ASSERT_TRUE(input_manager_->initialize());
+    ASSERT_TRUE(input_manager->initialize());
 
-    auto delta = input_manager_->get_mouse_delta();
+    float x, y;
+    input_manager->get_mouse_delta(x, y);
     // We don't assert the value as it depends on the actual input state
+    (void)x;
+    (void)y;
 }
 
-TEST_F(InputManagerTest, GetMouseWheel) {
-    ASSERT_TRUE(input_manager_->initialize());
+TEST_F(InputManagerTest, GetScrollDelta) {
+    ASSERT_TRUE(input_manager->initialize());
 
-    auto wheel = input_manager_->get_mouse_wheel();
+    float x, y;
+    input_manager->get_scroll_delta(x, y);
     // We don't assert the value as it depends on the actual input state
+    (void)x;
+    (void)y;
 }
 
-TEST_F(InputManagerTest, SetMousePosition) {
-    ASSERT_TRUE(input_manager_->initialize());
+TEST_F(InputManagerTest, RegisterCallback) {
+    ASSERT_TRUE(input_manager->initialize());
 
     // Should not crash
-    input_manager_->set_mouse_position(100, 100);
+    InputCallback callback = [](const InputEvent& event) {
+        (void)event;
+    };
+    input_manager->register_callback(callback);
 }
 
-TEST_F(InputManagerTest, SetMouseCursorVisible) {
-    ASSERT_TRUE(input_manager_->initialize());
+TEST_F(InputManagerTest, MultipleCallbacks) {
+    ASSERT_TRUE(input_manager->initialize());
 
-    // Should not crash
-    input_manager_->set_mouse_cursor_visible(true);
-    input_manager_->set_mouse_cursor_visible(false);
-    input_manager_->set_mouse_cursor_visible(true);
-}
-
-TEST_F(InputManagerTest, SetMouseCursorLocked) {
-    ASSERT_TRUE(input_manager_->initialize());
-
-    // Should not crash
-    input_manager_->set_mouse_cursor_locked(true);
-    input_manager_->set_mouse_cursor_locked(false);
-}
-
-TEST_F(InputManagerTest, GetGamepadCount) {
-    ASSERT_TRUE(input_manager_->initialize());
-
-    auto count = input_manager_->get_gamepad_count();
-    ASSERT_GE(count, 0);
-}
-
-TEST_F(InputManagerTest, IsGamepadConnected) {
-    ASSERT_TRUE(input_manager_->initialize());
-
-    // Test gamepad connection check
-    bool connected = input_manager_->is_gamepad_connected(0);
-    // We don't assert the value as it depends on the actual hardware
-}
-
-TEST_F(InputManagerTest, IsGamepadButtonPressed) {
-    ASSERT_TRUE(input_manager_->initialize());
-
-    // Test gamepad button press check
-    bool pressed = input_manager_->is_gamepad_button_pressed(0, GamepadButton::A);
-    // We don't assert the value as it depends on the actual hardware
-}
-
-TEST_F(InputManagerTest, GetGamepadAxis) {
-    ASSERT_TRUE(input_manager_->initialize());
-
-    // Test gamepad axis value
-    float value = input_manager_->get_gamepad_axis(0, GamepadAxis::LEFT_STICK_X);
-    // We don't assert the value as it depends on the actual hardware
-}
-
-TEST_F(InputManagerTest, SetGamepadVibration) {
-    ASSERT_TRUE(input_manager_->initialize());
-
-    // Should not crash
-    input_manager_->set_gamepad_vibration(0, 0.5f, 0.5f);
+    InputCallback callback1 = [](const InputEvent& event) {
+        (void)event;
+    };
+    InputCallback callback2 = [](const InputEvent& event) {
+        (void)event;
+    };
+    
+    input_manager->register_callback(callback1);
+    input_manager->register_callback(callback2);
 }
 
 } // namespace test

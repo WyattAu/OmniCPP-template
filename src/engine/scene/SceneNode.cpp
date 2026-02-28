@@ -6,21 +6,21 @@
 
 #include "engine/scene/SceneNode.hpp"
 #include "engine/ecs/TransformComponent.hpp"
-#include <spdlog/spdlog.h>
+#include "engine/logging/Log.hpp"
 
 namespace omnicpp {
 namespace scene {
 
 SceneNode::SceneNode(const std::string& name)
     : m_name(name) {
-    spdlog::debug("SceneNode: Created node '{}'", name);
+    omnicpp::log::debug("SceneNode: Created node '{}'", name);
 }
 
 SceneNode::~SceneNode() = default;
 
 void SceneNode::add_child(std::unique_ptr<SceneNode> child) {
     if (child) {
-        spdlog::debug("SceneNode: Adding child '{}' to node '{}'", child->get_name(), m_name);
+        omnicpp::log::debug("SceneNode: Adding child '{}' to node '{}'", child->get_name(), m_name);
         child->m_parent = this;
         m_children.push_back(std::move(child));
     }
@@ -29,7 +29,7 @@ void SceneNode::add_child(std::unique_ptr<SceneNode> child) {
 std::unique_ptr<SceneNode> SceneNode::remove_child(SceneNode* child) {
     for (auto it = m_children.begin(); it != m_children.end(); ++it) {
         if (it->get() == child) {
-            spdlog::debug("SceneNode: Removing child '{}' from node '{}'", child->get_name(), m_name);
+            omnicpp::log::debug("SceneNode: Removing child '{}' from node '{}'", child->get_name(), m_name);
             auto removed = std::move(*it);
             m_children.erase(it);
             child->m_parent = nullptr;

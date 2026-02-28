@@ -5,7 +5,7 @@
  */
 
 #include "engine/IRenderer.hpp"
-#include <spdlog/spdlog.h>
+#include "engine/logging/Log.hpp"
 
 namespace omnicpp {
 
@@ -15,12 +15,12 @@ public:
     ~RendererStub() override = default;
 
     bool initialize() override {
-        spdlog::info("Renderer initialized");
+        omnicpp::log::info("Renderer initialized");
         return true;
     }
 
     void shutdown() override {
-        spdlog::info("Renderer shutdown");
+        omnicpp::log::info("Renderer shutdown");
     }
 
     bool begin_frame() override {

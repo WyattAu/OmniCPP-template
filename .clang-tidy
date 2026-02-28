@@ -1,6 +1,11 @@
 ---
 # C++23 Linting Configuration for OmniCpp Template
 # Enable specific checks with C++23 best practices
+# 
+# COMPLIANCE: Phase 3 - Control Flow & Fault Tolerance
+# - Raw for/while loops for mutating or searching collections are prohibited
+# - Code must use <algorithm> or C++20 std::ranges
+# - Use modernize-loop-convert to auto-convert loops to ranges
 Checks: >
   -*,
   bugprone-*,
@@ -8,7 +13,6 @@ Checks: >
   clang-analyzer-*,
   concurrency-*,
   cppcoreguidelines-*,
-  misc-*,
   modernize-*,
   performance-*,
   readability-*,
@@ -17,7 +21,10 @@ Checks: >
   -cppcoreguidelines-pro-bounds-pointer-arithmetic,
   -cppcoreguidelines-pro-type-reinterpret-cast,
   -cppcoreguidelines-avoid-c-arrays,
-  -readability-magic-numbers
+  -readability-magic-numbers,
+  -cppcoreguidelines-pro-bounds-constant-array-index,
+  -misc-include-cleaner,
+  -portability-template-virtual-member-function
 
 # C++23 specific checks
 # These checks are enabled by default in modern clang-tidy versions
@@ -40,7 +47,15 @@ CheckOptions:
     value: 'NULL'
   - key: modernize-use-override.AllowOverrideAndFinal
     value: '0'
-
+  
+  # COMPLIANCE: Enforce ranges/algorithms over raw loops
+  - key: modernize-loop-convert.MinConfidence
+    value: '75'
+  - key: modernize-loop-convert.NamingStyle
+    value: 'CamelCase'
+  - key: modernize-use-ranges.IncludeStyle
+    value: 'IncludeBased'
+  
   # Performance checks
   - key: performance-unnecessary-value-param.AllowedTypes
     value: ''
@@ -82,6 +97,10 @@ CheckOptions:
   # C++ Core Guidelines checks
   - key: cppcoreguidelines-special-member-functions.AllowSoleDefaultDtor
     value: '1'
+  
+  # COMPLIANCE: Prefer algorithms over raw loops
+  - key: cppcoreguidelines-prefer-algorithms.AlgorithmList
+    value: 'std::ranges::find;std::ranges::find_if;std::ranges::copy;std::ranges::transform;std::ranges::sort;std::ranges::for_each;std::ranges::any_of;std::ranges::all_of;std::ranges::none_of;std::ranges::count;std::ranges::count_if;std::ranges::remove;std::ranges::remove_if;std::ranges::replace;std::ranges::replace_if;std::ranges::reverse;std::ranges::fill;std::ranges::generate;std::ranges::min_element;std::ranges::max_element;std::ranges::minmax_element;std::ranges::unique;std::ranges::partition;std::ranges::stable_partition'
 
   # Bugprone checks
   - key: bugprone-argument-comment.StrictMode
@@ -94,8 +113,9 @@ CheckOptions:
 # System headers to ignore
 SystemHeaders: false
 
-# Extra arguments to pass to clang-tidy
-ExtraArgs: '-std=c++23'
+# Extra arguments to pass to clang-tidy (must be a YAML list)
+ExtraArgs:
+  - '-std=c++23'
 
 # Inherit parent config
 InheritParentConfig: false

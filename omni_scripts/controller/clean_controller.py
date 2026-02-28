@@ -204,17 +204,17 @@ class CleanController(BaseController):
             # Get directories to clean
             directories = self.get_clean_directories()
 
+            # Clean CMake cache FIRST (before deleting build directory)
+            result = self.clean_cmake_cache()
+            if result != 0:
+                self.logger.warning("CMake cache clean returned non-zero, continuing...")
+
             # Clean directories
             for directory in directories:
                 result = self.clean_directory(directory)
                 if result != 0:
                     self.logger.error(f"Failed to clean directory: {directory}")
-                    return result
-
-            # Clean CMake cache
-            result = self.clean_cmake_cache()
-            if result != 0:
-                return result
+                    # Continue cleaning other directories even if one fails
 
             # Clean files (optional, based on target)
             if self.target == "all":
@@ -223,7 +223,7 @@ class CleanController(BaseController):
                     result = self.clean_file(file_path)
                     if result != 0:
                         self.logger.error(f"Failed to clean file: {file_path}")
-                        return result
+                        # Continue cleaning other files even if one fails
 
             self.log_command_success("clean")
             return 0

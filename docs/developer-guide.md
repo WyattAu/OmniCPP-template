@@ -42,6 +42,69 @@ This guide is for developers who want to contribute to the OmniCpp Game Engine o
 - **CLion**: Cross-platform with CMake support
 - **Qt Creator**: Qt-specific development
 
+### Linux-Specific Setup
+
+For Linux development, especially on CachyOS, the project provides enhanced setup options:
+
+#### Nix Development Environment
+
+The project includes comprehensive Nix support for reproducible builds:
+
+```bash
+# Enter Nix development environment
+nix develop
+
+# Or use specific toolchain
+nix develop .#gcc
+nix develop .#clang
+nix develop .#cachyos-gcc
+nix develop .#cachyos-clang
+```
+
+> **Note:** See [`docs/nix-development.md`](nix-development.md:1) for detailed Nix setup instructions.
+
+#### CachyOS Optimization
+
+CachyOS is the primary Linux target with performance-optimized builds:
+
+```bash
+# Use CachyOS CMake preset
+cmake --preset cachyos-gcc-release
+
+# Or use CachyOS Conan profile
+conan install . --profile cachyos
+```
+
+> **Note:** See [`docs/cachyos-builds.md`](cachyos-builds.md:1) for CachyOS-specific instructions.
+
+#### Linux Build Tools
+
+The project provides Linux-specific build tools and configurations:
+
+```bash
+# Install Linux dependencies
+sudo pacman -S gcc cmake ninja python python-pip
+
+# Install Conan
+pip install conan
+
+# Configure with Linux preset
+cmake --preset linux-gcc-debug
+
+# Build
+cmake --build --preset linux-gcc-debug
+```
+
+#### VSCode Linux Configuration
+
+VSCode provides Linux-specific tasks and debug configurations:
+
+- **Linux Build Tasks**: GCC and Clang specific build tasks
+- **Linux Debug Configurations**: GDB and LLDB debug configurations
+- **CMake Tools Integration**: Automatic preset detection
+
+> **Note:** See [`docs/vscode-linux-setup.md`](vscode-linux-setup.md:1) for detailed VSCode Linux setup instructions.
+
 ### Setting Up
 
 1. Clone the repository:

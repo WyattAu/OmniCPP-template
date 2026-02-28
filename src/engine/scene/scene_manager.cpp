@@ -3,11 +3,12 @@
  * @brief Scene management implementation
  */
 
-#include "engine/scene/scene_manager.hpp"
+#include "engine/scene/SceneManager.hpp"
 #include <mutex>
-#include <spdlog/spdlog.h>
+#include "engine/logging/Log.hpp"
 
-namespace OmniCpp::Engine::Scene {
+namespace omnicpp {
+namespace scene {
 
   /**
    * @brief Private implementation structure (Pimpl idiom)
@@ -39,14 +40,14 @@ namespace OmniCpp::Engine::Scene {
     std::lock_guard<std::mutex> lock (m_impl->mutex);
 
     if (m_impl->initialized) {
-      spdlog::warn("SceneManager: Already initialized");
+      omnicpp::log::warn("SceneManager: Already initialized");
       return true;
     }
 
     m_impl->current_scene.clear ();
     m_impl->initialized = true;
 
-    spdlog::info("SceneManager: Initialized");
+    omnicpp::log::info("SceneManager: Initialized");
     return true;
   }
 
@@ -60,7 +61,7 @@ namespace OmniCpp::Engine::Scene {
     m_impl->current_scene.clear ();
     m_impl->initialized = false;
 
-    spdlog::info("SceneManager: Shutdown");
+    omnicpp::log::info("SceneManager: Shutdown");
   }
 
   void SceneManager::update (float delta_time) {
@@ -72,12 +73,12 @@ namespace OmniCpp::Engine::Scene {
     std::lock_guard<std::mutex> lock (m_impl->mutex);
 
     if (!m_impl->initialized) {
-      spdlog::error("SceneManager: Not initialized, cannot load scene: {}", name);
+      omnicpp::log::error("SceneManager: Not initialized, cannot load scene: {}", name);
       return false;
     }
 
     m_impl->current_scene = name;
-    spdlog::info("SceneManager: Loaded scene '{}'", name);
+    omnicpp::log::info("SceneManager: Loaded scene '{}'", name);
     return true;
   }
 
@@ -85,16 +86,16 @@ namespace OmniCpp::Engine::Scene {
     std::lock_guard<std::mutex> lock (m_impl->mutex);
 
     if (!m_impl->initialized) {
-      spdlog::error("SceneManager: Not initialized, cannot unload scene: {}", name);
+      omnicpp::log::error("SceneManager: Not initialized, cannot unload scene: {}", name);
       return false;
     }
 
     if (m_impl->current_scene == name) {
       m_impl->current_scene.clear ();
-      spdlog::info("SceneManager: Unloaded scene '{}'", name);
+      omnicpp::log::info("SceneManager: Unloaded scene '{}'", name);
       return true;
     }
-    spdlog::warn("SceneManager: Scene '{}' is not the current scene", name);
+    omnicpp::log::warn("SceneManager: Scene '{}' is not the current scene", name);
     return false;
   }
 
@@ -103,4 +104,5 @@ namespace OmniCpp::Engine::Scene {
     return m_impl->current_scene;
   }
 
-} // namespace OmniCpp::Engine::Scene
+} // namespace scene
+} // namespace omnicpp

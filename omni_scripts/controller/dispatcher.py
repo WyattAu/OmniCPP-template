@@ -171,14 +171,14 @@ class CommandDispatcher:
         """
         self.logger.info("Handling clean command")
 
-        # Import and use build controller (clean is part of build operations)
+        # Import and use clean controller
         try:
-            from omni_scripts.controller.build_controller import BuildController
+            from omni_scripts.controller.clean_controller import CleanController
 
-            controller = BuildController(self.args)
+            controller = CleanController(self.args)
             return controller.execute()
         except ImportError as e:
-            self.logger.error(f"BuildController not implemented yet: {e}")
+            self.logger.error(f"CleanController not implemented yet: {e}")
             self.logger.info("Clean command will be implemented in future")
             return 0
 

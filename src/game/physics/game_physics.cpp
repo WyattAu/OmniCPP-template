@@ -4,40 +4,40 @@
  */
 
 #include "game/physics/game_physics.hpp"
-#include <spdlog/spdlog.h>
+#include "engine/logging/Log.hpp"
 
 namespace OmniCpp::Game::Physics {
 
   GamePhysics::GamePhysics () : m_initialized (false) {
-    spdlog::info ("GamePhysics instance created");
+    omnicpp::log::info ("GamePhysics instance created");
   }
 
   GamePhysics::~GamePhysics () {
     if (m_initialized) {
-      spdlog::warn ("GamePhysics destroyed without explicit shutdown");
+      omnicpp::log::warn ("GamePhysics destroyed without explicit shutdown");
     }
-    spdlog::info ("GamePhysics instance destroyed");
+    omnicpp::log::info ("GamePhysics instance destroyed");
   }
 
   void GamePhysics::initialize () {
     if (m_initialized) {
-      spdlog::warn ("GamePhysics already initialized, skipping");
+      omnicpp::log::warn ("GamePhysics already initialized, skipping");
       return;
     }
 
-    spdlog::info ("Initializing game physics...");
+    omnicpp::log::info ("Initializing game physics...");
 
     // TODO: Initialize physics subsystem
     // TODO: Setup physics world
     // TODO: Configure physics parameters
 
     m_initialized = true;
-    spdlog::info ("GamePhysics initialized successfully");
+    omnicpp::log::info ("GamePhysics initialized successfully");
   }
 
   void GamePhysics::update (float delta_time) {
     if (!m_initialized) {
-      spdlog::error ("Cannot update physics: GamePhysics not initialized");
+      omnicpp::log::error ("Cannot update physics: GamePhysics not initialized");
       return;
     }
 

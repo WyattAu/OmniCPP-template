@@ -3,12 +3,13 @@
  * @brief Script management implementation
  */
 
-#include "engine/scripting/script_manager.hpp"
+#include "engine/scripting/ScriptManager.hpp"
 #include <mutex>
 #include <unordered_map>
-#include <spdlog/spdlog.h>
+#include "engine/logging/Log.hpp"
 
-namespace OmniCpp::Engine::Scripting {
+namespace omnicpp {
+namespace scripting {
 
   /**
    * @brief Private implementation structure (Pimpl idiom)
@@ -44,14 +45,14 @@ namespace OmniCpp::Engine::Scripting {
     std::lock_guard<std::mutex> lock (m_impl->mutex);
 
     if (m_impl->initialized) {
-      spdlog::warn("ScriptManager: Already initialized");
+      omnicpp::log::warn("ScriptManager: Already initialized");
       return true;
     }
 
     m_impl->scripts.clear ();
     m_impl->initialized = true;
 
-    spdlog::info("ScriptManager: Initialized");
+    omnicpp::log::info("ScriptManager: Initialized");
     return true;
   }
 
@@ -65,7 +66,7 @@ namespace OmniCpp::Engine::Scripting {
     m_impl->scripts.clear ();
     m_impl->initialized = false;
 
-    spdlog::info("ScriptManager: Shutdown");
+    omnicpp::log::info("ScriptManager: Shutdown");
   }
 
   void ScriptManager::update (float delta_time) {
@@ -77,13 +78,13 @@ namespace OmniCpp::Engine::Scripting {
     std::lock_guard<std::mutex> lock (m_impl->mutex);
 
     if (!m_impl->initialized) {
-      spdlog::error("ScriptManager: Not initialized, cannot load script: {}", name);
+      omnicpp::log::error("ScriptManager: Not initialized, cannot load script: {}", name);
       return false;
     }
 
     Impl::ScriptInfo info{ path };
     m_impl->scripts[name] = info;
-    spdlog::debug("ScriptManager: Loaded script '{}' from '{}'", name, path);
+    omnicpp::log::debug("ScriptManager: Loaded script '{}' from '{}'", name, path);
     return true;
   }
 
@@ -91,17 +92,17 @@ namespace OmniCpp::Engine::Scripting {
     std::lock_guard<std::mutex> lock (m_impl->mutex);
 
     if (!m_impl->initialized) {
-      spdlog::error("ScriptManager: Not initialized, cannot unload script: {}", name);
+      omnicpp::log::error("ScriptManager: Not initialized, cannot unload script: {}", name);
       return false;
     }
 
     auto it = m_impl->scripts.find (name);
     if (it != m_impl->scripts.end ()) {
       m_impl->scripts.erase (it);
-      spdlog::debug("ScriptManager: Unloaded script '{}'", name);
+      omnicpp::log::debug("ScriptManager: Unloaded script '{}'", name);
       return true;
     }
-    spdlog::warn("ScriptManager: Script '{}' not found", name);
+    omnicpp::log::warn("ScriptManager: Script '{}' not found", name);
     return false;
   }
 
@@ -109,17 +110,18 @@ namespace OmniCpp::Engine::Scripting {
     std::lock_guard<std::mutex> lock (m_impl->mutex);
 
     if (!m_impl->initialized) {
-      spdlog::error("ScriptManager: Not initialized, cannot execute script: {}", name);
+      omnicpp::log::error("ScriptManager: Not initialized, cannot execute script: {}", name);
       return false;
     }
 
     auto it = m_impl->scripts.find (name);
     if (it != m_impl->scripts.end ()) {
-      spdlog::debug("ScriptManager: Executing script '{}'", name);
+      omnicpp::log::debug("ScriptManager: Executing script '{}'", name);
       return true;
     }
-    spdlog::warn("ScriptManager: Script '{}' not found", name);
+    omnicpp::log::warn("ScriptManager: Script '{}' not found", name);
     return false;
   }
 
-} // namespace OmniCpp::Engine::Scripting
+} // namespace scripting
+} // namespace omnicpp

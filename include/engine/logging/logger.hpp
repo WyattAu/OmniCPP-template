@@ -1,13 +1,13 @@
 /**
  * @file logger.hpp
- * @brief Logging interface with spdlog integration
+ * @brief Logging interface with Quill integration
  */
 
 #pragma once
 
 #include <memory>
-#include <spdlog/spdlog.h>
 #include <string>
+#include <quill/Quill.h>
 
 namespace OmniCpp::Engine::Logging {
 
@@ -15,19 +15,18 @@ namespace OmniCpp::Engine::Logging {
    * @brief Log level enumeration
    */
   enum class LogLevel {
-    Trace = SPDLOG_LEVEL_TRACE,
-    Debug = SPDLOG_LEVEL_DEBUG,
-    Info = SPDLOG_LEVEL_INFO,
-    Warning = SPDLOG_LEVEL_WARN,
-    Error = SPDLOG_LEVEL_ERROR,
-    Critical = SPDLOG_LEVEL_CRITICAL,
-    Off = SPDLOG_LEVEL_OFF
+    Trace = 0,
+    Debug = 1,
+    Info = 2,
+    Warning = 3,
+    Error = 4,
+    Critical = 5
   };
 
   /**
-   * @brief Logger class
-   * 
-   * Provides logging functionality using spdlog.
+   * @brief Logger class for the engine
+   *
+   * Provides logging functionality using Quill.
    * Follows C++23 best practices with RAII and move semantics.
    */
   class Logger {

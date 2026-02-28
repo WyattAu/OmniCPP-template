@@ -50,7 +50,7 @@ public:
      * @brief Called each frame to update component state
      * @param delta_time Time since last frame in seconds
      */
-    virtual void on_update(float delta_time) {}
+    virtual void on_update([[maybe_unused]] float delta_time) {}
 
 protected:
     uint64_t m_entity_id;

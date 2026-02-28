@@ -11,13 +11,13 @@ namespace math {
 
     // Function to add two numbers
     template<Arithmetic T>
-    T add(T a, T b) {
+    inline T add(T a, T b) {
         return a + b;
     }
 
     // Function to multiply two numbers
     template<Arithmetic T>
-    T multiply(T a, T b) {
+    inline T multiply(T a, T b) {
         return a * b;
     }
 
@@ -25,7 +25,7 @@ namespace math {
     constexpr double PI = 3.141592653589793;
 
     // Function to calculate factorial
-    int factorial(int n) {
+    inline int factorial(int n) {
         if (n <= 1) return 1;
         return n * factorial(n - 1);
     }

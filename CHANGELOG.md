@@ -26,6 +26,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Comprehensive test infrastructure
 - VSCode integration with launch configurations and tasks
 - Extensive documentation (architecture, API, user guides, developer guides)
+- **Nix package manager integration** with [`flake.nix`](flake.nix:1) and [`flake.lock`](flake.lock:1) for reproducible builds
+- **CachyOS primary Linux target** with performance-optimized compiler flags
+- **Direnv integration** with [`.envrc`](.envrc:1) for automatic environment loading
+- **Linux-specific Conan profiles** for GCC 13 and Clang 19
+- **Comprehensive Linux documentation** including Nix, CachyOS, troubleshooting, and VSCode setup
+- **Nix development environment** with GCC 13 and Clang 19 toolchains
+- **CachyOS-specific optimizations** with `-march=native -O3 -flto` flags
+- **Linux VSCode configuration** with platform-specific tasks and debug configurations
+- **Linux troubleshooting guide** with common issues and solutions
+- **Archived Windows support** moved to [`.archive/windows_scripts/`](.archive/windows_scripts/)
 
 ### Changed
 

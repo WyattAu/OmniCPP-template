@@ -3,12 +3,13 @@
  * @brief Input management implementation
  */
 
-#include "engine/input/input_manager.hpp"
+#include "engine/input/InputManager.hpp"
 #include <array>
 #include <mutex>
-#include <spdlog/spdlog.h>
+#include "engine/logging/Log.hpp"
 
-namespace OmniCpp::Engine::Input {
+namespace omnicpp {
+namespace input {
 
   /**
    * @brief Private implementation structure (Pimpl idiom)
@@ -43,7 +44,7 @@ namespace OmniCpp::Engine::Input {
     std::lock_guard<std::mutex> lock (m_impl->mutex);
 
     if (m_impl->initialized) {
-      spdlog::warn("InputManager: Already initialized");
+      omnicpp::log::warn("InputManager: Already initialized");
       return true;
     }
 
@@ -51,7 +52,7 @@ namespace OmniCpp::Engine::Input {
     m_impl->mouse_button_states.fill (false);
     m_impl->initialized = true;
 
-    spdlog::info("InputManager: Initialized");
+    omnicpp::log::info("InputManager: Initialized");
     return true;
   }
 
@@ -66,7 +67,7 @@ namespace OmniCpp::Engine::Input {
     m_impl->mouse_button_states.fill (false);
     m_impl->initialized = false;
 
-    spdlog::info("InputManager: Shutdown");
+    omnicpp::log::info("InputManager: Shutdown");
   }
 
   void InputManager::update () {
@@ -92,4 +93,5 @@ namespace OmniCpp::Engine::Input {
     return m_impl->mouse_button_states[index];
   }
 
-} // namespace OmniCpp::Engine::Input
+} // namespace input
+} // namespace omnicpp

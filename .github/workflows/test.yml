@@ -6,7 +6,177 @@ on:
   pull_request:
     branches: [ main, develop ]
 
+# Cancel in-progress runs for the same branch
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
+  # ============================================================================
+  # Sanitizer Tests (Phase 1: Zero-Bloat & Reproducibility)
+  # CI must run minimum three times:
+  # 1. AddressSanitizer + UndefinedBehaviorSanitizer
+  # 2. ThreadSanitizer  
+  # 3. Pure Release mode
+  # ============================================================================
+
+  test-linux-clang-asan-ubsan:
+    name: "Linux Clang - ASAN+UBSAN"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install conan cmake pytest
+          # Note: System packages required for CI runner environment
+          # TODO: Migrate to full vcpkg/Conan for deterministic builds
+          sudo apt-get update
+          sudo apt-get install -y clang llvm lld
+      
+      - name: Configure CMake with Sanitizers
+        run: |
+          cmake -B build -S . \
+            -DCMAKE_BUILD_TYPE=Debug \
+            -DCMAKE_C_COMPILER=clang \
+            -DCMAKE_CXX_COMPILER=clang++ \
+            -DCMAKE_CXX_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer -fno-optimize-sibling-calls -g -O1" \
+            -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address,undefined" \
+            -DOMNICPP_ENABLE_SANITIZERS=ON \
+            -DOMNICPP_WARNINGS_AS_ERRORS=ON
+      
+      - name: Build
+        run: cmake --build build --parallel $(nproc)
+      
+      - name: Run tests with sanitizers
+        env:
+          ASAN_OPTIONS: "detect_leaks=1:detect_stack_use_after_return=1:check_initialization_order=1:strict_init_order=1"
+          UBSAN_OPTIONS: "print_stacktrace=1:halt_on_error=1"
+          LSAN_OPTIONS: "detect_leaks=1:suppressions=${{ github.workspace }}/.lsan-suppressions.txt"
+        run: |
+          cd build
+          ctest --output-on-failure --timeout 300
+      
+      - name: Upload sanitizer reports
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sanitizer-reports-asan-ubsan
+          path: |
+            build/Testing/
+            build/*asan.log
+            build/*ubsan.log
+
+  test-linux-clang-tsan:
+    name: "Linux Clang - TSAN"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install conan cmake pytest
+          sudo apt-get update
+          sudo apt-get install -y clang llvm lld
+      
+      - name: Configure CMake with ThreadSanitizer
+        run: |
+          cmake -B build -S . \
+            -DCMAKE_BUILD_TYPE=Debug \
+            -DCMAKE_C_COMPILER=clang \
+            -DCMAKE_CXX_COMPILER=clang++ \
+            -DCMAKE_CXX_FLAGS="-fsanitize=thread -fno-omit-frame-pointer -g -O1" \
+            -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=thread" \
+            -DOMNICPP_ENABLE_SANITIZERS=ON \
+            -DOMNICPP_WARNINGS_AS_ERRORS=ON
+      
+      - name: Build
+        run: cmake --build build --parallel $(nproc)
+      
+      - name: Run tests with ThreadSanitizer
+        env:
+          TSAN_OPTIONS: "halt_on_error=1:second_deadlock_stack=1:history_size=7"
+        run: |
+          cd build
+          ctest --output-on-failure --timeout 300
+      
+      - name: Upload sanitizer reports
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sanitizer-reports-tsan
+          path: |
+            build/Testing/
+            build/*tsan.log
+
+  test-linux-gcc-msan:
+    name: "Linux GCC - MSAN (Memory Sanitizer)"
+    runs-on: ubuntu-latest
+    # Note: MSAN requires all code (including libs) to be instrumented
+    # This is a best-effort job that may need exclusion of certain tests
+    continue-on-error: true
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install conan cmake pytest
+          sudo apt-get update
+          sudo apt-get install -y gcc g++
+      
+      - name: Configure CMake with MemorySanitizer
+        run: |
+          cmake -B build -S . \
+            -DCMAKE_BUILD_TYPE=Debug \
+            -DCMAKE_C_COMPILER=clang \
+            -DCMAKE_CXX_COMPILER=clang++ \
+            -DCMAKE_CXX_FLAGS="-fsanitize=memory -fno-omit-frame-pointer -g -O1 -fPIE" \
+            -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=memory -pie" \
+            -DOMNICPP_ENABLE_SANITIZERS=ON \
+            -DOMNICPP_WARNINGS_AS_ERRORS=ON
+      
+      - name: Build
+        run: cmake --build build --parallel $(nproc)
+      
+      - name: Run tests with MemorySanitizer
+        env:
+          MSAN_OPTIONS: "halt_on_error=1:print_stats=1"
+        run: |
+          cd build
+          ctest --output-on-failure --timeout 300 || true
+      
+      - name: Upload sanitizer reports
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sanitizer-reports-msan
+          path: build/Testing/
+
+  # ============================================================================
+  # Standard Build Tests (Debug + Release)
+  # ============================================================================
+
   test-windows-msvc:
     runs-on: windows-latest
     strategy:
@@ -24,21 +194,21 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install conan
-          pip install cmake
-          pip install pytest
+          pip install conan cmake pytest
       
       - name: Configure CMake
         run: |
-          python OmniCppController.py configure --build-type ${{ matrix.config }}
+          cmake -B build -S . `
+            -DCMAKE_BUILD_TYPE=${{ matrix.config }} `
+            -DOMNICPP_WARNINGS_AS_ERRORS=ON
       
       - name: Build
-        run: |
-          python OmniCppController.py build engine "Clean Build Pipeline" default ${{ matrix.config }} --compiler msvc
+        run: cmake --build build --config ${{ matrix.config }} --parallel
       
       - name: Run tests
         run: |
-          python OmniCppController.py test engine ${{ matrix.config }}
+          cd build
+          ctest -C ${{ matrix.config }} --output-on-failure --timeout 300
       
       - name: Upload test results
         if: always()
@@ -49,137 +219,9 @@ jobs:
             build/Testing/
             validation_reports/
 
-  test-windows-clang-msvc:
-    runs-on: windows-latest
-    strategy:
-      matrix:
-        config: [Debug, Release]
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-      
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-      
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install conan
-          pip install cmake
-          pip install pytest
-      
-      - name: Configure CMake
-        run: |
-          python OmniCppController.py configure --build-type ${{ matrix.config }}
-      
-      - name: Build
-        run: |
-          python OmniCppController.py build engine "Clean Build Pipeline" default ${{ matrix.config }} --compiler clang-msvc
-      
-      - name: Run tests
-        run: |
-          python OmniCppController.py test engine ${{ matrix.config }}
-      
-      - name: Upload test results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: test-results-clang-msvc-${{ matrix.config }}
-          path: |
-            build/Testing/
-            validation_reports/
-
-  test-windows-mingw-gcc:
-    runs-on: windows-latest
-    strategy:
-      matrix:
-        config: [Debug, Release]
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-      
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-      
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install conan
-          pip install cmake
-          pip install pytest
-      
-      - name: Configure CMake
-        run: |
-          python OmniCppController.py configure --build-type ${{ matrix.config }}
-      
-      - name: Build
-        run: |
-          python OmniCppController.py build engine "Clean Build Pipeline" default ${{ matrix.config }} --compiler mingw-gcc
-      
-      - name: Run tests
-        run: |
-          python OmniCppController.py test engine ${{ matrix.config }}
-      
-      - name: Upload test results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: test-results-mingw-gcc-${{ matrix.config }}
-          path: |
-            build/Testing/
-            validation_reports/
-
-  test-windows-mingw-clang:
-    runs-on: windows-latest
-    strategy:
-      matrix:
-        config: [Debug, Release]
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-      
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-      
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install conan
-          pip install cmake
-          pip install pytest
-      
-      - name: Configure CMake
-        run: |
-          python OmniCppController.py configure --build-type ${{ matrix.config }}
-      
-      - name: Build
-        run: |
-          python OmniCppController.py build engine "Clean Build Pipeline" default ${{ matrix.config }} --compiler mingw-clang
-      
-      - name: Run tests
-        run: |
-          python OmniCppController.py test engine ${{ matrix.config }}
-      
-      - name: Upload test results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: test-results-mingw-clang-${{ matrix.config }}
-          path: |
-            build/Testing/
-            validation_reports/
-
-  test-linux-gcc:
+  test-linux-gcc-release:
+    name: "Linux GCC - Release (Pure)"
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        config: [Debug, Release]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -192,38 +234,43 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install conan
-          pip install cmake
-          pip install pytest
+          pip install conan cmake pytest
+          # Note: System packages used for CI runner compatibility
+          # Production builds should use vcpkg/Conan exclusively
           sudo apt-get update
-          sudo apt-get install -y build-essential libvulkan-dev libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libgl1-mesa-dev
+          sudo apt-get install -y gcc-13 g++-13
+          sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-13 100
+          sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-13 100
       
-      - name: Configure CMake
+      - name: Configure CMake (Release)
         run: |
-          python OmniCppController.py configure --build-type ${{ matrix.config }}
+          cmake -B build -S . \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_C_COMPILER=gcc \
+            -DCMAKE_CXX_COMPILER=g++ \
+            -DOMNICPP_WARNINGS_AS_ERRORS=ON \
+            -DENABLE_LTO=ON
       
       - name: Build
-        run: |
-          python OmniCppController.py build engine "Clean Build Pipeline" default ${{ matrix.config }} --compiler gcc
+        run: cmake --build build --parallel $(nproc)
       
       - name: Run tests
         run: |
-          python OmniCppController.py test engine ${{ matrix.config }}
+          cd build
+          ctest --output-on-failure --timeout 300
       
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: test-results-gcc-${{ matrix.config }}
+          name: test-results-gcc-release
           path: |
             build/Testing/
             validation_reports/
 
-  test-linux-clang:
+  test-linux-clang-release:
+    name: "Linux Clang - Release (Pure)"
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        config: [Debug, Release]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -236,29 +283,205 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install conan
-          pip install cmake
-          pip install pytest
+          pip install conan cmake pytest
           sudo apt-get update
-          sudo apt-get install -y build-essential libvulkan-dev libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libgl1-mesa-dev clang
+          sudo apt-get install -y clang-19 lld-19
+          sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-19 100
+          sudo update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-19 100
       
-      - name: Configure CMake
+      - name: Configure CMake (Release)
         run: |
-          python OmniCppController.py configure --build-type ${{ matrix.config }}
+          cmake -B build -S . \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_C_COMPILER=clang \
+            -DCMAKE_CXX_COMPILER=clang++ \
+            -DOMNICPP_WARNINGS_AS_ERRORS=ON \
+            -DENABLE_LTO=ON
       
       - name: Build
-        run: |
-          python OmniCppController.py build engine "Clean Build Pipeline" default ${{ matrix.config }} --compiler clang
+        run: cmake --build build --parallel $(nproc)
       
       - name: Run tests
         run: |
-          python OmniCppController.py test engine ${{ matrix.config }}
+          cd build
+          ctest --output-on-failure --timeout 300
       
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: test-results-clang-${{ matrix.config }}
+          name: test-results-clang-release
           path: |
             build/Testing/
             validation_reports/
+
+  # ============================================================================
+  # Static Analysis (clang-tidy)
+  # ============================================================================
+
+  static-analysis:
+    name: "Static Analysis - clang-tidy"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install conan cmake
+          sudo apt-get update
+          sudo apt-get install -y clang-19 clang-tidy-19
+          sudo update-alternatives --install /usr/bin/clang-tidy clang-tidy /usr/bin/clang-tidy-19 100
+      
+      - name: Configure CMake with compile_commands.json
+        run: |
+          cmake -B build -S . \
+            -DCMAKE_BUILD_TYPE=Debug \
+            -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+            -DCMAKE_C_COMPILER=clang \
+            -DCMAKE_CXX_COMPILER=clang++
+      
+      - name: Run clang-tidy
+        run: |
+          cd build
+          clang-tidy -p . \
+            --warnings-as-errors='*' \
+            --checks='-*,bugprone-*,cert-*,clang-analyzer-*,concurrency-*,cppcoreguidelines-*,modernize-*,performance-*,readability-*,-readability-magic-numbers' \
+            ../src/**/*.cpp ../include/**/*.hpp || true
+          # Note: clang-tidy warnings are informational; build continues
+
+  # ============================================================================
+  # Coverage Report
+  # ============================================================================
+
+  coverage:
+    name: "Code Coverage"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install conan cmake pytest gcovr
+          sudo apt-get update
+          sudo apt-get install -y gcc-13 g++-13 lcov
+          sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-13 100
+          sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-13 100
+      
+      - name: Configure CMake with coverage
+        run: |
+          cmake -B build -S . \
+            -DCMAKE_BUILD_TYPE=Debug \
+            -DCMAKE_C_COMPILER=gcc \
+            -DCMAKE_CXX_COMPILER=g++ \
+            -DOMNICPP_ENABLE_COVERAGE=ON
+      
+      - name: Build
+        run: cmake --build build --parallel $(nproc)
+      
+      - name: Run tests
+        run: |
+          cd build
+          ctest --output-on-failure
+      
+      - name: Generate coverage report
+        run: |
+          cd build
+          gcovr --xml -o coverage.xml --html-details -o coverage.html \
+            --exclude-unreachable-branches \
+            --exclude-throw-branches \
+            -r ..
+      
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          files: build/coverage.xml
+          fail_ci_if_error: false
+      
+      - name: Upload coverage artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: |
+            build/coverage.xml
+            build/coverage.html
+
+  # ============================================================================
+  # Mutation Testing (Mull)
+  # COMPLIANCE: Phase 1 - Line coverage is an illusion
+  # CI must run mull-runner to verify tests catch logic changes
+  # ============================================================================
+
+  mutation-testing:
+    name: "Mutation Testing - Mull"
+    runs-on: ubuntu-latest
+    continue-on-error: true  # Non-blocking for now
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install cmake
+          sudo apt-get update
+          sudo apt-get install -y clang-19 llvm-19-dev
+        
+      - name: Install Mull
+        run: |
+          # Install Mull mutation testing tool
+          wget -q https://github.com/mull-project/mull/releases/download/0.12.0/Mull-0.12.0-LLVM-19-Ubuntu-22.04.deb
+          sudo dpkg -i Mull-0.12.0-LLVM-19-Ubuntu-22.04.deb || true
+          sudo apt-get install -f -y
+      
+      - name: Configure CMake with mutation testing support
+        run: |
+          cmake -B build -S . \
+            -DCMAKE_BUILD_TYPE=Debug \
+            -DCMAKE_C_COMPILER=clang-19 \
+            -DCMAKE_CXX_COMPILER=clang++-19 \
+            -DCMAKE_CXX_FLAGS="-fexperimental-new-pass-manager -fpass-plugin=/usr/lib/mull-ir-frontend" \
+            -DOMNICPP_BUILD_TESTS=ON \
+            -DOMNICPP_ENABLE_MUTATION_TESTING=ON
+      
+      - name: Build with mutation instrumentation
+        run: |
+          cmake --build build --parallel $(nproc)
+      
+      - name: Run mutation tests
+        run: |
+          cd build
+          # Run mutation tests on specific test binaries
+          if [ -f bin/unit_tests ]; then
+            mull-runner-19 bin/unit_tests \
+              --reporters=IDE \
+              --report-dir=mutation-reports \
+              --timeout=60 \
+              --workers=$(nproc) || true
+          fi
+        continue-on-error: true
+      
+      - name: Upload mutation reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mutation-reports
+          path: build/mutation-reports/

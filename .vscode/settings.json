@@ -85,7 +85,6 @@
     "**/CVS": true,
     "**/.DS_Store": true,
     "**/Thumbs.db": true,
-    "**/build": true,
     "**/install": true,
     "**/packages": true,
     "**/.vscode-test": true,

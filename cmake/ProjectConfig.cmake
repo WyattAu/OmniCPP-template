@@ -32,8 +32,9 @@ set(OMNICPP_INSTALL_DOC_DIR "share/doc/${OMNICPP_PROJECT_NAME}" CACHE STRING "Do
 set(OMNICPP_INSTALL_CMAKE_DIR "lib/cmake/${OMNICPP_PROJECT_NAME}" CACHE STRING "CMake config installation directory")
 
 # C++ standard
+# Using C++23 as per ADR-016: C++23 Without Modules
 set(OMNICPP_CPP_STANDARD "23" CACHE STRING "C++ standard to use")
-set_property(CACHE OMNICPP_CPP_STANDARD PROPERTY STRINGS "20" "23")
+set_property(CACHE OMNICPP_CPP_STANDARD PROPERTY STRINGS "23")
 
 # Set C++ standard
 set(CMAKE_CXX_STANDARD ${OMNICPP_CPP_STANDARD})

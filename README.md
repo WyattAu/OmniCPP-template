@@ -5,19 +5,23 @@ A production-ready, modular, cross-platform C++ game engine template with dynami
 ## Features
 
 - **Dynamic Linking Architecture** - Game executable dynamically loads engine library at runtime
-- **Multi-Compiler Support** - MSVC, MSVC-Clang, MinGW-GCC, MinGW-Clang, GCC, Clang
-- **Multi-Platform Support** - Windows, Linux, WebAssembly (WASM)
+- **Multi-Compiler Support** - GCC 13, Clang 19 (Linux), Emscripten (WASM)
+- **Multi-Platform Support** - Linux (CachyOS, Ubuntu, Debian, Fedora, Arch), WebAssembly (WASM)
+- **Linux-First Development** - Primary focus on Linux/CachyOS with Nix integration and reproducible builds
+- **Nix Package Manager** - Reproducible development environments with [`flake.nix`](flake.nix:1) and [`flake.lock`](flake.lock:1)
+- **CachyOS Optimization** - Performance-optimized builds for CachyOS with custom compiler flags
 - **Modern C++ Standards** - C++23 best practices without modules
 - **CMake 4 Best Practices** - Modern CMake configuration with presets
-- **Package Manager Integration** - Conan, vcpkg, and CPM.cmake
+- **Package Manager Integration** - Conan 2.0+, vcpkg, and CPM.cmake
 - **Comprehensive Logging System** - Structured logging with multiple handlers, formatters, and configuration
 - **Platform Detection** - Automatic OS and architecture detection with cross-platform support
 - **Compiler Detection** - Automatic compiler detection with C++23 validation
-- **Terminal Environment Setup** - Automatic terminal setup for MSVC, MinGW, and Linux environments
+- **Terminal Environment Setup** - Automatic terminal setup for Linux, MSVC, MinGW, and Nix environments
+- **Direnv Integration** - Automatic environment loading with [`.envrc`](.envrc:1)
 - **Code Quality Tools** - clang-format, clang-tidy, pylint, mypy
 - **CI/CD Workflows** - GitHub Actions for build, test, and release
-- **VSCode Integration** - Seamless development experience with CMake Tools
-- **Extensive Documentation** - Architecture, API, user guides, developer guides
+- **VSCode Integration** - Seamless development experience with CMake Tools and Linux-specific tasks
+- **Extensive Documentation** - Architecture, API, user guides, developer guides, Nix, CachyOS
 
 ## Architecture
 
@@ -168,40 +172,39 @@ OmniCPP-template/
 
 ## Supported Compilers
 
-### Windows
-
-- **MSVC** (Microsoft Visual C++) - Recommended for production
-- **MSVC-Clang** - Clang with MSVC ABI
-- **MinGW-GCC** - MinGW with GCC
-- **MinGW-Clang** - MinGW with Clang
-
 ### Linux
 
-- **GCC** - Default compiler
-- **Clang** - Alternative compiler
+- **GCC** - Default compiler (GCC 13+)
+- **Clang** - Alternative compiler (Clang 19+)
 
 ### WebAssembly
 
 - **Emscripten** - LLVM to WebAssembly compiler
 
+### Archived Windows Support
+
+> **Note:** Windows-specific compilers (MSVC, MSVC-Clang, MinGW-GCC, MinGW-Clang) have been archived as part of the Linux-first development strategy. See [`.archive/windows_scripts/`](.archive/windows_scripts/) for archived Windows build scripts and profiles.
+
 ## Supported Platforms
 
-### Windows
+### Linux (Primary)
 
-- Windows 10/11
-- MSVC 2019/2022
-- MinGW-w64
-
-### Linux
-
-- Ubuntu 20.04+
+- **CachyOS** - Primary target platform (Arch Linux derivative) with performance optimizations
+- Ubuntu 20.04+ - Primary CI environment
 - Debian 11+
 - Fedora 35+
+- Arch Linux - Supported with pacman package manager
+
+> **Note:** CachyOS is the primary Linux target with optimized compiler flags, Nix integration, and performance-tuned kernel. See [`docs/cachyos-builds.md`](docs/cachyos-builds.md:1) for CachyOS-specific build instructions.
 
 ### WebAssembly
 
 - Modern browsers with WASM support
 - Node.js environments
+
+### Archived Windows Support
+
+> **Note:** Windows 10/11 support has been archived as part of the Linux-first development strategy. See [`.archive/windows_scripts/`](.archive/windows_scripts/) for archived Windows build scripts and profiles.
 
 ## Dependencies
 
@@ -305,13 +308,18 @@ Terminal setup is automatically performed for MinGW builds and provides:
 git clone <repository-url>
 cd OmniCPP-template
 
-# Install dependencies
+# Install Python dependencies
 pip install -r requirements.txt
 
-# Configure and build
-python OmniCppController.py configure
-python OmniCppController.py build engine "Clean Build Pipeline" default release --compiler msvc
+# Option 1: Use Nix (recommended for Linux/CachyOS)
+nix develop
+
+# Option 2: Configure and build directly
+python OmniCppController.py configure --compiler gcc --build-type Release
+python OmniCppController.py build engine "Clean Build Pipeline" default release --compiler gcc
 ```
+
+> **Note:** For Linux development, especially on CachyOS, using Nix is recommended for reproducible builds. See [`docs/nix-development.md`](docs/nix-development.md:1) for detailed Nix setup instructions.
 
 ### Build Commands
 
@@ -554,6 +562,7 @@ The project includes GitHub Actions workflows for:
 - **API Documentation** - Engine API, Game API, Python build system API
 - **User Guides** - Getting started, building, testing, cross-platform development, package managers
 - **Developer Guides** - Contributing, coding standards, adding features, debugging
+- **Linux-Specific Documentation** - Nix development, CachyOS builds, Linux troubleshooting, VSCode Linux setup
 - **Configuration Reference** - CMake options, Python config, logging config
 
 ### Documentation Location
@@ -564,6 +573,13 @@ Documentation is available in the `docs/` directory and can be built using MkDoc
 # Build documentation
 mkdocs build
 ```
+
+**Linux-Specific Documentation:**
+- [`docs/nix-development.md`](docs/nix-development.md:1) - Nix environment setup and usage
+- [`docs/cachyos-builds.md`](docs/cachyos-builds.md:1) - CachyOS-specific build instructions
+- [`docs/linux-troubleshooting.md`](docs/linux-troubleshooting.md:1) - Linux build troubleshooting guide
+- [`docs/vscode-linux-setup.md`](docs/vscode-linux-setup.md:1) - VSCode configuration for Linux development
+- [`docs/conan-linux-profiles.md`](docs/conan-linux-profiles.md:1) - Conan profile documentation for Linux
 
 ## Packaging
 

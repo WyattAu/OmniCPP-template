@@ -3,11 +3,12 @@
  * @brief Physics engine implementation
  */
 
-#include "engine/physics/physics_engine.hpp"
+#include "engine/physics/PhysicsEngine.hpp"
 #include <mutex>
-#include <spdlog/spdlog.h>
+#include "engine/logging/Log.hpp"
 
-namespace OmniCpp::Engine::Physics {
+namespace omnicpp {
+namespace physics {
 
   /**
    * @brief Private implementation structure (Pimpl idiom)
@@ -40,14 +41,14 @@ namespace OmniCpp::Engine::Physics {
     std::lock_guard<std::mutex> lock (m_impl->mutex);
 
     if (m_impl->initialized) {
-      spdlog::warn("PhysicsEngine: Already initialized");
+      omnicpp::log::warn("PhysicsEngine: Already initialized");
       return true;
     }
 
     m_impl->config = config;
     m_impl->initialized = true;
 
-    spdlog::info("PhysicsEngine: Initialized with gravity {}", config.gravity);
+    omnicpp::log::info("PhysicsEngine: Initialized with gravity {}", config.gravity);
     return true;
   }
 
@@ -60,7 +61,7 @@ namespace OmniCpp::Engine::Physics {
 
     m_impl->initialized = false;
 
-    spdlog::info("PhysicsEngine: Shutdown");
+    omnicpp::log::info("PhysicsEngine: Shutdown");
   }
 
   void PhysicsEngine::update (float delta_time) {
@@ -71,7 +72,7 @@ namespace OmniCpp::Engine::Physics {
   void PhysicsEngine::set_gravity (float gravity) {
     std::lock_guard<std::mutex> lock (m_impl->mutex);
     m_impl->config.gravity = gravity;
-    spdlog::debug("PhysicsEngine: Set gravity to {}", gravity);
+    omnicpp::log::debug("PhysicsEngine: Set gravity to {}", gravity);
   }
 
   float PhysicsEngine::get_gravity () const {
@@ -79,4 +80,5 @@ namespace OmniCpp::Engine::Physics {
     return m_impl->config.gravity;
   }
 
-} // namespace OmniCpp::Engine::Physics
+} // namespace physics
+} // namespace omnicpp

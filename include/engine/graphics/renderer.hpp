@@ -1,12 +1,18 @@
 /**
  * @file renderer.hpp
- * @brief Graphics renderer interface
+ * @brief Graphics renderer interface with Vulkan 3D rendering support
  */
 
 #pragma once
 
 #include <cstdint>
 #include <memory>
+
+namespace OmniCpp::Engine {
+  namespace Window {
+    class WindowManager;
+  }
+}
 
 namespace OmniCpp::Engine::Graphics {
 
@@ -20,7 +26,7 @@ namespace OmniCpp::Engine::Graphics {
   };
 
   /**
-   * @brief Renderer class
+   * @brief Renderer class for Vulkan 3D graphics rendering
    */
   class Renderer {
   public:
@@ -40,6 +46,11 @@ namespace OmniCpp::Engine::Graphics {
 
     void clear ();
     void present ();
+
+    void set_window_manager (Window::WindowManager* window_manager);
+    void set_ball_position(float x, float y);
+    void set_paddle_position(bool is_left, float y);
+    [[nodiscard]] uint32_t get_frame_count () const;
 
   private:
     struct Impl;

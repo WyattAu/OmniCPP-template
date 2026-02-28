@@ -90,6 +90,21 @@ Each ADR follows the standard format:
 | [ADR-023](ADR-023-pytest-python-tests.md) | pytest for Python tests | Accepted | 2026-01-07 |
 | [ADR-024](ADR-024-code-coverage-requirements.md) | Code coverage requirements (80%) | Accepted | 2026-01-07 |
 
+### Linux Support
+
+| ADR | Title | Status | Date |
+|------|-------|--------|------|
+| [ADR-027](ADR-027-nix-package-manager-integration.md) | Nix Package Manager Integration | Accepted | 2026-01-27 |
+| [ADR-028](ADR-028-cachyos-primary-linux-target.md) | CachyOS as Primary Linux Target | Accepted | 2026-01-27 |
+| [ADR-029](ADR-029-direnv-environment-management.md) | Direnv for Environment Management | Accepted | 2026-01-27 |
+| [ADR-030](ADR-030-enhanced-omnicppcontroller-architecture.md) | Enhanced OmniCppController.py Architecture | Accepted | 2026-01-27 |
+| [ADR-031](ADR-031-linux-multi-package-manager-strategy.md) | Linux-Specific Multi-Package Manager Strategy | Accepted | 2026-01-27 |
+| [ADR-032](ADR-032-vscode-platform-specific-tasks.md) | VSCode Platform-Specific Tasks | Accepted | 2026-01-27 |
+| [ADR-033](ADR-033-repository-cleanup-strategy.md) | Repository Cleanup Strategy | Accepted | 2026-01-27 |
+| [ADR-034](ADR-034-conan-profile-expansion.md) | Conan Profile Expansion | Accepted | 2026-01-27 |
+| [ADR-035](ADR-035-linux-setup-script-architecture.md) | Linux Setup Script Architecture | Accepted | 2026-01-27 |
+| [ADR-036](ADR-036-cmake-preset-expansion.md) | CMake Preset Expansion | Accepted | 2026-01-27 |
+
 ### VSCode Integration
 
 | ADR | Title | Status | Date |

@@ -9,7 +9,7 @@
 #include "engine/ecs/TransformComponent.hpp"
 #include "engine/ecs/MeshComponent.hpp"
 #include <stdexcept>
-#include <spdlog/spdlog.h>
+#include "engine/logging/Log.hpp"
 
 namespace omnicpp {
 namespace ecs {
@@ -20,7 +20,7 @@ Entity::Entity(uint64_t id, const std::string& name)
     : m_id(id == 0 ? s_next_entity_id++ : id)
     , m_name(name)
     , m_active(true) {
-    spdlog::debug("Entity: Created entity {} with name '{}'", m_id, name);
+    omnicpp::log::debug("Entity: Created entity {} with name '{}'", m_id, name);
 }
 
 Entity::~Entity() = default;

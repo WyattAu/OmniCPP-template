@@ -4,7 +4,7 @@
  */
 
 #include "game/utils/game_utils.hpp"
-#include <spdlog/spdlog.h>
+#include "engine/logging/Log.hpp"
 
 namespace OmniCpp::Game::Utils {
 
@@ -12,34 +12,34 @@ namespace OmniCpp::Game::Utils {
 
   void GameUtils::initialize () {
     if (s_initialized) {
-      spdlog::warn ("GameUtils already initialized, skipping");
+      omnicpp::log::warn ("GameUtils already initialized, skipping");
       return;
     }
 
-    spdlog::info ("Initializing game utilities...");
+    omnicpp::log::info ("Initializing game utilities...");
 
     // TODO: Initialize utility subsystems
     // TODO: Setup file paths
     // TODO: Initialize resource caches
 
     s_initialized = true;
-    spdlog::info ("GameUtils initialized successfully");
+    omnicpp::log::info ("GameUtils initialized successfully");
   }
 
   void GameUtils::cleanup () {
     if (!s_initialized) {
-      spdlog::warn ("GameUtils not initialized, nothing to cleanup");
+      omnicpp::log::warn ("GameUtils not initialized, nothing to cleanup");
       return;
     }
 
-    spdlog::info ("Cleaning up game utilities...");
+    omnicpp::log::info ("Cleaning up game utilities...");
 
     // TODO: Cleanup utility subsystems
     // TODO: Clear resource caches
     // TODO: Close file handles
 
     s_initialized = false;
-    spdlog::info ("GameUtils cleanup complete");
+    omnicpp::log::info ("GameUtils cleanup complete");
   }
 
 } // namespace OmniCpp::Game::Utils

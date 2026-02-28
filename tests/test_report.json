@@ -1,19 +1,26 @@
 {
-  "timestamp": "2025-12-31T21:18:45.560464",
+  "timestamp": "2026-01-29T10:28:27.167938",
   "suites": {
     "System Tests": {
       "tests_run": 24,
-      "failures": 2,
+      "failures": 8,
       "errors": 0,
+      "skipped": 0,
+      "success": false
+    },
+    "Build System Integration Tests": {
+      "tests_run": 13,
+      "failures": 0,
+      "errors": 13,
       "skipped": 0,
       "success": false
     }
   },
   "summary": {
-    "total": 24,
-    "passed": 22,
-    "failed": 2,
-    "errors": 0,
+    "total": 37,
+    "passed": 16,
+    "failed": 8,
+    "errors": 13,
     "skipped": 0
   }
 }

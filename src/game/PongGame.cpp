@@ -21,7 +21,7 @@
 #include <cmath>
 #include <cstdlib>
 #include <ctime>
-#include <spdlog/spdlog.h>
+#include "engine/logging/Log.hpp"
 
 namespace omnicpp {
 namespace game {
@@ -36,7 +36,7 @@ PongGame::PongGame(Engine* engine)
 
     // Initialize random seed
     std::srand(static_cast<unsigned int>(std::time(nullptr)));
-    spdlog::debug("PongGame: Constructor called");
+    omnicpp::log::debug("PongGame: Constructor called");
 }
 
 PongGame::~PongGame() {
@@ -44,7 +44,7 @@ PongGame::~PongGame() {
 }
 
 bool PongGame::initialize() {
-    spdlog::info("PongGame: Initializing 3D Pong game...");
+    omnicpp::log::info("PongGame: Initializing 3D Pong game...");
 
     // Get engine subsystems
     auto renderer = m_engine->get_renderer();
@@ -52,7 +52,7 @@ bool PongGame::initialize() {
     auto resource_manager = m_engine->get_resource_manager();
 
     if (!renderer || !input_manager || !resource_manager) {
-        spdlog::error("PongGame: Failed to get engine subsystems");
+        omnicpp::log::error("PongGame: Failed to get engine subsystems");
         return false;
     }
 
@@ -75,12 +75,12 @@ bool PongGame::initialize() {
 
     // Initialize game state
     m_initialized = true;
-    spdlog::info("PongGame: 3D Pong game initialized successfully");
-    spdlog::info("PongGame: Controls:");
-    spdlog::info("PongGame:   W - Move paddle up");
-    spdlog::info("PongGame:   S - Move paddle down");
-    spdlog::info("PongGame:   ESC - Exit game");
-    spdlog::info("PongGame: First to {} points wins!", WINNING_SCORE);
+    omnicpp::log::info("PongGame: 3D Pong game initialized successfully");
+    omnicpp::log::info("PongGame: Controls:");
+    omnicpp::log::info("PongGame:   W - Move paddle up");
+    omnicpp::log::info("PongGame:   S - Move paddle down");
+    omnicpp::log::info("PongGame:   ESC - Exit game");
+    omnicpp::log::info("PongGame: First to {} points wins!", WINNING_SCORE);
 
     return true;
 }
@@ -90,7 +90,7 @@ void PongGame::shutdown() {
         return;
     }
 
-    spdlog::info("PongGame: Shutting down 3D Pong game...");
+    omnicpp::log::info("PongGame: Shutting down 3D Pong game...");
 
     m_scene_manager->unload_scene();
     m_scene_manager.reset();
@@ -100,7 +100,7 @@ void PongGame::shutdown() {
     m_ball.reset();
 
     m_initialized = false;
-    spdlog::info("PongGame: Shutdown complete");
+    omnicpp::log::info("PongGame: Shutdown complete");
 }
 
 void PongGame::create_scene() {
@@ -364,13 +364,13 @@ void PongGame::check_collisions() {
     if (m_ball_state.x < m_bounds.left) {
         // AI scores
         m_ai_score++;
-        spdlog::info("PongGame: AI scores! Score: Player {} - AI {}", m_player_score, m_ai_score);
+        omnicpp::log::info("PongGame: AI scores! Score: Player {} - AI {}", m_player_score, m_ai_score);
         reset_ball();
         update_score();
     } else if (m_ball_state.x > m_bounds.right) {
         // Player scores
         m_player_score++;
-        spdlog::info("PongGame: Player scores! Score: Player {} - AI {}", m_player_score, m_ai_score);
+        omnicpp::log::info("PongGame: Player scores! Score: Player {} - AI {}", m_player_score, m_ai_score);
         reset_ball();
         update_score();
     }
@@ -379,12 +379,12 @@ void PongGame::check_collisions() {
 void PongGame::update_score() {
     // Check for win condition
     if (m_player_score >= WINNING_SCORE) {
-        spdlog::info("PongGame: PLAYER WINS!");
-        spdlog::info("PongGame: Final Score: Player {} - AI {}", m_player_score, m_ai_score);
+        omnicpp::log::info("PongGame: PLAYER WINS!");
+        omnicpp::log::info("PongGame: Final Score: Player {} - AI {}", m_player_score, m_ai_score);
         m_running = false;
     } else if (m_ai_score >= WINNING_SCORE) {
-        spdlog::info("PongGame: AI WINS!");
-        spdlog::info("PongGame: Final Score: Player {} - AI {}", m_player_score, m_ai_score);
+        omnicpp::log::info("PongGame: AI WINS!");
+        omnicpp::log::info("PongGame: Final Score: Player {} - AI {}", m_player_score, m_ai_score);
         m_running = false;
     }
 }
@@ -401,7 +401,7 @@ void PongGame::render() {
 void PongGame::handle_input(const input::InputEvent& event) {
     if (event.type == input::EventType::KEY_PRESS) {
         if (event.key_code == input::KeyCode::ESCAPE) {
-            spdlog::info("PongGame: ESCAPE pressed, stopping game");
+            omnicpp::log::info("PongGame: ESCAPE pressed, stopping game");
             m_running = false;
         }
     }
@@ -409,11 +409,11 @@ void PongGame::handle_input(const input::InputEvent& event) {
 
 int PongGame::run() {
     if (!m_initialized) {
-        spdlog::error("PongGame: Game not initialized");
+        omnicpp::log::error("PongGame: Game not initialized");
         return 1;
     }
 
-    spdlog::info("PongGame: Starting 3D Pong game loop...");
+    omnicpp::log::info("PongGame: Starting 3D Pong game loop...");
     m_running = true;
 
     // Game loop
@@ -434,7 +434,7 @@ int PongGame::run() {
         m_engine->update(delta_time);
     }
 
-    spdlog::info("PongGame: 3D Pong game loop ended");
+    omnicpp::log::info("PongGame: 3D Pong game loop ended");
     return 0;
 }
 

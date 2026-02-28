@@ -70,7 +70,6 @@ Thumbs.db
 /dotnamebackup/
 *.bak
 *.orig
-*~
 
 # Temporary files
 *.tmp
@@ -98,3 +97,33 @@ graph.html
 
 # CMake user presets
 CMakeUserPresets.json
+
+# Nix/direnv
+.direnv/
+.envrc
+.devenv/
+result
+result-*
+
+# Environment files
+.env
+.env.local
+.clang.env
+
+# Debug/development reports (temporary)
+*_REPORT.md
+!README.md
+!CHANGELOG.md
+
+# Temporary scripts
+run-*.sh
+
+# Test output directories
+tests/output/
+tests/.cache/
+
+# IDE/Editor specific
+.idea/
+.vscode/launch.json
+.vscode/tasks.json
+*.code-workspace

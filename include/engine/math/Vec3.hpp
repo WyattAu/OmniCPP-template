@@ -28,11 +28,11 @@ public:
 
     /**
      * @brief Constructor with initial values
-     * @param x X component
-     * @param y Y component
-     * @param z Z component
+     * @param x_ X component
+     * @param y_ Y component
+     * @param z_ Z component
      */
-    Vec3(float x, float y, float z) : x(x), y(y), z(z) {}
+    Vec3(float x_, float y_, float z_) : x(x_), y(y_), z(z_) {}
 
     /**
      * @brief Copy constructor

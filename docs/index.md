@@ -30,9 +30,12 @@ ctest --test-dir build
 - [API Documentation](api/overview.md) - Generated from code comments
 - [Getting Started](getting-started/installation.md) - Installation and setup
 - [Development](development/building.md) - Building and contributing
-- [MSVC Builds](msvc-builds.md) - Windows MSVC build instructions
-- [MinGW Builds](mingw-builds.md) - Windows MinGW build instructions
+- [Nix Development](nix-development.md) - Nix environment setup and usage
+- [CachyOS Builds](cachyos-builds.md) - CachyOS-specific build instructions and optimizations
 - [Linux Builds](linux-builds.md) - Linux build instructions
+- [Linux Troubleshooting](linux-troubleshooting.md) - Linux build troubleshooting guide
+- [Conan Linux Profiles](conan-linux-profiles.md) - Conan profile documentation for Linux
+- [VSCode Linux Setup](vscode-linux-setup.md) - VSCode configuration for Linux development
 - [WASM Builds](wasm-builds.md) - WebAssembly build instructions
 
 ## License

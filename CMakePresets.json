@@ -9,66 +9,143 @@
     {
       "name": "default",
       "displayName": "Default Config",
-      "description": "Default build configuration",
-      "binaryDir": "${sourceDir}/build/${presetName}",
+      "description": "Default build configuration (single build directory)",
+      "binaryDir": "${sourceDir}/build",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_C_COMPILER": "clang",
+        "CMAKE_CXX_COMPILER": "clang++",
+        "CMAKE_CXX_STANDARD": "23",
+        "CMAKE_CXX_FLAGS": "-march=native -g -Wall -Wextra -Wpedantic -U_FORTIFY_SOURCE",
+        "CMAKE_C_FLAGS": "-march=native -g -Wall -Wextra -Wpedantic -U_FORTIFY_SOURCE",
+        "CMAKE_EXE_LINKER_FLAGS": "-Wl,--as-needed -Wl,--no-undefined",
+        "CMAKE_SHARED_LINKER_FLAGS": "-Wl,--as-needed -Wl,--no-undefined",
+        "CMAKE_PREFIX_PATH": "/nix/var/nix/profiles/default",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+        "CMAKE_BUILD_PARALLEL_LEVEL": "$(nproc)",
         "OMNICPP_BUILD_ENGINE": "ON",
         "OMNICPP_BUILD_GAME": "ON",
         "OMNICPP_BUILD_TESTS": "OFF",
-        "OMNICPP_BUILD_EXAMPLES": "OFF"
+        "OMNICPP_BUILD_EXAMPLES": "ON",
+        "OMNICPP_USE_VULKAN": "ON",
+        "OMNICPP_USE_QT6": "ON",
+        "OMNICPP_USE_OPENGL": "OFF",
+        "OMNICPP_USE_GLFW": "OFF",
+        "OMNICPP_USE_SPDLOG": "ON",
+        "OMNICPP_USE_GLM": "ON",
+        "OMNICPP_USE_STB": "ON",
+        "OMNICPP_ENABLE_COVERAGE": "OFF",
+        "OMNICPP_ENABLE_FORMATTING": "ON",
+        "OMNICPP_ENABLE_LINTING": "ON",
+        "OMNICPP_USE_CONAN": "OFF",
+        "OMNICPP_USE_VCPKG": "OFF",
+        "OMNICPP_USE_CPM": "ON",
+        "Qt6_DIR": "/nix/store/kavwy4v9p1jhf952dzipkjj5l1hjx110-qtbase-6.10.1/lib/cmake/Qt6"
       }
     },
     {
       "name": "debug",
       "displayName": "Debug",
-      "description": "Debug build",
-      "binaryDir": "${sourceDir}/build/debug",
+      "description": "Debug build (single build directory)",
+      "binaryDir": "${sourceDir}/build",
+      "generator": "Ninja",
       "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Debug",
         "OMNICPP_BUILD_ENGINE": "ON",
         "OMNICPP_BUILD_GAME": "ON",
         "OMNICPP_BUILD_TESTS": "ON",
-        "OMNICPP_BUILD_EXAMPLES": "OFF"
+        "OMNICPP_BUILD_EXAMPLES": "OFF",
+        "OMNICPP_USE_VULKAN": "ON",
+        "OMNICPP_USE_QT6": "ON",
+        "OMNICPP_USE_OPENGL": "OFF",
+        "OMNICPP_USE_GLFW": "OFF",
+        "OMNICPP_USE_SPDLOG": "ON",
+        "OMNICPP_USE_GLM": "ON",
+        "OMNICPP_USE_STB": "ON",
+        "OMNICPP_ENABLE_COVERAGE": "OFF",
+        "OMNICPP_ENABLE_FORMATTING": "ON",
+        "OMNICPP_ENABLE_LINTING": "ON",
+        "OMNICPP_USE_CONAN": "OFF",
+        "OMNICPP_USE_VCPKG": "OFF",
+        "OMNICPP_USE_CPM": "ON"
       }
     },
     {
       "name": "release",
       "displayName": "Release",
-      "description": "Release build",
-      "binaryDir": "${sourceDir}/build/release",
+      "description": "Release build (single build directory)",
+      "binaryDir": "${sourceDir}/build",
+      "generator": "Ninja",
       "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Release",
         "OMNICPP_BUILD_ENGINE": "ON",
         "OMNICPP_BUILD_GAME": "ON",
         "OMNICPP_BUILD_TESTS": "OFF",
-        "OMNICPP_BUILD_EXAMPLES": "OFF"
+        "OMNICPP_BUILD_EXAMPLES": "ON",
+        "OMNICPP_USE_VULKAN": "ON",
+        "OMNICPP_USE_QT6": "ON",
+        "OMNICPP_USE_OPENGL": "OFF",
+        "OMNICPP_USE_GLFW": "OFF",
+        "OMNICPP_USE_SPDLOG": "ON",
+        "OMNICPP_USE_GLM": "ON",
+        "OMNICPP_USE_STB": "ON",
+        "OMNICPP_ENABLE_COVERAGE": "OFF",
+        "OMNICPP_ENABLE_FORMATTING": "ON",
+        "OMNICPP_ENABLE_LINTING": "ON",
+        "OMNICPP_USE_CONAN": "OFF",
+        "OMNICPP_USE_VCPKG": "OFF",
+        "OMNICPP_USE_CPM": "ON",
+        "Qt6_DIR": "/nix/store/kavwy4v9p1jhf952dzipkjj5l1hjx110-qtbase-6.10.1/lib/cmake/Qt6"
       }
     },
     {
       "name": "relwithdebinfo",
       "displayName": "RelWithDebInfo",
-      "description": "Release with debug info",
-      "binaryDir": "${sourceDir}/build/relwithdebinfo",
+      "description": "Release with debug info (single build directory)",
+      "binaryDir": "${sourceDir}/build",
+      "generator": "Ninja",
       "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "RelWithDebInfo",
         "OMNICPP_BUILD_ENGINE": "ON",
         "OMNICPP_BUILD_GAME": "ON",
         "OMNICPP_BUILD_TESTS": "OFF",
-        "OMNICPP_BUILD_EXAMPLES": "OFF"
+        "OMNICPP_BUILD_EXAMPLES": "ON",
+        "OMNICPP_USE_VULKAN": "ON",
+        "OMNICPP_USE_QT6": "ON",
+        "OMNICPP_USE_OPENGL": "OFF",
+        "OMNICPP_USE_GLFW": "OFF",
+        "OMNICPP_USE_SPDLOG": "ON",
+        "OMNICPP_USE_GLM": "ON",
+        "OMNICPP_USE_STB": "ON",
+        "OMNICPP_ENABLE_COVERAGE": "OFF",
+        "OMNICPP_ENABLE_FORMATTING": "ON",
+        "OMNICPP_ENABLE_LINTING": "ON",
+        "OMNICPP_USE_CONAN": "OFF",
+        "OMNICPP_USE_VCPKG": "OFF",
+        "OMNICPP_USE_CPM": "ON"
       }
     },
     {
       "name": "minsizerel",
       "displayName": "MinSizeRel",
-      "description": "Minimum size release",
-      "binaryDir": "${sourceDir}/build/minsizerel",
+      "description": "Minimum size release (single build directory)",
+      "binaryDir": "${sourceDir}/build",
+      "generator": "Ninja",
       "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "MinSizeRel",
         "OMNICPP_BUILD_ENGINE": "ON",
         "OMNICPP_BUILD_GAME": "ON",
         "OMNICPP_BUILD_TESTS": "OFF",
-        "OMNICPP_BUILD_EXAMPLES": "OFF"
+        "OMNICPP_BUILD_EXAMPLES": "ON",
+        "OMNICPP_USE_VULKAN": "ON",
+        "OMNICPP_USE_QT6": "ON",
+        "OMNICPP_USE_OPENGL": "OFF",
+        "OMNICPP_USE_GLFW": "OFF",
+        "OMNICPP_USE_SPDLOG": "ON",
+        "OMNICPP_USE_GLM": "ON",
+        "OMNICPP_USE_STB": "ON",
+        "OMNICPP_ENABLE_COVERAGE": "OFF",
+        "OMNICPP_ENABLE_FORMATTING": "ON",
+        "OMNICPP_ENABLE_LINTING": "ON",
+        "OMNICPP_USE_CONAN": "OFF",
+        "OMNICPP_USE_VCPKG": "OFF",
+        "OMNICPP_USE_CPM": "ON"
       }
     },
     {
@@ -366,8 +443,8 @@
     {
       "name": "gcc-debug",
       "displayName": "GCC Debug",
-      "description": "Debug build with GCC compiler",
-      "binaryDir": "${sourceDir}/build/gcc/debug",
+      "description": "Debug build with GCC compiler (single build directory)",
+      "binaryDir": "${sourceDir}/build",
       "generator": "Ninja",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
@@ -381,8 +458,8 @@
     {
       "name": "gcc-release",
       "displayName": "GCC Release",
-      "description": "Release build with GCC compiler",
-      "binaryDir": "${sourceDir}/build/gcc/release",
+      "description": "Release build with GCC compiler (single build directory)",
+      "binaryDir": "${sourceDir}/build",
       "generator": "Ninja",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
@@ -426,8 +503,8 @@
     {
       "name": "clang-debug",
       "displayName": "Clang Debug",
-      "description": "Debug build with Clang compiler",
-      "binaryDir": "${sourceDir}/build/clang/debug",
+      "description": "Debug build with Clang compiler (single build directory)",
+      "binaryDir": "${sourceDir}/build",
       "generator": "Ninja",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
@@ -441,8 +518,8 @@
     {
       "name": "clang-release",
       "displayName": "Clang Release",
-      "description": "Release build with Clang compiler",
-      "binaryDir": "${sourceDir}/build/clang/release",
+      "description": "Release build with Clang compiler (single build directory)",
+      "binaryDir": "${sourceDir}/build",
       "generator": "Ninja",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
@@ -481,6 +558,228 @@
         "OMNICPP_BUILD_ENGINE": "ON",
         "OMNICPP_BUILD_GAME": "ON",
         "OMNICPP_BUILD_TESTS": "OFF"
+      }
+    },
+    {
+      "name": "nix-debug",
+      "displayName": "Nix Debug",
+      "description": "Debug build with Nix environment (GCC 13 or Clang 19)",
+      "binaryDir": "${sourceDir}/build",
+      "generator": "Ninja",
+      "cacheVariables": {
+        "OMNICPP_BUILD_ENGINE": "ON",
+        "OMNICPP_BUILD_GAME": "ON",
+        "OMNICPP_BUILD_TESTS": "ON",
+        "OMNICPP_BUILD_EXAMPLES": "ON",
+        "OMNICPP_USE_VULKAN": "ON",
+        "OMNICPP_USE_QT6": "ON",
+        "OMNICPP_USE_OPENGL": "OFF",
+        "OMNICPP_USE_GLFW": "OFF",
+        "OMNICPP_USE_SPDLOG": "ON",
+        "OMNICPP_USE_GLM": "ON",
+        "OMNICPP_USE_STB": "ON",
+        "OMNICPP_USE_NLOHMANN_JSON": "ON",
+        "OMNICPP_ENABLE_COVERAGE": "OFF",
+        "OMNICPP_ENABLE_FORMATTING": "ON",
+        "OMNICPP_ENABLE_LINTING": "ON",
+        "OMNICPP_USE_CONAN": "OFF",
+        "OMNICPP_USE_VCPKG": "OFF",
+        "OMNICPP_USE_CPM": "ON"
+      }
+    },
+    {
+      "name": "nix-release",
+      "displayName": "Nix Release",
+      "description": "Release build with Nix environment (GCC 13 or Clang 19)",
+      "binaryDir": "${sourceDir}/build",
+      "generator": "Ninja",
+      "cacheVariables": {
+        "OMNICPP_BUILD_ENGINE": "ON",
+        "OMNICPP_BUILD_GAME": "ON",
+        "OMNICPP_BUILD_TESTS": "OFF",
+        "OMNICPP_BUILD_EXAMPLES": "ON",
+        "OMNICPP_USE_VULKAN": "ON",
+        "OMNICPP_USE_QT6": "ON",
+        "OMNICPP_USE_OPENGL": "OFF",
+        "OMNICPP_USE_GLFW": "OFF",
+        "OMNICPP_USE_SPDLOG": "ON",
+        "OMNICPP_USE_GLM": "ON",
+        "OMNICPP_USE_STB": "ON",
+        "OMNICPP_USE_NLOHMANN_JSON": "ON",
+        "OMNICPP_ENABLE_COVERAGE": "OFF",
+        "OMNICPP_ENABLE_FORMATTING": "ON",
+        "OMNICPP_ENABLE_LINTING": "ON",
+        "OMNICPP_USE_CONAN": "OFF",
+        "OMNICPP_USE_VCPKG": "OFF",
+        "OMNICPP_USE_CPM": "ON"
+      }
+    },
+    {
+      "name": "cachyos-gcc-debug",
+      "displayName": "CachyOS-GCC Debug",
+      "description": "Debug build with CachyOS GCC 13 compiler",
+      "binaryDir": "${sourceDir}/build",
+      "generator": "Ninja",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_C_COMPILER": "gcc",
+        "CMAKE_CXX_COMPILER": "g++",
+        "CMAKE_CXX_STANDARD": "23",
+        "CMAKE_CXX_FLAGS": "-march=native -g -Wall -Wextra -Wpedantic",
+        "CMAKE_C_FLAGS": "-march=native -g -Wall -Wextra -Wpedantic",
+        "CMAKE_EXE_LINKER_FLAGS": "-Wl,--as-needed -Wl,--no-undefined",
+        "CMAKE_SHARED_LINKER_FLAGS": "-Wl,--as-needed -Wl,--no-undefined",
+        "OMNICPP_BUILD_ENGINE": "ON",
+        "OMNICPP_BUILD_GAME": "ON",
+        "OMNICPP_BUILD_TESTS": "ON",
+        "OMNICPP_BUILD_EXAMPLES": "OFF"
+      }
+    },
+    {
+      "name": "cachyos-gcc-release",
+      "displayName": "CachyOS-GCC Release",
+      "description": "Release build with CachyOS GCC 13 compiler with performance optimizations",
+      "binaryDir": "${sourceDir}/build/cachyos-gcc/release",
+      "generator": "Ninja",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_C_COMPILER": "gcc",
+        "CMAKE_CXX_COMPILER": "g++",
+        "CMAKE_CXX_STANDARD": "23",
+        "CMAKE_CXX_FLAGS": "-march=native -O3 -flto -DNDEBUG -Wall -Wextra -Wpedantic",
+        "CMAKE_C_FLAGS": "-march=native -O3 -flto -DNDEBUG -Wall -Wextra -Wpedantic",
+        "CMAKE_EXE_LINKER_FLAGS": "-Wl,--as-needed -Wl,--no-undefined -flto",
+        "CMAKE_SHARED_LINKER_FLAGS": "-Wl,--as-needed -Wl,--no-undefined -flto",
+        "OMNICPP_BUILD_ENGINE": "ON",
+        "OMNICPP_BUILD_GAME": "ON",
+        "OMNICPP_BUILD_TESTS": "OFF",
+        "OMNICPP_BUILD_EXAMPLES": "OFF"
+      }
+    },
+    {
+      "name": "cachyos-gcc-relwithdebinfo",
+      "displayName": "CachyOS-GCC RelWithDebInfo",
+      "description": "Release with debug info build with CachyOS GCC 13 compiler",
+      "binaryDir": "${sourceDir}/build/cachyos-gcc/relwithdebinfo",
+      "generator": "Ninja",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+        "CMAKE_C_COMPILER": "gcc",
+        "CMAKE_CXX_COMPILER": "g++",
+        "CMAKE_CXX_STANDARD": "23",
+        "CMAKE_CXX_FLAGS": "-march=native -O2 -g -flto -Wall -Wextra -Wpedantic",
+        "CMAKE_C_FLAGS": "-march=native -O2 -g -flto -Wall -Wextra -Wpedantic",
+        "CMAKE_EXE_LINKER_FLAGS": "-Wl,--as-needed -Wl,--no-undefined -flto",
+        "CMAKE_SHARED_LINKER_FLAGS": "-Wl,--as-needed -Wl,--no-undefined -flto",
+        "OMNICPP_BUILD_ENGINE": "ON",
+        "OMNICPP_BUILD_GAME": "ON",
+        "OMNICPP_BUILD_TESTS": "OFF",
+        "OMNICPP_BUILD_EXAMPLES": "OFF"
+      }
+    },
+    {
+      "name": "cachyos-gcc-minsizerel",
+      "displayName": "CachyOS-GCC MinSizeRel",
+      "description": "Minimum size release build with CachyOS GCC 13 compiler",
+      "binaryDir": "${sourceDir}/build/cachyos-gcc/minsizerel",
+      "generator": "Ninja",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "MinSizeRel",
+        "CMAKE_C_COMPILER": "gcc",
+        "CMAKE_CXX_COMPILER": "g++",
+        "CMAKE_CXX_STANDARD": "23",
+        "CMAKE_CXX_FLAGS": "-march=native -Os -flto -DNDEBUG -Wall -Wextra -Wpedantic",
+        "CMAKE_C_FLAGS": "-march=native -Os -flto -DNDEBUG -Wall -Wextra -Wpedantic",
+        "CMAKE_EXE_LINKER_FLAGS": "-Wl,--as-needed -Wl,--no-undefined -flto -Wl,-s",
+        "CMAKE_SHARED_LINKER_FLAGS": "-Wl,--as-needed -Wl,--no-undefined -flto -Wl,-s",
+        "OMNICPP_BUILD_ENGINE": "ON",
+        "OMNICPP_BUILD_GAME": "ON",
+        "OMNICPP_BUILD_TESTS": "OFF",
+        "OMNICPP_BUILD_EXAMPLES": "OFF"
+      }
+    },
+    {
+      "name": "cachyos-clang-debug",
+      "displayName": "CachyOS-Clang Debug",
+      "description": "Debug build with CachyOS Clang 19 compiler (single build directory)",
+      "binaryDir": "${sourceDir}/build",
+      "generator": "Ninja",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_C_COMPILER": "clang",
+        "CMAKE_CXX_COMPILER": "clang++",
+        "CMAKE_CXX_STANDARD": "23",
+        "CMAKE_CXX_FLAGS": "-march=native -g -Wall -Wextra -Wpedantic",
+        "CMAKE_C_FLAGS": "-march=native -g -Wall -Wextra -Wpedantic",
+        "CMAKE_EXE_LINKER_FLAGS": "-Wl,--as-needed -Wl,--no-undefined",
+        "CMAKE_SHARED_LINKER_FLAGS": "-Wl,--as-needed -Wl,--no-undefined",
+        "OMNICPP_BUILD_ENGINE": "ON",
+        "OMNICPP_BUILD_GAME": "ON",
+        "OMNICPP_BUILD_TESTS": "ON",
+        "OMNICPP_BUILD_EXAMPLES": "OFF"
+      }
+    },
+    {
+      "name": "cachyos-clang-release",
+      "displayName": "CachyOS-Clang Release",
+      "description": "Release build with CachyOS Clang 19 compiler with performance optimizations",
+      "binaryDir": "${sourceDir}/build/cachyos-clang/release",
+      "generator": "Ninja",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_C_COMPILER": "clang",
+        "CMAKE_CXX_COMPILER": "clang++",
+        "CMAKE_CXX_STANDARD": "23",
+        "CMAKE_CXX_FLAGS": "-march=native -O3 -flto -DNDEBUG -Wall -Wextra -Wpedantic",
+        "CMAKE_C_FLAGS": "-march=native -O3 -flto -DNDEBUG -Wall -Wextra -Wpedantic",
+        "CMAKE_EXE_LINKER_FLAGS": "-Wl,--as-needed -Wl,--no-undefined -flto",
+        "CMAKE_SHARED_LINKER_FLAGS": "-Wl,--as-needed -Wl,--no-undefined -flto",
+        "OMNICPP_BUILD_ENGINE": "ON",
+        "OMNICPP_BUILD_GAME": "ON",
+        "OMNICPP_BUILD_TESTS": "OFF",
+        "OMNICPP_BUILD_EXAMPLES": "OFF"
+      }
+    },
+    {
+      "name": "cachyos-clang-relwithdebinfo",
+      "displayName": "CachyOS-Clang RelWithDebInfo",
+      "description": "Release with debug info build with CachyOS Clang 19 compiler",
+      "binaryDir": "${sourceDir}/build/cachyos-clang/relwithdebinfo",
+      "generator": "Ninja",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+        "CMAKE_C_COMPILER": "clang",
+        "CMAKE_CXX_COMPILER": "clang++",
+        "CMAKE_CXX_STANDARD": "23",
+        "CMAKE_CXX_FLAGS": "-march=native -O2 -g -flto -Wall -Wextra -Wpedantic",
+        "CMAKE_C_FLAGS": "-march=native -O2 -g -flto -Wall -Wextra -Wpedantic",
+        "CMAKE_EXE_LINKER_FLAGS": "-Wl,--as-needed -Wl,--no-undefined -flto",
+        "CMAKE_SHARED_LINKER_FLAGS": "-Wl,--as-needed -Wl,--no-undefined -flto",
+        "OMNICPP_BUILD_ENGINE": "ON",
+        "OMNICPP_BUILD_GAME": "ON",
+        "OMNICPP_BUILD_TESTS": "OFF",
+        "OMNICPP_BUILD_EXAMPLES": "OFF"
+      }
+    },
+    {
+      "name": "cachyos-clang-minsizerel",
+      "displayName": "CachyOS-Clang MinSizeRel",
+      "description": "Minimum size release build with CachyOS Clang 19 compiler",
+      "binaryDir": "${sourceDir}/build/cachyos-clang/minsizerel",
+      "generator": "Ninja",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "MinSizeRel",
+        "CMAKE_C_COMPILER": "clang",
+        "CMAKE_CXX_COMPILER": "clang++",
+        "CMAKE_CXX_STANDARD": "23",
+        "CMAKE_CXX_FLAGS": "-march=native -Os -flto -DNDEBUG -Wall -Wextra -Wpedantic",
+        "CMAKE_C_FLAGS": "-march=native -Os -flto -DNDEBUG -Wall -Wextra -Wpedantic",
+        "CMAKE_EXE_LINKER_FLAGS": "-Wl,--as-needed -Wl,--no-undefined -flto -Wl,-s",
+        "CMAKE_SHARED_LINKER_FLAGS": "-Wl,--as-needed -Wl,--no-undefined -flto -Wl,-s",
+        "OMNICPP_BUILD_ENGINE": "ON",
+        "OMNICPP_BUILD_GAME": "ON",
+        "OMNICPP_BUILD_TESTS": "OFF",
+        "OMNICPP_BUILD_EXAMPLES": "OFF"
       }
     },
     {
@@ -621,6 +920,575 @@
         "OMNICPP_BUILD_GAME": "ON",
         "OMNICPP_BUILD_TESTS": "OFF",
         "OMNICPP_BUILD_EXAMPLES": "OFF"
+      }
+    },
+    {
+      "name": "nix-gcc-debug",
+      "displayName": "Nix GCC Debug",
+      "description": "Nix environment with GCC 13 compiler in Debug mode (ADR-033, REQ-002-002)",
+      "binaryDir": "${sourceDir}/build/nix-gcc/debug",
+      "generator": "Ninja",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_C_COMPILER": "gcc",
+        "CMAKE_CXX_COMPILER": "g++",
+        "CMAKE_CXX_STANDARD": "23",
+        "CMAKE_CXX_STANDARD_REQUIRED": "ON",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+        "OMNICPP_BUILD_ENGINE": "ON",
+        "OMNICPP_BUILD_GAME": "ON",
+        "OMNICPP_BUILD_TESTS": "ON",
+        "OMNICPP_BUILD_EXAMPLES": "OFF"
+      },
+      "environment": {
+        "IN_NIX_SHELL": "1",
+        "CC": "gcc",
+        "CXX": "g++"
+      },
+      "condition": {
+        "type": "equals",
+        "lhs": "$penv{IN_NIX_SHELL}",
+        "rhs": "1"
+      }
+    },
+    {
+      "name": "nix-gcc-release",
+      "displayName": "Nix GCC Release",
+      "description": "Nix environment with GCC 13 compiler in Release mode (ADR-033, REQ-002-002)",
+      "binaryDir": "${sourceDir}/build/nix-gcc/release",
+      "generator": "Ninja",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_C_COMPILER": "gcc",
+        "CMAKE_CXX_COMPILER": "g++",
+        "CMAKE_CXX_STANDARD": "23",
+        "CMAKE_CXX_STANDARD_REQUIRED": "ON",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+        "OMNICPP_BUILD_ENGINE": "ON",
+        "OMNICPP_BUILD_GAME": "ON",
+        "OMNICPP_BUILD_TESTS": "OFF",
+        "OMNICPP_BUILD_EXAMPLES": "OFF"
+      },
+      "environment": {
+        "IN_NIX_SHELL": "1",
+        "CC": "gcc",
+        "CXX": "g++"
+      },
+      "condition": {
+        "type": "equals",
+        "lhs": "$penv{IN_NIX_SHELL}",
+        "rhs": "1"
+      }
+    },
+    {
+      "name": "nix-gcc-relwithdebinfo",
+      "displayName": "Nix GCC RelWithDebInfo",
+      "description": "Nix environment with GCC 13 compiler in RelWithDebInfo mode (ADR-033, REQ-002-002)",
+      "binaryDir": "${sourceDir}/build/nix-gcc/relwithdebinfo",
+      "generator": "Ninja",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+        "CMAKE_C_COMPILER": "gcc",
+        "CMAKE_CXX_COMPILER": "g++",
+        "CMAKE_CXX_STANDARD": "23",
+        "CMAKE_CXX_STANDARD_REQUIRED": "ON",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+        "OMNICPP_BUILD_ENGINE": "ON",
+        "OMNICPP_BUILD_GAME": "ON",
+        "OMNICPP_BUILD_TESTS": "OFF",
+        "OMNICPP_BUILD_EXAMPLES": "OFF"
+      },
+      "environment": {
+        "IN_NIX_SHELL": "1",
+        "CC": "gcc",
+        "CXX": "g++"
+      },
+      "condition": {
+        "type": "equals",
+        "lhs": "$penv{IN_NIX_SHELL}",
+        "rhs": "1"
+      }
+    },
+    {
+      "name": "nix-gcc-minsizerel",
+      "displayName": "Nix GCC MinSizeRel",
+      "description": "Nix environment with GCC 13 compiler in MinSizeRel mode (ADR-033, REQ-002-002)",
+      "binaryDir": "${sourceDir}/build/nix-gcc/minsizerel",
+      "generator": "Ninja",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "MinSizeRel",
+        "CMAKE_C_COMPILER": "gcc",
+        "CMAKE_CXX_COMPILER": "g++",
+        "CMAKE_CXX_STANDARD": "23",
+        "CMAKE_CXX_STANDARD_REQUIRED": "ON",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+        "OMNICPP_BUILD_ENGINE": "ON",
+        "OMNICPP_BUILD_GAME": "ON",
+        "OMNICPP_BUILD_TESTS": "OFF",
+        "OMNICPP_BUILD_EXAMPLES": "OFF"
+      },
+      "environment": {
+        "IN_NIX_SHELL": "1",
+        "CC": "gcc",
+        "CXX": "g++"
+      },
+      "condition": {
+        "type": "equals",
+        "lhs": "$penv{IN_NIX_SHELL}",
+        "rhs": "1"
+      }
+    },
+    {
+      "name": "nix-clang-debug",
+      "displayName": "Nix Clang Debug",
+      "description": "Nix environment with Clang 19 compiler in Debug mode (ADR-033, REQ-002-003)",
+      "binaryDir": "${sourceDir}/build/nix-clang/debug",
+      "generator": "Ninja",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_C_COMPILER": "clang",
+        "CMAKE_CXX_COMPILER": "clang++",
+        "CMAKE_CXX_STANDARD": "23",
+        "CMAKE_CXX_STANDARD_REQUIRED": "ON",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+        "OMNICPP_BUILD_ENGINE": "ON",
+        "OMNICPP_BUILD_GAME": "ON",
+        "OMNICPP_BUILD_TESTS": "ON",
+        "OMNICPP_BUILD_EXAMPLES": "OFF"
+      },
+      "environment": {
+        "IN_NIX_SHELL": "1",
+        "CC": "clang",
+        "CXX": "clang++"
+      },
+      "condition": {
+        "type": "equals",
+        "lhs": "$penv{IN_NIX_SHELL}",
+        "rhs": "1"
+      }
+    },
+    {
+      "name": "nix-clang-release",
+      "displayName": "Nix Clang Release",
+      "description": "Nix environment with Clang 19 compiler in Release mode (ADR-033, REQ-002-003)",
+      "binaryDir": "${sourceDir}/build/nix-clang/release",
+      "generator": "Ninja",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_C_COMPILER": "clang",
+        "CMAKE_CXX_COMPILER": "clang++",
+        "CMAKE_CXX_STANDARD": "23",
+        "CMAKE_CXX_STANDARD_REQUIRED": "ON",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+        "OMNICPP_BUILD_ENGINE": "ON",
+        "OMNICPP_BUILD_GAME": "ON",
+        "OMNICPP_BUILD_TESTS": "OFF",
+        "OMNICPP_BUILD_EXAMPLES": "OFF"
+      },
+      "environment": {
+        "IN_NIX_SHELL": "1",
+        "CC": "clang",
+        "CXX": "clang++"
+      },
+      "condition": {
+        "type": "equals",
+        "lhs": "$penv{IN_NIX_SHELL}",
+        "rhs": "1"
+      }
+    },
+    {
+      "name": "nix-clang-relwithdebinfo",
+      "displayName": "Nix Clang RelWithDebInfo",
+      "description": "Nix environment with Clang 19 compiler in RelWithDebInfo mode (ADR-033, REQ-002-003)",
+      "binaryDir": "${sourceDir}/build/nix-clang/relwithdebinfo",
+      "generator": "Ninja",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+        "CMAKE_C_COMPILER": "clang",
+        "CMAKE_CXX_COMPILER": "clang++",
+        "CMAKE_CXX_STANDARD": "23",
+        "CMAKE_CXX_STANDARD_REQUIRED": "ON",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+        "OMNICPP_BUILD_ENGINE": "ON",
+        "OMNICPP_BUILD_GAME": "ON",
+        "OMNICPP_BUILD_TESTS": "OFF",
+        "OMNICPP_BUILD_EXAMPLES": "OFF"
+      },
+      "environment": {
+        "IN_NIX_SHELL": "1",
+        "CC": "clang",
+        "CXX": "clang++"
+      },
+      "condition": {
+        "type": "equals",
+        "lhs": "$penv{IN_NIX_SHELL}",
+        "rhs": "1"
+      }
+    },
+    {
+      "name": "nix-clang-minsizerel",
+      "displayName": "Nix Clang MinSizeRel",
+      "description": "Nix environment with Clang 19 compiler in MinSizeRel mode (ADR-033, REQ-002-003)",
+      "binaryDir": "${sourceDir}/build/nix-clang/minsizerel",
+      "generator": "Ninja",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "MinSizeRel",
+        "CMAKE_C_COMPILER": "clang",
+        "CMAKE_CXX_COMPILER": "clang++",
+        "CMAKE_CXX_STANDARD": "23",
+        "CMAKE_CXX_STANDARD_REQUIRED": "ON",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+        "OMNICPP_BUILD_ENGINE": "ON",
+        "OMNICPP_BUILD_GAME": "ON",
+        "OMNICPP_BUILD_TESTS": "OFF",
+        "OMNICPP_BUILD_EXAMPLES": "OFF"
+      },
+      "environment": {
+        "IN_NIX_SHELL": "1",
+        "CC": "clang",
+        "CXX": "clang++"
+      },
+      "condition": {
+        "type": "equals",
+        "lhs": "$penv{IN_NIX_SHELL}",
+        "rhs": "1"
+      }
+    },
+    {
+      "name": "nix-cachyos-gcc-debug",
+      "displayName": "Nix CachyOS GCC Debug",
+      "description": "Nix environment with GCC 13 compiler and CachyOS optimizations in Debug mode (ADR-033, REQ-002-001)",
+      "binaryDir": "${sourceDir}/build/nix-cachyos-gcc/debug",
+      "generator": "Ninja",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_C_COMPILER": "gcc",
+        "CMAKE_CXX_COMPILER": "g++",
+        "CMAKE_C_FLAGS": "-march=native -g -O0",
+        "CMAKE_CXX_FLAGS": "-march=native -g -O0",
+        "CMAKE_EXE_LINKER_FLAGS": "-Wl,--as-needed -Wl,--no-undefined",
+        "CMAKE_CXX_STANDARD": "23",
+        "CMAKE_CXX_STANDARD_REQUIRED": "ON",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+        "OMNICPP_BUILD_ENGINE": "ON",
+        "OMNICPP_BUILD_GAME": "ON",
+        "OMNICPP_BUILD_TESTS": "ON",
+        "OMNICPP_BUILD_EXAMPLES": "OFF"
+      },
+      "environment": {
+        "IN_NIX_SHELL": "1",
+        "CC": "gcc",
+        "CXX": "g++",
+        "QT_QPA_PLATFORM": "wayland"
+      },
+      "condition": {
+        "type": "equals",
+        "lhs": "$penv{IN_NIX_SHELL}",
+        "rhs": "1"
+      }
+    },
+    {
+      "name": "nix-cachyos-gcc-release",
+      "displayName": "Nix CachyOS GCC Release",
+      "description": "Nix environment with GCC 13 compiler and CachyOS optimizations in Release mode (ADR-033, REQ-002-001)",
+      "binaryDir": "${sourceDir}/build/nix-cachyos-gcc/release",
+      "generator": "Ninja",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_C_COMPILER": "gcc",
+        "CMAKE_CXX_COMPILER": "g++",
+        "CMAKE_C_FLAGS": "-march=native -O3 -flto -DNDEBUG -fstack-protector-strong -D_FORTIFY_SOURCE=2",
+        "CMAKE_CXX_FLAGS": "-march=native -O3 -flto -DNDEBUG -fstack-protector-strong -D_FORTIFY_SOURCE=2",
+        "CMAKE_EXE_LINKER_FLAGS": "-Wl,--as-needed -Wl,--no-undefined",
+        "CMAKE_CXX_STANDARD": "23",
+        "CMAKE_CXX_STANDARD_REQUIRED": "ON",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+        "OMNICPP_BUILD_ENGINE": "ON",
+        "OMNICPP_BUILD_GAME": "ON",
+        "OMNICPP_BUILD_TESTS": "OFF",
+        "OMNICPP_BUILD_EXAMPLES": "OFF"
+      },
+      "environment": {
+        "IN_NIX_SHELL": "1",
+        "CC": "gcc",
+        "CXX": "g++",
+        "QT_QPA_PLATFORM": "wayland"
+      },
+      "condition": {
+        "type": "equals",
+        "lhs": "$penv{IN_NIX_SHELL}",
+        "rhs": "1"
+      }
+    },
+    {
+      "name": "nix-cachyos-gcc-relwithdebinfo",
+      "displayName": "Nix CachyOS GCC RelWithDebInfo",
+      "description": "Nix environment with GCC 13 compiler and CachyOS optimizations in RelWithDebInfo mode (ADR-033, REQ-002-001)",
+      "binaryDir": "${sourceDir}/build/nix-cachyos-gcc/relwithdebinfo",
+      "generator": "Ninja",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+        "CMAKE_C_COMPILER": "gcc",
+        "CMAKE_CXX_COMPILER": "g++",
+        "CMAKE_C_FLAGS": "-march=native -O2 -flto -g -fstack-protector-strong -D_FORTIFY_SOURCE=2",
+        "CMAKE_CXX_FLAGS": "-march=native -O2 -flto -g -fstack-protector-strong -D_FORTIFY_SOURCE=2",
+        "CMAKE_EXE_LINKER_FLAGS": "-Wl,--as-needed -Wl,--no-undefined",
+        "CMAKE_CXX_STANDARD": "23",
+        "CMAKE_CXX_STANDARD_REQUIRED": "ON",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+        "OMNICPP_BUILD_ENGINE": "ON",
+        "OMNICPP_BUILD_GAME": "ON",
+        "OMNICPP_BUILD_TESTS": "OFF",
+        "OMNICPP_BUILD_EXAMPLES": "OFF"
+      },
+      "environment": {
+        "IN_NIX_SHELL": "1",
+        "CC": "gcc",
+        "CXX": "g++",
+        "QT_QPA_PLATFORM": "wayland"
+      },
+      "condition": {
+        "type": "equals",
+        "lhs": "$penv{IN_NIX_SHELL}",
+        "rhs": "1"
+      }
+    },
+    {
+      "name": "nix-cachyos-gcc-minsizerel",
+      "displayName": "Nix CachyOS GCC MinSizeRel",
+      "description": "Nix environment with GCC 13 compiler and CachyOS optimizations in MinSizeRel mode (ADR-033, REQ-002-001)",
+      "binaryDir": "${sourceDir}/build/nix-cachyos-gcc/minsizerel",
+      "generator": "Ninja",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "MinSizeRel",
+        "CMAKE_C_COMPILER": "gcc",
+        "CMAKE_CXX_COMPILER": "g++",
+        "CMAKE_C_FLAGS": "-march=native -Os -flto -DNDEBUG -fstack-protector-strong -D_FORTIFY_SOURCE=2",
+        "CMAKE_CXX_FLAGS": "-march=native -Os -flto -DNDEBUG -fstack-protector-strong -D_FORTIFY_SOURCE=2",
+        "CMAKE_EXE_LINKER_FLAGS": "-Wl,--as-needed -Wl,--no-undefined",
+        "CMAKE_CXX_STANDARD": "23",
+        "CMAKE_CXX_STANDARD_REQUIRED": "ON",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+        "OMNICPP_BUILD_ENGINE": "ON",
+        "OMNICPP_BUILD_GAME": "ON",
+        "OMNICPP_BUILD_TESTS": "OFF",
+        "OMNICPP_BUILD_EXAMPLES": "OFF"
+      },
+      "environment": {
+        "IN_NIX_SHELL": "1",
+        "CC": "gcc",
+        "CXX": "g++",
+        "QT_QPA_PLATFORM": "wayland"
+      },
+      "condition": {
+        "type": "equals",
+        "lhs": "$penv{IN_NIX_SHELL}",
+        "rhs": "1"
+      }
+    },
+    {
+      "name": "nix-cachyos-clang-debug",
+      "displayName": "Nix CachyOS Clang Debug",
+      "description": "Nix environment with Clang 19 compiler and CachyOS optimizations in Debug mode (ADR-033, REQ-002-001)",
+      "binaryDir": "${sourceDir}/build/nix-cachyos-clang/debug",
+      "generator": "Ninja",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_C_COMPILER": "clang",
+        "CMAKE_CXX_COMPILER": "clang++",
+        "CMAKE_C_FLAGS": "-march=native -g -O0",
+        "CMAKE_CXX_FLAGS": "-march=native -g -O0",
+        "CMAKE_EXE_LINKER_FLAGS": "-Wl,--as-needed -Wl,--no-undefined",
+        "CMAKE_CXX_STANDARD": "23",
+        "CMAKE_CXX_STANDARD_REQUIRED": "ON",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+        "OMNICPP_BUILD_ENGINE": "ON",
+        "OMNICPP_BUILD_GAME": "ON",
+        "OMNICPP_BUILD_TESTS": "ON",
+        "OMNICPP_BUILD_EXAMPLES": "OFF"
+      },
+      "environment": {
+        "IN_NIX_SHELL": "1",
+        "CC": "clang",
+        "CXX": "clang++",
+        "QT_QPA_PLATFORM": "wayland"
+      },
+      "condition": {
+        "type": "equals",
+        "lhs": "$penv{IN_NIX_SHELL}",
+        "rhs": "1"
+      }
+    },
+    {
+      "name": "nix-cachyos-clang-release",
+      "displayName": "Nix CachyOS Clang Release",
+      "description": "Nix environment with Clang 19 compiler and CachyOS optimizations in Release mode (ADR-033, REQ-002-001)",
+      "binaryDir": "${sourceDir}/build/nix-cachyos-clang/release",
+      "generator": "Ninja",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_C_COMPILER": "clang",
+        "CMAKE_CXX_COMPILER": "clang++",
+        "CMAKE_C_FLAGS": "-march=native -O3 -flto -DNDEBUG -fstack-protector-strong -D_FORTIFY_SOURCE=2",
+        "CMAKE_CXX_FLAGS": "-march=native -O3 -flto -DNDEBUG -fstack-protector-strong -D_FORTIFY_SOURCE=2",
+        "CMAKE_EXE_LINKER_FLAGS": "-Wl,--as-needed -Wl,--no-undefined",
+        "CMAKE_CXX_STANDARD": "23",
+        "CMAKE_CXX_STANDARD_REQUIRED": "ON",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+        "OMNICPP_BUILD_ENGINE": "ON",
+        "OMNICPP_BUILD_GAME": "ON",
+        "OMNICPP_BUILD_TESTS": "OFF",
+        "OMNICPP_BUILD_EXAMPLES": "OFF"
+      },
+      "environment": {
+        "IN_NIX_SHELL": "1",
+        "CC": "clang",
+        "CXX": "clang++",
+        "QT_QPA_PLATFORM": "wayland"
+      },
+      "condition": {
+        "type": "equals",
+        "lhs": "$penv{IN_NIX_SHELL}",
+        "rhs": "1"
+      }
+    },
+    {
+      "name": "nix-cachyos-clang-relwithdebinfo",
+      "displayName": "Nix CachyOS Clang RelWithDebInfo",
+      "description": "Nix environment with Clang 19 compiler and CachyOS optimizations in RelWithDebInfo mode (ADR-033, REQ-002-001)",
+      "binaryDir": "${sourceDir}/build/nix-cachyos-clang/relwithdebinfo",
+      "generator": "Ninja",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+        "CMAKE_C_COMPILER": "clang",
+        "CMAKE_CXX_COMPILER": "clang++",
+        "CMAKE_C_FLAGS": "-march=native -O2 -flto -g -fstack-protector-strong -D_FORTIFY_SOURCE=2",
+        "CMAKE_CXX_FLAGS": "-march=native -O2 -flto -g -fstack-protector-strong -D_FORTIFY_SOURCE=2",
+        "CMAKE_EXE_LINKER_FLAGS": "-Wl,--as-needed -Wl,--no-undefined",
+        "CMAKE_CXX_STANDARD": "23",
+        "CMAKE_CXX_STANDARD_REQUIRED": "ON",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+        "OMNICPP_BUILD_ENGINE": "ON",
+        "OMNICPP_BUILD_GAME": "ON",
+        "OMNICPP_BUILD_TESTS": "OFF",
+        "OMNICPP_BUILD_EXAMPLES": "OFF"
+      },
+      "environment": {
+        "IN_NIX_SHELL": "1",
+        "CC": "clang",
+        "CXX": "clang++",
+        "QT_QPA_PLATFORM": "wayland"
+      },
+      "condition": {
+        "type": "equals",
+        "lhs": "$penv{IN_NIX_SHELL}",
+        "rhs": "1"
+      }
+    },
+    {
+      "name": "nix-cachyos-clang-minsizerel",
+      "displayName": "Nix CachyOS Clang MinSizeRel",
+      "description": "Nix environment with Clang 19 compiler and CachyOS optimizations in MinSizeRel mode (ADR-033, REQ-002-001)",
+      "binaryDir": "${sourceDir}/build/nix-cachyos-clang/minsizerel",
+      "generator": "Ninja",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "MinSizeRel",
+        "CMAKE_C_COMPILER": "clang",
+        "CMAKE_CXX_COMPILER": "clang++",
+        "CMAKE_C_FLAGS": "-march=native -Os -flto -DNDEBUG -fstack-protector-strong -D_FORTIFY_SOURCE=2",
+        "CMAKE_CXX_FLAGS": "-march=native -Os -flto -DNDEBUG -fstack-protector-strong -D_FORTIFY_SOURCE=2",
+        "CMAKE_EXE_LINKER_FLAGS": "-Wl,--as-needed -Wl,--no-undefined",
+        "CMAKE_CXX_STANDARD": "23",
+        "CMAKE_CXX_STANDARD_REQUIRED": "ON",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+        "OMNICPP_BUILD_ENGINE": "ON",
+        "OMNICPP_BUILD_GAME": "ON",
+        "OMNICPP_BUILD_TESTS": "OFF",
+        "OMNICPP_BUILD_EXAMPLES": "OFF"
+      },
+      "environment": {
+        "IN_NIX_SHELL": "1",
+        "CC": "clang",
+        "CXX": "clang++",
+        "QT_QPA_PLATFORM": "wayland"
+      },
+      "condition": {
+        "type": "equals",
+        "lhs": "$penv{IN_NIX_SHELL}",
+        "rhs": "1"
+      }
+    },
+    {
+      "name": "nix-qt6-vulkan-debug",
+      "displayName": "Nix Qt6 Vulkan Debug",
+      "description": "Nix environment with Qt6 and Vulkan libraries in Debug mode (ADR-033, REQ-002-004, REQ-002-005)",
+      "binaryDir": "${sourceDir}/build/nix-qt6-vulkan/debug",
+      "generator": "Ninja",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_C_COMPILER": "clang",
+        "CMAKE_CXX_COMPILER": "clang++",
+        "CMAKE_CXX_STANDARD": "23",
+        "CMAKE_CXX_STANDARD_REQUIRED": "ON",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+        "CMAKE_PREFIX_PATH": "${sourceDir}/.nix-profile/qt6:${sourceDir}/.nix-profile/vulkan",
+        "OMNICPP_BUILD_ENGINE": "ON",
+        "OMNICPP_BUILD_GAME": "ON",
+        "OMNICPP_BUILD_TESTS": "ON",
+        "OMNICPP_BUILD_EXAMPLES": "OFF"
+      },
+      "environment": {
+        "IN_NIX_SHELL": "1",
+        "CC": "clang",
+        "CXX": "clang++",
+        "QT_QPA_PLATFORM": "wayland",
+        "QT_PLUGIN_PATH": "${sourceDir}/.nix-profile/qt6/lib/qt-6/plugins",
+        "QMAKE": "${sourceDir}/.nix-profile/qt6/bin/qmake",
+        "VK_LAYER_PATH": "${sourceDir}/.nix-profile/vulkan/share/vulkan/explicit_layer.d",
+        "VK_ICD_FILENAMES": "${sourceDir}/.nix-profile/vulkan/share/vulkan/icd.d/intel_icd.x86_64.json:${sourceDir}/.nix-profile/vulkan/share/vulkan/icd.d/radeon_icd.x86_64.json"
+      },
+      "condition": {
+        "type": "equals",
+        "lhs": "$penv{IN_NIX_SHELL}",
+        "rhs": "1"
+      }
+    },
+    {
+      "name": "nix-qt6-vulkan-release",
+      "displayName": "Nix Qt6 Vulkan Release",
+      "description": "Nix environment with Qt6 and Vulkan libraries in Release mode (ADR-033, REQ-002-004, REQ-002-005)",
+      "binaryDir": "${sourceDir}/build/nix-qt6-vulkan/release",
+      "generator": "Ninja",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_C_COMPILER": "clang",
+        "CMAKE_CXX_COMPILER": "clang++",
+        "CMAKE_C_FLAGS": "-march=native -O3 -flto -DNDEBUG",
+        "CMAKE_CXX_FLAGS": "-march=native -O3 -flto -DNDEBUG",
+        "CMAKE_EXE_LINKER_FLAGS": "-Wl,--as-needed -Wl,--no-undefined",
+        "CMAKE_CXX_STANDARD": "23",
+        "CMAKE_CXX_STANDARD_REQUIRED": "ON",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+        "CMAKE_PREFIX_PATH": "${sourceDir}/.nix-profile/qt6:${sourceDir}/.nix-profile/vulkan",
+        "OMNICPP_BUILD_ENGINE": "ON",
+        "OMNICPP_BUILD_GAME": "ON",
+        "OMNICPP_BUILD_TESTS": "OFF",
+        "OMNICPP_BUILD_EXAMPLES": "OFF"
+      },
+      "environment": {
+        "IN_NIX_SHELL": "1",
+        "CC": "clang",
+        "CXX": "clang++",
+        "QT_QPA_PLATFORM": "wayland",
+        "QT_PLUGIN_PATH": "${sourceDir}/.nix-profile/qt6/lib/qt-6/plugins",
+        "QMAKE": "${sourceDir}/.nix-profile/qt6/bin/qmake",
+        "VK_LAYER_PATH": "${sourceDir}/.nix-profile/vulkan/share/vulkan/explicit_layer.d",
+        "VK_ICD_FILENAMES": "${sourceDir}/.nix-profile/vulkan/share/vulkan/icd.d/intel_icd.x86_64.json:${sourceDir}/.nix-profile/vulkan/share/vulkan/icd.d/radeon_icd.x86_64.json"
+      },
+      "condition": {
+        "type": "equals",
+        "lhs": "$penv{IN_NIX_SHELL}",
+        "rhs": "1"
       }
     }
   ],
@@ -834,6 +1702,96 @@
       "name": "windows-arm64-release",
       "configurePreset": "windows-arm64-release",
       "displayName": "Windows ARM64 Release Build"
+    },
+    {
+      "name": "nix-gcc-debug",
+      "configurePreset": "nix-gcc-debug",
+      "displayName": "Nix GCC Debug Build"
+    },
+    {
+      "name": "nix-gcc-release",
+      "configurePreset": "nix-gcc-release",
+      "displayName": "Nix GCC Release Build"
+    },
+    {
+      "name": "nix-gcc-relwithdebinfo",
+      "configurePreset": "nix-gcc-relwithdebinfo",
+      "displayName": "Nix GCC RelWithDebInfo Build"
+    },
+    {
+      "name": "nix-gcc-minsizerel",
+      "configurePreset": "nix-gcc-minsizerel",
+      "displayName": "Nix GCC MinSizeRel Build"
+    },
+    {
+      "name": "nix-clang-debug",
+      "configurePreset": "nix-clang-debug",
+      "displayName": "Nix Clang Debug Build"
+    },
+    {
+      "name": "nix-clang-release",
+      "configurePreset": "nix-clang-release",
+      "displayName": "Nix Clang Release Build"
+    },
+    {
+      "name": "nix-clang-relwithdebinfo",
+      "configurePreset": "nix-clang-relwithdebinfo",
+      "displayName": "Nix Clang RelWithDebInfo Build"
+    },
+    {
+      "name": "nix-clang-minsizerel",
+      "configurePreset": "nix-clang-minsizerel",
+      "displayName": "Nix Clang MinSizeRel Build"
+    },
+    {
+      "name": "nix-cachyos-gcc-debug",
+      "configurePreset": "nix-cachyos-gcc-debug",
+      "displayName": "Nix CachyOS GCC Debug Build"
+    },
+    {
+      "name": "nix-cachyos-gcc-release",
+      "configurePreset": "nix-cachyos-gcc-release",
+      "displayName": "Nix CachyOS GCC Release Build"
+    },
+    {
+      "name": "nix-cachyos-gcc-relwithdebinfo",
+      "configurePreset": "nix-cachyos-gcc-relwithdebinfo",
+      "displayName": "Nix CachyOS GCC RelWithDebInfo Build"
+    },
+    {
+      "name": "nix-cachyos-gcc-minsizerel",
+      "configurePreset": "nix-cachyos-gcc-minsizerel",
+      "displayName": "Nix CachyOS GCC MinSizeRel Build"
+    },
+    {
+      "name": "nix-cachyos-clang-debug",
+      "configurePreset": "nix-cachyos-clang-debug",
+      "displayName": "Nix CachyOS Clang Debug Build"
+    },
+    {
+      "name": "nix-cachyos-clang-release",
+      "configurePreset": "nix-cachyos-clang-release",
+      "displayName": "Nix CachyOS Clang Release Build"
+    },
+    {
+      "name": "nix-cachyos-clang-relwithdebinfo",
+      "configurePreset": "nix-cachyos-clang-relwithdebinfo",
+      "displayName": "Nix CachyOS Clang RelWithDebInfo Build"
+    },
+    {
+      "name": "nix-cachyos-clang-minsizerel",
+      "configurePreset": "nix-cachyos-clang-minsizerel",
+      "displayName": "Nix CachyOS Clang MinSizeRel Build"
+    },
+    {
+      "name": "nix-qt6-vulkan-debug",
+      "configurePreset": "nix-qt6-vulkan-debug",
+      "displayName": "Nix Qt6 Vulkan Debug Build"
+    },
+    {
+      "name": "nix-qt6-vulkan-release",
+      "configurePreset": "nix-qt6-vulkan-release",
+      "displayName": "Nix Qt6 Vulkan Release Build"
     }
   ]
 }

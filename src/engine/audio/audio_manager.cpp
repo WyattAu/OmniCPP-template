@@ -3,12 +3,13 @@
  * @brief Audio management implementation
  */
 
-#include "engine/audio/audio_manager.hpp"
+#include "engine/audio/AudioManager.hpp"
 #include <mutex>
 #include <unordered_map>
-#include <spdlog/spdlog.h>
+#include "engine/logging/Log.hpp"
 
-namespace OmniCpp::Engine::Audio {
+namespace omnicpp {
+namespace audio {
 
   /**
    * @brief Private implementation structure (Pimpl idiom)
@@ -41,7 +42,7 @@ namespace OmniCpp::Engine::Audio {
     std::lock_guard<std::mutex> lock (m_impl->mutex);
 
     if (m_impl->initialized) {
-      spdlog::warn("AudioManager: Already initialized");
+      omnicpp::log::warn("AudioManager: Already initialized");
       return true;
     }
 
@@ -49,7 +50,7 @@ namespace OmniCpp::Engine::Audio {
     m_impl->sounds.clear ();
     m_impl->initialized = true;
 
-    spdlog::info("AudioManager: Initialized");
+    omnicpp::log::info("AudioManager: Initialized");
     return true;
   }
 
@@ -63,7 +64,7 @@ namespace OmniCpp::Engine::Audio {
     m_impl->sounds.clear ();
     m_impl->initialized = false;
 
-    spdlog::info("AudioManager: Shutdown");
+    omnicpp::log::info("AudioManager: Shutdown");
   }
 
   void AudioManager::update () {
@@ -75,12 +76,12 @@ namespace OmniCpp::Engine::Audio {
     std::lock_guard<std::mutex> lock (m_impl->mutex);
 
     if (!m_impl->initialized) {
-      spdlog::error("AudioManager: Not initialized, cannot load sound: {}", name);
+      omnicpp::log::error("AudioManager: Not initialized, cannot load sound: {}", name);
       return false;
     }
 
     m_impl->sounds[name] = path;
-    spdlog::debug("AudioManager: Loaded sound '{}' from '{}'", name, path);
+    omnicpp::log::debug("AudioManager: Loaded sound '{}' from '{}'", name, path);
     return true;
   }
 
@@ -88,16 +89,16 @@ namespace OmniCpp::Engine::Audio {
     std::lock_guard<std::mutex> lock (m_impl->mutex);
 
     if (!m_impl->initialized) {
-      spdlog::error("AudioManager: Not initialized, cannot play sound: {}", name);
+      omnicpp::log::error("AudioManager: Not initialized, cannot play sound: {}", name);
       return false;
     }
 
     auto it = m_impl->sounds.find (name);
     if (it != m_impl->sounds.end ()) {
-      spdlog::debug("AudioManager: Playing sound '{}'", name);
+      omnicpp::log::debug("AudioManager: Playing sound '{}'", name);
       return true;
     }
-    spdlog::warn("AudioManager: Sound '{}' not found", name);
+    omnicpp::log::warn("AudioManager: Sound '{}' not found", name);
     return false;
   }
 
@@ -105,17 +106,18 @@ namespace OmniCpp::Engine::Audio {
     std::lock_guard<std::mutex> lock (m_impl->mutex);
 
     if (!m_impl->initialized) {
-      spdlog::error("AudioManager: Not initialized, cannot stop sound: {}", name);
+      omnicpp::log::error("AudioManager: Not initialized, cannot stop sound: {}", name);
       return false;
     }
 
     auto it = m_impl->sounds.find (name);
     if (it != m_impl->sounds.end ()) {
-      spdlog::debug("AudioManager: Stopping sound '{}'", name);
+      omnicpp::log::debug("AudioManager: Stopping sound '{}'", name);
       return true;
     }
-    spdlog::warn("AudioManager: Sound '{}' not found", name);
+    omnicpp::log::warn("AudioManager: Sound '{}' not found", name);
     return false;
   }
 
-} // namespace OmniCpp::Engine::Audio
+} // namespace audio
+} // namespace omnicpp

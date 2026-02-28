@@ -72,7 +72,8 @@ def load_config(config_path: Optional[str] = None) -> Dict[str, Any]:
 
     # Load the configuration file
     try:
-        with open(config_path, 'r', encoding='utf-8') as f:
+        # Use utf-8-sig to handle UTF-8 BOM (Byte Order Mark)
+        with open(config_path, 'r', encoding='utf-8-sig') as f:
             config = json.load(f)
     except json.JSONDecodeError as e:
         raise LoggingConfigError(f"Invalid JSON in configuration file {config_path}: {e}")

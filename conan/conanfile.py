@@ -82,6 +82,26 @@ class OmniCppTemplate(ConanFile):
         self.requires("zlib/[~1.3]")                    # Compression library
         self.requires("spdlog/[~1.14]")                 # Logging library
 
+        # COMPLIANCE: Phase 5 - Zero-copy deserialization
+        self.requires("simdjson/[~3.6]")                # Zero-copy JSON parsing
+        self.requires("flatbuffers/[~23.5]")            # Zero-copy serialization
+
+        # COMPLIANCE: Phase 3 - Structured concurrency
+        self.requires("asio/[~1.30]")                   # Async I/O and structured concurrency
+
+        # COMPLIANCE: Phase 5 - Hardware-optimized containers
+        self.requires("abseil/[~20240100]")             # SwissTables and utilities
+
+        # COMPLIANCE: Phase 5 - High-concurrency allocators
+        self.requires("mimalloc/[~2.1]")                # High-performance allocator
+
+        # COMPLIANCE: Phase 4 - Security
+        self.requires("libsodium/[~1.0]")               # Cryptographic security
+
+        # COMPLIANCE: Phase 5 - RPC contracts
+        self.requires("grpc/[~1.60]")                   # RPC framework
+        self.requires("protobuf/[~4.25]")               # Protocol buffers
+
         # Math library
         if self.options.with_math:
             self.requires("glm/[~1.0]")                # GLM math library

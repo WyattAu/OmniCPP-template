@@ -10,157 +10,191 @@
 #include "engine/ecs/TransformComponent.hpp"
 #include "engine/ecs/MeshComponent.hpp"
 
+using omnicpp::ecs::Entity;
+using omnicpp::ecs::Component;
+using omnicpp::ecs::TransformComponent;
+using omnicpp::ecs::MeshComponent;
+
 namespace omnicpp {
 namespace test {
 
 class ECSTest : public ::testing::Test {
 protected:
     void SetUp() override {
-        entity_manager_ = std::make_unique<EntityManager>();
+        // Create entities directly - no EntityManager needed
+        next_entity_id = 0;
     }
 
     void TearDown() override {
-        if (entity_manager_) {
-            entity_manager_->shutdown();
-        }
+        // Entities clean up themselves via destructors
     }
 
-    std::unique_ptr<EntityManager> entity_manager_;
+    uint64_t next_entity_id = 0;
 };
 
 TEST_F(ECSTest, CreateEntity) {
-    auto entity = entity_manager_->create_entity();
-    ASSERT_NE(entity, nullptr);
+    Entity entity(next_entity_id++, "TestEntity");
+    ASSERT_EQ(entity.get_id(), 0);
+    ASSERT_EQ(entity.get_name(), "TestEntity");
+    ASSERT_TRUE(entity.is_active());
 }
 
-TEST_F(ECSTest, DestroyEntity) {
-    auto entity = entity_manager_->create_entity();
-    ASSERT_NE(entity, nullptr);
+TEST_F(ECSTest, EntityName) {
+    Entity entity(next_entity_id++, "NamedEntity");
+    ASSERT_EQ(entity.get_name(), "NamedEntity");
+    
+    entity.set_name("RenamedEntity");
+    ASSERT_EQ(entity.get_name(), "RenamedEntity");
+}
 
-    entity_manager_->destroy_entity(entity);
+TEST_F(ECSTest, EntityActiveState) {
+    Entity entity(next_entity_id++);
+    ASSERT_TRUE(entity.is_active());
+    
+    entity.set_active(false);
+    ASSERT_FALSE(entity.is_active());
+    
+    entity.set_active(true);
+    ASSERT_TRUE(entity.is_active());
 }
 
 TEST_F(ECSTest, AddComponent) {
-    auto entity = entity_manager_->create_entity();
-    ASSERT_NE(entity, nullptr);
-
-    auto transform = std::make_shared<TransformComponent>();
-    entity_manager_->add_component(entity, transform);
+    Entity entity(next_entity_id++);
+    auto* transform = entity.add_component<TransformComponent>(entity.get_id());
+    ASSERT_NE(transform, nullptr);
 }
 
 TEST_F(ECSTest, GetComponent) {
-    auto entity = entity_manager_->create_entity();
-    ASSERT_NE(entity, nullptr);
-
-    auto transform = std::make_shared<TransformComponent>();
-    entity_manager_->add_component(entity, transform);
-
-    auto retrieved = entity_manager_->get_component<TransformComponent>(entity);
+    Entity entity(next_entity_id++);
+    entity.add_component<TransformComponent>(entity.get_id());
+    
+    auto* retrieved = entity.get_component<TransformComponent>();
     ASSERT_NE(retrieved, nullptr);
 }
 
 TEST_F(ECSTest, RemoveComponent) {
-    auto entity = entity_manager_->create_entity();
-    ASSERT_NE(entity, nullptr);
-
-    auto transform = std::make_shared<TransformComponent>();
-    entity_manager_->add_component(entity, transform);
-
-    entity_manager_->remove_component<TransformComponent>(entity);
-
-    auto retrieved = entity_manager_->get_component<TransformComponent>(entity);
+    Entity entity(next_entity_id++);
+    entity.add_component<TransformComponent>(entity.get_id());
+    
+    entity.remove_component<TransformComponent>();
+    
+    auto* retrieved = entity.get_component<TransformComponent>();
     ASSERT_EQ(retrieved, nullptr);
 }
 
+TEST_F(ECSTest, HasComponent) {
+    Entity entity(next_entity_id++);
+    ASSERT_FALSE(entity.has_component<TransformComponent>());
+    
+    entity.add_component<TransformComponent>(entity.get_id());
+    ASSERT_TRUE(entity.has_component<TransformComponent>());
+    
+    entity.remove_component<TransformComponent>();
+    ASSERT_FALSE(entity.has_component<TransformComponent>());
+}
+
 TEST_F(ECSTest, TransformComponentDefaultValues) {
-    auto transform = std::make_shared<TransformComponent>();
+    Entity entity(next_entity_id++);
+    auto* transform = entity.add_component<TransformComponent>(entity.get_id());
+    
+    auto pos = transform->get_position();
+    ASSERT_FLOAT_EQ(pos.x, 0.0f);
+    ASSERT_FLOAT_EQ(pos.y, 0.0f);
+    ASSERT_FLOAT_EQ(pos.z, 0.0f);
 
-    ASSERT_FLOAT_EQ(transform->position.x, 0.0f);
-    ASSERT_FLOAT_EQ(transform->position.y, 0.0f);
-    ASSERT_FLOAT_EQ(transform->position.z, 0.0f);
+    auto rot = transform->get_rotation();
+    ASSERT_FLOAT_EQ(rot.x, 0.0f);
+    ASSERT_FLOAT_EQ(rot.y, 0.0f);
+    ASSERT_FLOAT_EQ(rot.z, 0.0f);
 
-    ASSERT_FLOAT_EQ(transform->rotation.x, 0.0f);
-    ASSERT_FLOAT_EQ(transform->rotation.y, 0.0f);
-    ASSERT_FLOAT_EQ(transform->rotation.z, 0.0f);
-
-    ASSERT_FLOAT_EQ(transform->scale.x, 1.0f);
-    ASSERT_FLOAT_EQ(transform->scale.y, 1.0f);
-    ASSERT_FLOAT_EQ(transform->scale.z, 1.0f);
+    auto scl = transform->get_scale();
+    ASSERT_FLOAT_EQ(scl.x, 1.0f);
+    ASSERT_FLOAT_EQ(scl.y, 1.0f);
+    ASSERT_FLOAT_EQ(scl.z, 1.0f);
 }
 
 TEST_F(ECSTest, TransformComponentSetValues) {
-    auto transform = std::make_shared<TransformComponent>();
+    Entity entity(next_entity_id++);
+    auto* transform = entity.add_component<TransformComponent>(entity.get_id());
 
-    transform->position = Vec3(1.0f, 2.0f, 3.0f);
-    transform->rotation = Vec3(45.0f, 90.0f, 135.0f);
-    transform->scale = Vec3(2.0f, 2.0f, 2.0f);
+    using omnicpp::math::Vec3;
+    transform->set_position(Vec3(1.0f, 2.0f, 3.0f));
+    transform->set_rotation(Vec3(45.0f, 90.0f, 135.0f));
+    transform->set_scale(Vec3(2.0f, 2.0f, 2.0f));
 
-    ASSERT_FLOAT_EQ(transform->position.x, 1.0f);
-    ASSERT_FLOAT_EQ(transform->position.y, 2.0f);
-    ASSERT_FLOAT_EQ(transform->position.z, 3.0f);
+    auto pos = transform->get_position();
+    ASSERT_FLOAT_EQ(pos.x, 1.0f);
+    ASSERT_FLOAT_EQ(pos.y, 2.0f);
+    ASSERT_FLOAT_EQ(pos.z, 3.0f);
 
-    ASSERT_FLOAT_EQ(transform->rotation.x, 45.0f);
-    ASSERT_FLOAT_EQ(transform->rotation.y, 90.0f);
-    ASSERT_FLOAT_EQ(transform->rotation.z, 135.0f);
+    auto rot = transform->get_rotation();
+    ASSERT_FLOAT_EQ(rot.x, 45.0f);
+    ASSERT_FLOAT_EQ(rot.y, 90.0f);
+    ASSERT_FLOAT_EQ(rot.z, 135.0f);
 
-    ASSERT_FLOAT_EQ(transform->scale.x, 2.0f);
-    ASSERT_FLOAT_EQ(transform->scale.y, 2.0f);
-    ASSERT_FLOAT_EQ(transform->scale.z, 2.0f);
+    auto scl = transform->get_scale();
+    ASSERT_FLOAT_EQ(scl.x, 2.0f);
+    ASSERT_FLOAT_EQ(scl.y, 2.0f);
+    ASSERT_FLOAT_EQ(scl.z, 2.0f);
 }
 
 TEST_F(ECSTest, MeshComponentDefaultValues) {
-    auto mesh = std::make_shared<MeshComponent>();
-
-    ASSERT_EQ(mesh->mesh_id, 0);
-    ASSERT_EQ(mesh->material_id, 0);
+    Entity entity(next_entity_id++);
+    auto* mesh = entity.add_component<MeshComponent>(entity.get_id());
+    
+    ASSERT_EQ(mesh->get_mesh(), nullptr);
+    ASSERT_EQ(mesh->get_material(), nullptr);
+    ASSERT_TRUE(mesh->is_visible());
+    ASSERT_TRUE(mesh->casts_shadows());
 }
 
 TEST_F(ECSTest, MeshComponentSetValues) {
-    auto mesh = std::make_shared<MeshComponent>();
+    Entity entity(next_entity_id++);
+    auto* mesh = entity.add_component<MeshComponent>(entity.get_id());
 
-    mesh->mesh_id = 123;
-    mesh->material_id = 456;
+    mesh->set_visible(false);
+    mesh->set_casts_shadows(false);
 
-    ASSERT_EQ(mesh->mesh_id, 123);
-    ASSERT_EQ(mesh->material_id, 456);
+    ASSERT_FALSE(mesh->is_visible());
+    ASSERT_FALSE(mesh->casts_shadows());
 }
 
 TEST_F(ECSTest, MultipleComponentsOnEntity) {
-    auto entity = entity_manager_->create_entity();
-    ASSERT_NE(entity, nullptr);
+    Entity entity(next_entity_id++);
+    
+    auto* transform = entity.add_component<TransformComponent>(entity.get_id());
+    auto* mesh = entity.add_component<MeshComponent>(entity.get_id());
 
-    auto transform = std::make_shared<TransformComponent>();
-    auto mesh = std::make_shared<MeshComponent>();
-
-    entity_manager_->add_component(entity, transform);
-    entity_manager_->add_component(entity, mesh);
-
-    auto retrieved_transform = entity_manager_->get_component<TransformComponent>(entity);
-    auto retrieved_mesh = entity_manager_->get_component<MeshComponent>(entity);
-
-    ASSERT_NE(retrieved_transform, nullptr);
-    ASSERT_NE(retrieved_mesh, nullptr);
+    ASSERT_NE(transform, nullptr);
+    ASSERT_NE(mesh, nullptr);
+    ASSERT_TRUE(entity.has_component<TransformComponent>());
+    ASSERT_TRUE(entity.has_component<MeshComponent>());
 }
 
-TEST_F(ECSTest, EntityCount) {
-    auto count_before = entity_manager_->get_entity_count();
-
-    auto entity1 = entity_manager_->create_entity();
-    auto entity2 = entity_manager_->create_entity();
-    auto entity3 = entity_manager_->create_entity();
-
-    auto count_after = entity_manager_->get_entity_count();
-
-    ASSERT_EQ(count_after, count_before + 3);
+TEST_F(ECSTest, GetComponentCount) {
+    Entity entity(next_entity_id++);
+    
+    ASSERT_EQ(entity.get_components().size(), 0);
+    
+    entity.add_component<TransformComponent>(entity.get_id());
+    ASSERT_EQ(entity.get_components().size(), 1);
+    
+    entity.add_component<MeshComponent>(entity.get_id());
+    ASSERT_EQ(entity.get_components().size(), 2);
 }
 
-TEST_F(ECSTest, GetAllEntities) {
-    auto entity1 = entity_manager_->create_entity();
-    auto entity2 = entity_manager_->create_entity();
-
-    auto entities = entity_manager_->get_all_entities();
-
-    ASSERT_GE(entities.size(), 2);
+TEST_F(ECSTest, MultipleEntities) {
+    Entity entity1(next_entity_id++);
+    Entity entity2(next_entity_id++);
+    Entity entity3(next_entity_id++);
+    
+    entity1.add_component<TransformComponent>(entity1.get_id());
+    entity2.add_component<TransformComponent>(entity2.get_id());
+    entity3.add_component<TransformComponent>(entity3.get_id());
+    
+    ASSERT_TRUE(entity1.has_component<TransformComponent>());
+    ASSERT_TRUE(entity2.has_component<TransformComponent>());
+    ASSERT_TRUE(entity3.has_component<TransformComponent>());
 }
 
 } // namespace test

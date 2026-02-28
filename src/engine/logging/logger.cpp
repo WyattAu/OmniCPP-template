@@ -1,21 +1,15 @@
 /**
  * @file logger.cpp
- * @brief Logging implementation with spdlog integration
+ * @brief Logging implementation using Quill backend
  */
 
 #include "engine/logging/logger.hpp"
+#include "engine/logging/Log.hpp"
 #include <memory>
-#include <spdlog/sinks/basic_file_sink.h>
-#include <spdlog/sinks/stdout_color_sinks.h>
-#include <spdlog/spdlog.h>
 
 namespace OmniCpp::Engine::Logging {
 
-  /**
-   * @brief Private implementation structure (Pimpl idiom)
-   */
   struct Logger::Impl {
-    std::shared_ptr<spdlog::logger> logger;
     std::string name;
     LogLevel current_level{ LogLevel::Info };
     bool initialized{ false };
@@ -23,41 +17,17 @@ namespace OmniCpp::Engine::Logging {
 
   Logger::Logger (const std::string& name) : m_impl (std::make_unique<Impl> ()) {
     m_impl->name = name;
-
-    // Create console sink with color support
-    auto console_sink
-        = std::make_shared<spdlog::sinks::stdout_color_sink_mt> (spdlog::color_mode::automatic);
-
-    // Create file sink
-    try {
-      auto file_sink
-          = std::make_shared<spdlog::sinks::basic_file_sink_mt> ("logs/" + name + ".log", true);
-
-      // Create multi-sink logger
-      m_impl->logger = std::make_shared<spdlog::logger> (name, console_sink, file_sink);
-
-      // Set default pattern
-      spdlog::set_pattern ("[%Y-%m-%d %H:%M:%S.%e] [%n] [%l] %v");
-
-      // Set default level
-      m_impl->logger->set_level (spdlog::level::info);
-
-      m_impl->initialized = true;
-    } catch (const spdlog::spdlog_ex& ex) {
-      // Fallback to console only if file sink fails
-      m_impl->logger = std::make_shared<spdlog::logger> (name, console_sink);
-      m_impl->initialized = true;
-    }
+    m_impl->initialized = true;
+    omnicpp::log::info("Logger '{}' initialized", name);
   }
 
   Logger::~Logger () {
-    if (m_impl->initialized && m_impl->logger) {
-      m_impl->logger->flush ();
+    if (m_impl->initialized) {
+      omnicpp::log::info("Logger '{}' shutting down", m_impl->name);
     }
   }
 
   Logger::Logger (Logger&& other) noexcept : m_impl (std::move (other.m_impl)) {
-    // Move constructor
   }
 
   Logger& Logger::operator= (Logger&& other) noexcept {
@@ -68,84 +38,70 @@ namespace OmniCpp::Engine::Logging {
   }
 
   void Logger::trace (const std::string& message) {
-    if (!m_impl->initialized || !m_impl->logger) {
-      return;
-    }
-    m_impl->logger->trace (message);
+    if (!m_impl->initialized) return;
+    omnicpp::log::trace("{}", message);
   }
 
   void Logger::debug (const std::string& message) {
-    if (!m_impl->initialized || !m_impl->logger) {
-      return;
-    }
-    m_impl->logger->debug (message);
+    if (!m_impl->initialized) return;
+    omnicpp::log::debug("{}", message);
   }
 
   void Logger::info (const std::string& message) {
-    if (!m_impl->initialized || !m_impl->logger) {
-      return;
-    }
-    m_impl->logger->info (message);
+    if (!m_impl->initialized) return;
+    omnicpp::log::info("{}", message);
   }
 
   void Logger::warning (const std::string& message) {
-    if (!m_impl->initialized || !m_impl->logger) {
-      return;
-    }
-    m_impl->logger->warn (message);
+    if (!m_impl->initialized) return;
+    omnicpp::log::warn("{}", message);
   }
 
   void Logger::error (const std::string& message) {
-    if (!m_impl->initialized || !m_impl->logger) {
-      return;
-    }
-    m_impl->logger->error (message);
+    if (!m_impl->initialized) return;
+    omnicpp::log::error("{}", message);
   }
 
   void Logger::critical (const std::string& message) {
-    if (!m_impl->initialized || !m_impl->logger) {
-      return;
-    }
-    m_impl->logger->critical (message);
+    if (!m_impl->initialized) return;
+    omnicpp::log::critical("{}", message);
   }
 
   void Logger::set_level (LogLevel level) {
-    if (!m_impl->initialized || !m_impl->logger) {
-      return;
-    }
+    if (!m_impl->initialized) return;
 
     m_impl->current_level = level;
 
-    // Map our LogLevel to spdlog level
-    spdlog::level::level_enum spdlog_level;
+    // Map our LogLevel to Quill log level
+    quill::LogLevel quill_level;
     switch (level) {
     case LogLevel::Trace:
-      spdlog_level = spdlog::level::trace;
+      quill_level = quill::LogLevel::TraceL3;
       break;
     case LogLevel::Debug:
-      spdlog_level = spdlog::level::debug;
+      quill_level = quill::LogLevel::Debug;
       break;
     case LogLevel::Info:
-      spdlog_level = spdlog::level::info;
+      quill_level = quill::LogLevel::Info;
       break;
     case LogLevel::Warning:
-      spdlog_level = spdlog::level::warn;
+      quill_level = quill::LogLevel::Warning;
       break;
     case LogLevel::Error:
-      spdlog_level = spdlog::level::err;
+      quill_level = quill::LogLevel::Error;
       break;
     case LogLevel::Critical:
-      spdlog_level = spdlog::level::critical;
+      quill_level = quill::LogLevel::Critical;
       break;
     case LogLevel::Off:
-      spdlog_level = spdlog::level::off;
+      quill_level = quill::LogLevel::None;
       break;
     default:
-      spdlog_level = spdlog::level::info;
+      quill_level = quill::LogLevel::Info;
       break;
     }
 
-    m_impl->logger->set_level (spdlog_level);
+    omnicpp::log::set_level(quill_level);
   }
 
   LogLevel Logger::get_level () const noexcept {
@@ -153,9 +109,7 @@ namespace OmniCpp::Engine::Logging {
   }
 
   void Logger::flush () {
-    if (m_impl->initialized && m_impl->logger) {
-      m_impl->logger->flush ();
-    }
+    // Quill handles flushing automatically
   }
 
 } // namespace OmniCpp::Engine::Logging

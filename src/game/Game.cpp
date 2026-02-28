@@ -1,70 +1,106 @@
 /**
  * @file Game.cpp
- * @brief Game application implementation for OmniCpp
+ * @brief Game application implementation for dynamic engine loading
  * @version 1.0.0
  */
 
 #include "game/Game.hpp"
+#include "engine/Engine.hpp"
+#include "engine/IEngine.hpp"
+#include "engine/IRenderer.hpp"
+#include "engine/IInputManager.hpp"
+#include "engine/IAudioManager.hpp"
+#include "engine/IPhysicsEngine.hpp"
+#include "engine/IResourceManager.hpp"
+#include "engine/ILogger.hpp"
+#include "engine/IPlatform.hpp"
+#include <iostream>
+#include <memory>
+#include <chrono>
+#include "engine/logging/Log.hpp"
 
-// Platform-specific dynamic loading
 #ifdef _WIN32
     #include <windows.h>
-    #define LOAD_LIBRARY(path) LoadLibraryA(path)
-    #define GET_SYMBOL(handle, name) GetProcAddress((HMODULE)handle, name)
-    #define FREE_LIBRARY(handle) FreeLibrary((HMODULE)handle)
+    #define RTLD_NOW 0
+    static void* dlopen(const char* filename, int) {
+        return LoadLibraryA(filename);
+    }
+    static void* dlsym(void* handle, const char* symbol) {
+        return (void*)GetProcAddress((HMODULE)handle, symbol);
+    }
+    static void dlclose(void* handle) {
+        FreeLibrary((HMODULE)handle);
+    }
 #else
     #include <dlfcn.h>
-    #define LOAD_LIBRARY(path) dlopen(path, RTLD_LAZY)
-    #define GET_SYMBOL(handle, name) dlsym(handle, name)
-    #define FREE_LIBRARY(handle) dlclose(handle)
 #endif
-
-#include <iostream>
-#include <stdexcept>
 
 namespace omnicpp {
 
-Game::Game() = default;
+// Static engine functions for fallback when dynamic loading fails
+extern IEngine* create_engine(const EngineConfig& config);
+extern void destroy_engine(IEngine* engine);
+
+Game::Game() 
+    : m_engine_handle(nullptr)
+    , m_engine(nullptr)
+    , m_create_engine(nullptr)
+    , m_destroy_engine(nullptr)
+    , m_get_version(nullptr)
+    , m_running(false)
+    , m_initialized(false) {
+    omnicpp::log::debug("Game: Constructor");
+}
+
 Game::~Game() {
-    shutdown();
+    if (m_initialized) {
+        shutdown();
+    }
+    omnicpp::log::debug("Game: Destructor");
 }
 
 bool Game::load_engine() {
-    // Determine library path based on platform
-    const char* library_path = nullptr;
+    omnicpp::log::info("Game: Loading engine...");
+    
+    // Try dynamic loading first
+    const char* engine_lib = 
 #ifdef _WIN32
-    library_path = "omnicpp_engine.dll";
+        "omnicpp_engine.dll";
+#elif defined(__APPLE__)
+        "libomnicpp_engine.dylib";
 #else
-    library_path = "./libomnicpp_engine.so";
+        "libomnicpp_engine.so";
 #endif
-
-    // Load the engine library
-    m_engine_handle = LOAD_LIBRARY(library_path);
+    
+    m_engine_handle = dlopen(engine_lib, RTLD_NOW);
+    
+    if (m_engine_handle) {
+        // Load function pointers
+        m_create_engine = reinterpret_cast<CreateEngineFunc>(dlsym(m_engine_handle, "create_engine"));
+        m_destroy_engine = reinterpret_cast<DestroyEngineFunc>(dlsym(m_engine_handle, "destroy_engine"));
+        m_get_version = reinterpret_cast<GetVersionFunc>(dlsym(m_engine_handle, "engine_get_version"));
+        
+        if (!m_create_engine || !m_destroy_engine) {
+            omnicpp::log::warn("Game: Failed to load engine functions from {}", engine_lib);
+            dlclose(m_engine_handle);
+            m_engine_handle = nullptr;
+        } else {
+            omnicpp::log::info("Game: Engine loaded dynamically from {}", engine_lib);
+            if (m_get_version) {
+                omnicpp::log::info("Game: Engine version: {}", m_get_version());
+            }
+        }
+    }
+    
+    // Fallback to static linking
     if (!m_engine_handle) {
-        std::cerr << "Failed to load engine library: " << library_path << std::endl;
-#ifdef _WIN32
-        std::cerr << "Error code: " << GetLastError() << std::endl;
-#else
-        std::cerr << "Error: " << dlerror() << std::endl;
-#endif
-        return false;
+        omnicpp::log::info("Game: Using statically linked engine");
+        m_create_engine = &omnicpp::create_engine;
+        m_destroy_engine = &omnicpp::destroy_engine;
+        m_get_version = nullptr; // Static version available via engine_get_version()
     }
-
-    // Load engine functions
-    m_create_engine = reinterpret_cast<CreateEngineFunc>(GET_SYMBOL(m_engine_handle, "create_engine"));
-    m_destroy_engine = reinterpret_cast<DestroyEngineFunc>(GET_SYMBOL(m_engine_handle, "destroy_engine"));
-    m_get_version = reinterpret_cast<GetVersionFunc>(GET_SYMBOL(m_engine_handle, "engine_get_version"));
-
-    if (!m_create_engine || !m_destroy_engine || !m_get_version) {
-        std::cerr << "Failed to load engine functions" << std::endl;
-        unload_engine();
-        return false;
-    }
-
-    // Print engine version
-    std::cout << "Loaded engine version: " << m_get_version() << std::endl;
-
-    return true;
+    
+    return m_create_engine != nullptr && m_destroy_engine != nullptr;
 }
 
 void Game::unload_engine() {
@@ -72,47 +108,97 @@ void Game::unload_engine() {
         m_destroy_engine(m_engine);
         m_engine = nullptr;
     }
-
+    
     if (m_engine_handle) {
-        FREE_LIBRARY(m_engine_handle);
+        dlclose(m_engine_handle);
         m_engine_handle = nullptr;
     }
-
+    
     m_create_engine = nullptr;
     m_destroy_engine = nullptr;
     m_get_version = nullptr;
 }
 
 bool Game::initialize() {
-    std::cout << "Initializing game..." << std::endl;
-
-    // Load engine library
+    omnicpp::log::info("Game: Initializing...");
+    
+    if (m_initialized) {
+        omnicpp::log::warn("Game: Already initialized");
+        return true;
+    }
+    
+    // Load engine
     if (!load_engine()) {
+        omnicpp::log::error("Game: Failed to load engine");
         return false;
     }
-
-    // Create engine with configuration
+    
+    // Create engine configuration
     EngineConfig config;
-    // Note: Subsystems will be created by the game in a full implementation
-    // For now, we pass nullptr for all subsystems
+    config.platform = nullptr;
     config.renderer = nullptr;
     config.input_manager = nullptr;
     config.audio_manager = nullptr;
     config.physics_engine = nullptr;
     config.resource_manager = nullptr;
     config.logger = nullptr;
-    config.platform = nullptr;
-
+    
+    // Create engine
     m_engine = m_create_engine(config);
     if (!m_engine) {
-        std::cerr << "Failed to create engine" << std::endl;
+        omnicpp::log::error("Game: Failed to create engine");
         unload_engine();
         return false;
     }
-
+    
     m_initialized = true;
-    std::cout << "Game initialized successfully" << std::endl;
+    omnicpp::log::info("Game: Initialized successfully");
     return true;
+}
+
+void Game::shutdown() {
+    if (!m_initialized) {
+        return;
+    }
+    
+    omnicpp::log::info("Game: Shutting down...");
+    
+    m_running = false;
+    unload_engine();
+    m_initialized = false;
+    
+    omnicpp::log::info("Game: Shutdown complete");
+}
+
+int Game::run() {
+    if (!m_initialized || !m_engine) {
+        omnicpp::log::error("Game: Cannot run - not initialized");
+        return 1;
+    }
+    
+    omnicpp::log::info("Game: Starting game loop");
+    m_running = true;
+    
+    auto last_time = std::chrono::high_resolution_clock::now();
+    
+    // Main game loop
+    while (m_running) {
+        auto current_time = std::chrono::high_resolution_clock::now();
+        float delta_time = std::chrono::duration<float>(current_time - last_time).count();
+        last_time = current_time;
+        
+        // Handle input
+        handle_input();
+        
+        // Update game logic
+        update(delta_time);
+        
+        // Render
+        render();
+    }
+    
+    omnicpp::log::info("Game: Game loop ended");
+    return 0;
 }
 
 void Game::update(float delta_time) {
@@ -128,58 +214,8 @@ void Game::render() {
 }
 
 void Game::handle_input() {
-    // Handle input here
-    // For now, this is a placeholder
-}
-
-int Game::run() {
-    if (!m_initialized) {
-        spdlog::error("Game: Game not initialized");
-        return 1;
-    }
-
-    spdlog::info("Game: Starting game loop...");
-    m_running = true;
-
-    // Simple game loop
-    while (m_running) {
-        handle_input();
-        update(0.016f); // 60 FPS
-        render();
-    }
-
-    spdlog::info("Game: Game loop ended");
-    return 0;
-}
-
-void Game::shutdown() {
-    if (!m_initialized) {
-        return;
-    }
-
-    spdlog::info("Game: Shutting down game...");
-    m_running = false;
-    unload_engine();
-    m_initialized = false;
-    spdlog::info("Game: Game shutdown complete");
+    // Input handling - in a full implementation, this would poll input events
+    // and update game state accordingly
 }
 
 } // namespace omnicpp
-
-// Main entry point
-int main(int argc, char* argv[]) {
-    (void)argc;
-    (void)argv;
-
-    omnicpp::Game game;
-
-    if (!game.initialize()) {
-        spdlog::error("Game: Failed to initialize game");
-        return 1;
-    }
-
-    int exit_code = game.run();
-    game.shutdown();
-
-    return exit_code;
-}

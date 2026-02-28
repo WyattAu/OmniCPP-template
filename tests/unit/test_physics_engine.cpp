@@ -10,135 +10,119 @@
 namespace omnicpp {
 namespace test {
 
+using physics::PhysicsEngine;
+
 class PhysicsEngineTest : public ::testing::Test {
 protected:
     void SetUp() override {
-        physics_engine_ = std::make_unique<PhysicsEngine>();
+        physics_engine = std::make_unique<PhysicsEngine>();
     }
 
     void TearDown() override {
-        if (physics_engine_) {
-            physics_engine_->shutdown();
+        if (physics_engine) {
+            physics_engine->shutdown();
         }
     }
 
-    std::unique_ptr<PhysicsEngine> physics_engine_;
+    std::unique_ptr<PhysicsEngine> physics_engine;
 };
 
 TEST_F(PhysicsEngineTest, DefaultInitialization) {
-    ASSERT_TRUE(physics_engine_->initialize());
+    ASSERT_TRUE(physics_engine->initialize());
 }
 
 TEST_F(PhysicsEngineTest, MultipleInitialization) {
-    ASSERT_TRUE(physics_engine_->initialize());
-    physics_engine_->shutdown();
+    ASSERT_TRUE(physics_engine->initialize());
+    physics_engine->shutdown();
     
     // Re-initialize should work
-    ASSERT_TRUE(physics_engine_->initialize());
-    physics_engine_->shutdown();
+    ASSERT_TRUE(physics_engine->initialize());
+    physics_engine->shutdown();
 }
 
 TEST_F(PhysicsEngineTest, ShutdownWithoutInitialize) {
     // Should not crash
-    physics_engine_->shutdown();
+    physics_engine->shutdown();
 }
 
 TEST_F(PhysicsEngineTest, UpdateWithoutInitialize) {
     // Should not crash
-    physics_engine_->update(0.016f);
+    physics_engine->update(0.016f);
 }
 
 TEST_F(PhysicsEngineTest, SetGravity) {
-    ASSERT_TRUE(physics_engine_->initialize());
+    ASSERT_TRUE(physics_engine->initialize());
     
     // Should not crash
-    physics_engine_->set_gravity(0.0f, -9.81f, 0.0f);
+    physics_engine->set_gravity(0.0f, -9.81f, 0.0f);
 }
 
 TEST_F(PhysicsEngineTest, GetGravity) {
-    ASSERT_TRUE(physics_engine_->initialize());
+    ASSERT_TRUE(physics_engine->initialize());
     
-    auto gravity = physics_engine_->get_gravity();
-    // We don't assert the value as it depends on the configuration
+    float x, y, z;
+    physics_engine->get_gravity(x, y, z);
+    // Default gravity should be -9.81 on Y axis
+    EXPECT_FLOAT_EQ(x, 0.0f);
+    EXPECT_FLOAT_EQ(y, -9.81f);
+    EXPECT_FLOAT_EQ(z, 0.0f);
 }
 
-TEST_F(PhysicsEngineTest, CreateRigidBody) {
-    ASSERT_TRUE(physics_engine_->initialize());
+TEST_F(PhysicsEngineTest, AddRigidBody) {
+    ASSERT_TRUE(physics_engine->initialize());
+    
+    // Should not crash with null pointer (defensive handling)
+    physics_engine->add_rigid_body(nullptr);
+}
+
+TEST_F(PhysicsEngineTest, RemoveRigidBody) {
+    ASSERT_TRUE(physics_engine->initialize());
+    
+    // Should not crash with null pointer (defensive handling)
+    physics_engine->remove_rigid_body(nullptr);
+}
+
+TEST_F(PhysicsEngineTest, GetRigidBodies) {
+    ASSERT_TRUE(physics_engine->initialize());
     
     // Should not crash
-    auto body = physics_engine_->create_rigidBody();
-    // We don't assert the result as it depends on the implementation
+    const auto& bodies = physics_engine->get_rigid_bodies();
+    // Initially empty
+    EXPECT_TRUE(bodies.empty());
 }
 
-TEST_F(PhysicsEngineTest, DestroyRigidBody) {
-    ASSERT_TRUE(physics_engine_->initialize());
+TEST_F(PhysicsEngineTest, GetCollisionDetection) {
+    ASSERT_TRUE(physics_engine->initialize());
     
     // Should not crash
-    physics_engine_->destroy_rigidBody(nullptr);
+    auto* collision = physics_engine->get_collision_detection();
+    // May be null if not implemented
+    (void)collision;
 }
 
-TEST_F(PhysicsEngineTest, SetRigidBodyPosition) {
-    ASSERT_TRUE(physics_engine_->initialize());
+TEST_F(PhysicsEngineTest, SetStepSize) {
+    ASSERT_TRUE(physics_engine->initialize());
     
     // Should not crash
-    physics_engine_->set_rigidBody_position(nullptr, 0.0f, 0.0f, 0.0f);
+    physics_engine->set_step_size(1.0f / 120.0f);
 }
 
-TEST_F(PhysicsEngineTest, SetRigidBodyRotation) {
-    ASSERT_TRUE(physics_engine_->initialize());
+TEST_F(PhysicsEngineTest, GetStepSize) {
+    ASSERT_TRUE(physics_engine->initialize());
+    
+    auto step_size = physics_engine->get_step_size();
+    ASSERT_GT(step_size, 0.0f);
+    // Default is 1/60
+    EXPECT_FLOAT_EQ(step_size, 1.0f / 60.0f);
+}
+
+TEST_F(PhysicsEngineTest, UpdateAfterInitialize) {
+    ASSERT_TRUE(physics_engine->initialize());
     
     // Should not crash
-    physics_engine_->set_rigidBody_rotation(nullptr, 0.0f, 0.0f, 0.0f);
-}
-
-TEST_F(PhysicsEngineTest, SetRigidBodyVelocity) {
-    ASSERT_TRUE(physics_engine_->initialize());
-    
-    // Should not crash
-    physics_engine_->set_rigidBody_velocity(nullptr, 0.0f, 0.0f, 0.0f);
-}
-
-TEST_F(PhysicsEngineTest, SetRigidBodyAngularVelocity) {
-    ASSERT_TRUE(physics_engine_->initialize());
-    
-    // Should not crash
-    physics_engine_->set_rigidBody_angular_velocity(nullptr, 0.0f, 0.0f, 0.0f);
-}
-
-TEST_F(PhysicsEngineTest, SetRigidBodyMass) {
-    ASSERT_TRUE(physics_engine_->initialize());
-    
-    // Should not crash
-    physics_engine_->set_rigidBody_mass(nullptr, 1.0f);
-}
-
-TEST_F(PhysicsEngineTest, SetRigidBodyFriction) {
-    ASSERT_TRUE(physics_engine_->initialize());
-    
-    // Should not crash
-    physics_engine_->set_rigidBody_friction(nullptr, 0.5f);
-}
-
-TEST_F(PhysicsEngineTest, SetRigidBodyRestitution) {
-    ASSERT_TRUE(physics_engine_->initialize());
-    
-    // Should not crash
-    physics_engine_->set_rigidBody_restitution(nullptr, 0.5f);
-}
-
-TEST_F(PhysicsEngineTest, Raycast) {
-    ASSERT_TRUE(physics_engine_->initialize());
-    
-    // Should not crash
-    auto result = physics_engine_->raycast(0.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f);
-    // We don't assert the result as it depends on the scene
-}
-
-TEST_F(PhysicsEngineTest, GetRigidBodyCount) {
-    ASSERT_TRUE(physics_engine_->initialize());
-    
-    auto count = physics_engine_->get_rigidBody_count();
-    ASSERT_GE(count, 0);
+    physics_engine->update(0.016f);
+    physics_engine->update(0.016f);
+    physics_engine->update(0.016f);
 }
 
 } // namespace test

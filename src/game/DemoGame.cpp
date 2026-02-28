@@ -133,7 +133,7 @@ void DemoGame::render() {
 void DemoGame::handle_input(const input::InputEvent& event) {
     if (event.type == input::EventType::KEY_PRESS) {
         if (event.key_code == input::KeyCode::ESCAPE) {
-            spdlog::info("DemoGame: ESCAPE pressed, stopping game");
+            omnicpp::log::info("DemoGame: ESCAPE pressed, stopping game");
             m_running = false;
         }
     }
@@ -195,17 +195,17 @@ void DemoGame::update_camera(float delta_time) {
 
 int DemoGame::run() {
     if (!m_initialized) {
-        spdlog::error("DemoGame: Game not initialized");
+        omnicpp::log::error("DemoGame: Game not initialized");
         return 1;
     }
 
-    spdlog::info("DemoGame: Starting demo game loop...");
-    spdlog::info("DemoGame: Controls:");
-    spdlog::info("DemoGame:   W/S - Move Forward/Backward");
-    spdlog::info("DemoGame:   A/D - Move Left/Right");
-    spdlog::info("DemoGame:   Space/Shift - Move Up/Down");
-    spdlog::info("DemoGame:   Mouse - Look around");
-    spdlog::info("DemoGame:   ESC - Exit");
+    omnicpp::log::info("DemoGame: Starting demo game loop...");
+    omnicpp::log::info("DemoGame: Controls:");
+    omnicpp::log::info("DemoGame:   W/S - Move Forward/Backward");
+    omnicpp::log::info("DemoGame:   A/D - Move Left/Right");
+    omnicpp::log::info("DemoGame:   Space/Shift - Move Up/Down");
+    omnicpp::log::info("DemoGame:   Mouse - Look around");
+    omnicpp::log::info("DemoGame:   ESC - Exit");
 
     m_running = true;
 
@@ -227,7 +227,7 @@ int DemoGame::run() {
         m_engine->update(delta_time);
     }
 
-    spdlog::info("DemoGame: Demo game loop ended");
+    omnicpp::log::info("DemoGame: Demo game loop ended");
     return 0;
 }
 

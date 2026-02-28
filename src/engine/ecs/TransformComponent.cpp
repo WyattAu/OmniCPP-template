@@ -7,14 +7,14 @@
 #include "engine/ecs/TransformComponent.hpp"
 #include "math.hpp"
 #include <cmath>
-#include <spdlog/spdlog.h>
+#include "engine/logging/Log.hpp"
 
 namespace omnicpp {
 namespace ecs {
 
 TransformComponent::TransformComponent(uint64_t entity_id)
     : Component(entity_id) {
-    spdlog::debug("TransformComponent: Created transform component for entity {}", entity_id);
+    omnicpp::log::debug("TransformComponent: Created transform component for entity {}", entity_id);
 }
 
 TransformComponent::TransformComponent(uint64_t entity_id,
@@ -25,7 +25,7 @@ TransformComponent::TransformComponent(uint64_t entity_id,
     , m_position(position)
     , m_rotation(rotation)
     , m_scale(scale) {
-    spdlog::debug("TransformComponent: Created transform component for entity {} with position ({}, {}, {})", entity_id, position.x, position.y, position.z);
+    omnicpp::log::debug("TransformComponent: Created transform component for entity {} with position ({}, {}, {})", entity_id, position.x, position.y, position.z);
 }
 
 void TransformComponent::translate(const Vec3& delta) {

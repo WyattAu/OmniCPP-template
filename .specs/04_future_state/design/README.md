@@ -83,6 +83,17 @@ This directory contains the technical design documents for the OmniCPP-template 
 | [DES-038](DES-038-test-configuration-schema.md) | Test Configuration Schema | Defines the JSON schema for test configuration with Python dataclasses for TestSuiteConfig, FixtureConfig, OutputConfig, CoverageConfig, ReportingConfig, EnvironmentConfig, LoggingConfig, ParallelConfig, TimeoutConfig, RetryConfig, FilterConfig, and TestConfiguration supporting test suites, fixtures, output, coverage, reporting, environment, logging, parallel execution, timeout, retry, and filter configuration |
 | [DES-039](DES-039-coverage-report-schema.md) | Coverage Report Schema | Defines the JSON schema for coverage report with Python dataclasses and C++ structs for LineCoverage, BranchCoverage, FunctionCoverage, FileCoverage, DirectoryCoverage, ModuleCoverage, UncoveredLine, UncoveredBranch, UncoveredFunction, CoverageSummary, CoverageThresholds, CoverageMetadata, and CoverageReport supporting line, branch, and function coverage metrics, threshold checking, and coverage analysis |
 
+### Linux Support Design (DES-040 to DES-045)
+
+| ID | Document | Description |
+|----|----------|-------------|
+| [DES-040](DES-040-omnicppcontroller-linux-extensions.md) | OmniCppController.py Extensions | Defines the extensions to OmniCppController.py for comprehensive Linux support, including platform detection, CachyOS detection, Nix environment detection, package manager detection, compiler flags, and build command generation interfaces |
+| [DES-041](DES-041-flake-nix-schema.md) | flake.nix Schema | Defines the schema and structure for Nix flake configuration file, including package definitions, shell environment configuration, CMake integration, and Conan integration |
+| [DES-042](DES-042-vscode-configuration-schema.md) | VSCode Configuration Schema | Defines the schema and structure for VSCode configuration files ([`tasks.json`](../../.vscode/tasks.json:1) and [`launch.json`](../../.vscode/launch.json:1)) with comprehensive Linux support, including platform-specific variants, Nix environment integration, and CachyOS optimizations |
+| [DES-043](DES-043-conan-profile-schema.md) | Conan Profile Schema | Defines the schema and structure for Conan profile files, including Linux, CachyOS, GCC, and Clang profiles with support for Nix environments and CachyOS-specific optimizations |
+| [DES-044](DES-044-setup-script-architecture.md) | Setup Script Architecture | Defines the architecture and interfaces for setup scripts that handle Linux environment configuration, Nix environment activation, CachyOS optimization setup, and development environment validation |
+| [DES-045](DES-045-cmake-preset-schema.md) | CMake Preset Schema | Defines the schema and structure for CMake preset files, including Nix-aware presets, CachyOS presets, and platform detection enhancement schemas |
+
 ## Design Document Structure
 
 Each design document follows a consistent structure:
@@ -114,7 +125,7 @@ The technical design documents follow these principles:
 - [Requirements](../reqs/) - Requirements documents
 - [Architecture Decision Records](../adrs/) - ADR documents
 - [Current State](../01_current_state/) - Current state analysis
-- [Future State](../02_future_state/) - Future state vision
+- [Future State](../04_future_state/) - Future state vision
 - [Threat Model](../03_threat_model/) - Threat model analysis
 
 ## Version History
@@ -122,6 +133,7 @@ The technical design documents follow these principles:
 | Version | Date | Description |
 |---------|------|-------------|
 | 1.0.0 | 2026-01-07 | Initial design documents created |
+| 1.1.0 | 2026-01-27 | Added Linux support design documents (DES-040 to DES-045) |
 
 ## Contributors
 

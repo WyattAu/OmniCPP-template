@@ -9,7 +9,7 @@
 #include "engine/ecs/Entity.hpp"
 #include "engine/ecs/TransformComponent.hpp"
 #include "engine/ecs/MeshComponent.hpp"
-#include <spdlog/spdlog.h>
+#include "engine/logging/Log.hpp"
 
 namespace omnicpp {
 namespace scene {
@@ -17,7 +17,7 @@ namespace scene {
 Scene::Scene(const std::string& name)
     : m_name(name)
     , m_root_node(std::make_unique<SceneNode>("Root")) {
-    spdlog::debug("Scene: Created scene '{}'", name);
+    omnicpp::log::debug("Scene: Created scene '{}'", name);
 }
 
 Scene::~Scene() = default;

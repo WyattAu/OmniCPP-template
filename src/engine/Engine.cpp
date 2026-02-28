@@ -14,11 +14,13 @@
 #include "engine/IResourceManager.hpp"
 #include "engine/ILogger.hpp"
 #include "engine/IPlatform.hpp"
-#include "engine/logging/SpdLogLogger.hpp"
+#include "engine/logging/Log.hpp"
+#include "engine/window/window_manager.hpp"
+#include "engine/graphics/renderer.hpp"
 
+#include <iostream>
 #include <memory>
 #include <stdexcept>
-#include <spdlog/spdlog.h>
 
 namespace omnicpp {
 
@@ -31,78 +33,91 @@ public:
     ~EngineImpl() override = default;
 
     bool initialize(const EngineConfig& config) override {
-        // Initialize spdlog logger
-        auto spdlog_logger = std::make_unique<SpdLogLogger>("omnicpp_engine");
-        if (!spdlog_logger->initialize("config/logging_cpp.json")) {
-            std::cerr << "Failed to initialize logger" << std::endl;
-            return false;
-        }
-        m_logger = std::move(spdlog_logger);
-
-        spdlog::info("Engine initialization started");
+        // Initialize logging
+        omnicpp::log::init();
+        omnicpp::log::info("Engine initialization started");
 
         // Initialize platform
         if (config.platform) {
             m_platform.reset(config.platform);
             if (!m_platform->initialize()) {
-                spdlog::error("Failed to initialize platform");
+                omnicpp::log::error("Failed to initialize platform");
                 return false;
             }
-            spdlog::info("Platform initialized");
+            omnicpp::log::info("Platform initialized");
         }
+
+        // Initialize window manager and renderer
+        m_window_manager = std::make_unique<OmniCpp::Engine::Window::WindowManager>();
+        if (!m_window_manager->initialize({"OmniCpp Engine", 1280, 720, false, true, true})) {
+            omnicpp::log::error("Failed to initialize window manager");
+            return false;
+        }
+
+        m_graphics_renderer = std::make_unique<OmniCpp::Engine::Graphics::Renderer>();
+        OmniCpp::Engine::Graphics::RendererConfig renderer_config;
+        renderer_config.vsync = true;
+        renderer_config.msaa_samples = 4;
+        renderer_config.enable_debug = false;
+        if (!m_graphics_renderer->initialize(renderer_config)) {
+            omnicpp::log::error("Failed to initialize graphics renderer");
+            return false;
+        }
+
+        m_graphics_renderer->set_window_manager(m_window_manager.get());
 
         // Initialize renderer
         if (config.renderer) {
             m_renderer.reset(config.renderer);
             if (!m_renderer->initialize()) {
-                spdlog::error("Failed to initialize renderer");
+                omnicpp::log::error("Failed to initialize renderer");
                 return false;
             }
-            spdlog::info("Renderer initialized");
+            omnicpp::log::info("Renderer initialized");
         }
 
         // Initialize input manager
         if (config.input_manager) {
             m_input_manager.reset(config.input_manager);
             if (!m_input_manager->initialize()) {
-                spdlog::error("Failed to initialize input manager");
+                omnicpp::log::error("Failed to initialize input manager");
                 return false;
             }
-            spdlog::info("Input manager initialized");
+            omnicpp::log::info("Input manager initialized");
         }
 
         // Initialize audio manager
         if (config.audio_manager) {
             m_audio_manager.reset(config.audio_manager);
             if (!m_audio_manager->initialize()) {
-                spdlog::error("Failed to initialize audio manager");
+                omnicpp::log::error("Failed to initialize audio manager");
                 return false;
             }
-            spdlog::info("Audio manager initialized");
+            omnicpp::log::info("Audio manager initialized");
         }
 
         // Initialize physics engine
         if (config.physics_engine) {
             m_physics_engine.reset(config.physics_engine);
             if (!m_physics_engine->initialize()) {
-                spdlog::error("Failed to initialize physics engine");
+                omnicpp::log::error("Failed to initialize physics engine");
                 return false;
             }
-            spdlog::info("Physics engine initialized");
+            omnicpp::log::info("Physics engine initialized");
         }
 
         // Initialize resource manager
         if (config.resource_manager) {
             m_resource_manager.reset(config.resource_manager);
             if (!m_resource_manager->initialize()) {
-                spdlog::error("Failed to initialize resource manager");
+                omnicpp::log::error("Failed to initialize resource manager");
                 return false;
             }
-            spdlog::info("Resource manager initialized");
+            omnicpp::log::info("Resource manager initialized");
         }
 
         m_initialized = true;
-        spdlog::info("Engine initialization complete");
+        omnicpp::log::info("Engine initialization complete");
         return true;
     }
 
@@ -111,7 +126,7 @@ public:
             return;
         }
 
-        spdlog::info("Engine shutdown started");
+        omnicpp::log::info("Engine shutdown started");
 
         // Shutdown in reverse order
         if (m_resource_manager) {
@@ -129,12 +144,18 @@ public:
         if (m_renderer) {
             m_renderer->shutdown();
         }
+        if (m_graphics_renderer) {
+            m_graphics_renderer->shutdown();
+        }
+        if (m_window_manager) {
+            m_window_manager->shutdown();
+        }
         if (m_platform) {
             m_platform->shutdown();
         }
 
-        spdlog::info("Engine shutdown complete");
-        spdlog::shutdown();
+        omnicpp::log::info("Engine shutdown complete");
+        omnicpp::log::shutdown();
 
         m_initialized = false;
     }
@@ -158,16 +179,49 @@ public:
         if (m_audio_manager) {
             m_audio_manager->update(delta_time);
         }
+
+        // Update window and graphics
+        if (m_window_manager) {
+            m_window_manager->update();
+        }
+        if (m_graphics_renderer) {
+            m_graphics_renderer->update();
+        }
+
+        // Check if window should close
+        if (m_window_manager && m_window_manager->should_close()) {
+            m_initialized = false;
+        }
     }
 
     void render() override {
-        if (!m_initialized || !m_renderer) {
+        if (!m_initialized) {
             return;
         }
 
-        m_renderer->begin_frame();
+        // Check if window should close
+        if (m_window_manager && m_window_manager->should_close()) {
+            m_initialized = false;
+        }
+
+        // Update window and graphics
+        if (m_window_manager) {
+            m_window_manager->update();
+        }
+        if (m_graphics_renderer) {
+            m_graphics_renderer->render();
+        }
+
+        // Present frame
+        if (m_graphics_renderer) {
+            m_graphics_renderer->present();
+        }
+
         // Render scene here
-        m_renderer->end_frame();
+        if (m_renderer) {
+            m_renderer->begin_frame();
+            m_renderer->end_frame();
+        }
     }
 
     IRenderer* get_renderer() const override {
@@ -191,7 +245,7 @@ public:
     }
 
     ILogger* get_logger() const override {
-        return m_logger.get();
+        return nullptr;  // Using spdlog shim directly
     }
 
     IPlatform* get_platform() const override {
@@ -208,8 +262,9 @@ private:
     std::unique_ptr<IAudioManager> m_audio_manager;
     std::unique_ptr<IPhysicsEngine> m_physics_engine;
     std::unique_ptr<IResourceManager> m_resource_manager;
-    std::unique_ptr<SpdLogLogger> m_logger;
     std::unique_ptr<IPlatform> m_platform;
+    std::unique_ptr<OmniCpp::Engine::Window::WindowManager> m_window_manager;
+    std::unique_ptr<OmniCpp::Engine::Graphics::Renderer> m_graphics_renderer;
     bool m_initialized = false;
 };
 

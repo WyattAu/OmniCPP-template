@@ -1,6 +1,19 @@
 # Linux Builds
 
-This document outlines the requirements and expected behavior for Linux builds in the OmniCpp project.
+This document outlines requirements and expected behavior for Linux builds in OmniCpp project.
+
+## Overview
+
+Linux builds have been significantly enhanced with the following new features:
+
+- **Nix Package Manager Integration** - Reproducible development environments with [`flake.nix`](../flake.nix:1) and [`flake.lock`](../flake.lock:1)
+- **CachyOS Primary Target** - Performance-optimized builds for CachyOS with custom compiler flags
+- **Direnv Integration** - Automatic environment loading with [`.envrc`](../.envrc:1)
+- **Enhanced Conan Profiles** - Linux-specific profiles for GCC 13 and Clang 19
+- **CMake Presets** - Linux-specific CMake presets for GCC and Clang
+- **VSCode Linux Configuration** - Platform-specific tasks and debug configurations
+
+> **Note:** CachyOS is the primary Linux target with optimized compiler flags and performance tuning. See [`docs/cachyos-builds.md`](cachyos-builds.md:1) for CachyOS-specific instructions. See [`docs/nix-development.md`](nix-development.md:1) for Nix environment setup. See [`docs/linux-troubleshooting.md`](linux-troubleshooting.md:1) for troubleshooting. See [`docs/vscode-linux-setup.md`](vscode-linux-setup.md:1) for VSCode configuration.
 
 ## Prerequisites
 
@@ -82,11 +95,11 @@ sudo pacman -S clang
 
 ## Build Pipeline Behavior
 
-When running on Linux, the build pipeline follows these steps:
+When running on Linux, build pipeline follows these steps:
 
 ### 1. Environment Setup
 
-The build system automatically detects the Linux environment:
+The build system automatically detects Linux environment:
 
 - **Detection:** Identifies Linux platform via `platform.system() == 'Linux'`
 - **Compiler Detection:** Searches for GCC/Clang in PATH

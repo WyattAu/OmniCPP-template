@@ -4,49 +4,49 @@
  */
 
 #include "game/core/game.hpp"
-#include <spdlog/spdlog.h>
+#include "engine/logging/Log.hpp"
 
 namespace OmniCpp::Game::Core {
 
   Game::Game () : m_initialized (false), m_running (false) {
-    spdlog::info ("Game instance created");
+    omnicpp::log::info ("Game instance created");
   }
 
   Game::~Game () {
     if (m_initialized) {
-      spdlog::warn ("Game destroyed without explicit shutdown");
+      omnicpp::log::warn ("Game destroyed without explicit shutdown");
       shutdown ();
     }
-    spdlog::info ("Game instance destroyed");
+    omnicpp::log::info ("Game instance destroyed");
   }
 
   void Game::initialize () {
     if (m_initialized) {
-      spdlog::warn ("Game already initialized, skipping");
+      omnicpp::log::warn ("Game already initialized, skipping");
       return;
     }
 
-    spdlog::info ("Initializing game...");
+    omnicpp::log::info ("Initializing game...");
 
     // Initialize game subsystems
     // TODO: Initialize graphics, audio, input, physics, scene, scripting, network
 
     m_initialized = true;
-    spdlog::info ("Game initialized successfully");
+    omnicpp::log::info ("Game initialized successfully");
   }
 
   void Game::run () {
     if (!m_initialized) {
-      spdlog::error ("Cannot run game: not initialized");
+      omnicpp::log::error ("Cannot run game: not initialized");
       return;
     }
 
     if (m_running) {
-      spdlog::warn ("Game already running");
+      omnicpp::log::warn ("Game already running");
       return;
     }
 
-    spdlog::info ("Starting game main loop...");
+    omnicpp::log::info ("Starting game main loop...");
     m_running = true;
 
     // Main game loop
@@ -59,16 +59,16 @@ namespace OmniCpp::Game::Core {
       // TODO: Update network
     }
 
-    spdlog::info ("Game main loop ended");
+    omnicpp::log::info ("Game main loop ended");
   }
 
   void Game::shutdown () {
     if (!m_initialized) {
-      spdlog::warn ("Game not initialized, nothing to shutdown");
+      omnicpp::log::warn ("Game not initialized, nothing to shutdown");
       return;
     }
 
-    spdlog::info ("Shutting down game...");
+    omnicpp::log::info ("Shutting down game...");
 
     // Stop game loop
     m_running = false;
@@ -77,7 +77,7 @@ namespace OmniCpp::Game::Core {
     // TODO: Shutdown graphics, audio, input, physics, scene, scripting, network
 
     m_initialized = false;
-    spdlog::info ("Game shutdown complete");
+    omnicpp::log::info ("Game shutdown complete");
   }
 
 } // namespace OmniCpp::Game::Core

@@ -1,13 +1,12 @@
 # ============================================================================
 # OmniCpp Template - Root CMakeLists.txt
 # ============================================================================
-# CMake 4.0+ Root Configuration
+# CMake 3.28+ Root Configuration
 # Supports: Windows, Linux, WASM
 # Compilers: MSVC, MSVC-Clang, MinGW-GCC, MinGW-Clang, GCC, Clang
 # ============================================================================
 
-cmake_minimum_required(VERSION 4.0)
-set(CMAKE_POLICY_VERSION_MINIMUM 3.5)
+cmake_minimum_required(VERSION 3.28...4.0)
 project(OmniCppTemplate
     VERSION 1.0.0
     DESCRIPTION "OmniCpp Template Project"
@@ -45,10 +44,12 @@ option(OMNICPP_ENABLE_LINTING "Enable code linting targets" ON)
 # ============================================================================
 option(OMNICPP_USE_VULKAN "Use Vulkan graphics API" ON)
 option(OMNICPP_USE_OPENGL "Use OpenGL graphics API" OFF)
-option(OMNICPP_USE_QT6 "Use Qt6 framework" OFF)
-option(OMNICPP_USE_SPDLOG "Use spdlog logging library" ON)
+option(OMNICPP_USE_GLFW "Use GLFW windowing library" ON)
+option(OMNICPP_USE_QT6 "Use Qt6 framework" ON)
+option(OMNICPP_USE_QUILL "Use Quill logging library" ON)
 option(OMNICPP_USE_GLM "Use GLM math library" ON)
 option(OMNICPP_USE_STB "Use STB image library" ON)
+option(OMNICPP_USE_NLOHMANN_JSON "Use nlohmann/json library" ON)
 
 # ============================================================================
 # Package Manager Options
@@ -109,17 +110,35 @@ else()
     message(STATUS "Qt6 support disabled (OMNICPP_USE_QT6=OFF)")
 endif()
 
+# Use Nix Vulkan headers for compilation but system Vulkan for runtime
+# This is what the wrapper script handles at runtime anyway
+set(NIX_VULKAN_INCLUDE "/nix/store/lhzl3zl3mfl46grkmxda6j5921bki81j-vulkan-headers-1.4.335.0/include")
+set(SYSTEM_VULKAN_LIB "/usr/lib/libvulkan.so")
+
+# Set up the variables for build
+set(Vulkan_FOUND TRUE)
+set(Vulkan_INCLUDE_DIRS "${NIX_VULKAN_INCLUDE}")
+set(Vulkan_LIBRARIES "${SYSTEM_VULKAN_LIB}")
+
+# Create the imported target
+if(NOT TARGET Vulkan::Vulkan)
+    add_library(Vulkan::Vulkan SHARED IMPORTED)
+    set_target_properties(Vulkan::Vulkan PROPERTIES
+        IMPORTED_LOCATION "${SYSTEM_VULKAN_LIB}"
+        INTERFACE_INCLUDE_DIRECTORIES "${NIX_VULKAN_INCLUDE}"
+    )
+    message(STATUS "Created Vulkan::Vulkan target (Nix headers + system loader)")
+endif()
+
+message(STATUS "Final Vulkan_INCLUDE_DIRS = ${Vulkan_INCLUDE_DIRS}")
+message(STATUS "Final Vulkan_LIBRARIES = ${Vulkan_LIBRARIES}")
+
 # ============================================================================
 # Vulkan Configuration
 # ============================================================================
-if(OMNICPP_USE_VULKAN)
-    find_package(Vulkan)
-
-    if(NOT Vulkan_FOUND)
-        message(WARNING "Vulkan not found, Vulkan support disabled")
-        set(OMNICPP_USE_VULKAN OFF)
-    endif()
-endif()
+# Vulkan is configured in cmake/FindDependencies.cmake for Nix environment
+# Vulkan_FOUND is set to TRUE after Qt6 configuration
+# No need to check Vulkan_FOUND here
 
 # ============================================================================
 # OpenGL Configuration
@@ -215,6 +234,7 @@ message(STATUS "")
 message(STATUS "Dependencies:")
 message(STATUS "  Vulkan: ${OMNICPP_USE_VULKAN} (${Vulkan_FOUND})")
 message(STATUS "  OpenGL: ${OMNICPP_USE_OPENGL} (${OpenGL_FOUND})")
+message(STATUS "  GLFW: ${OMNICPP_USE_GLFW} (${glfw_FOUND})")
 
 if(OMNICPP_USE_QT6)
     if(Qt6_FOUND)
@@ -226,7 +246,7 @@ else()
     message(STATUS "  Qt6: DISABLED")
 endif()
 
-message(STATUS "  spdlog: ${OMNICPP_USE_SPDLOG}")
+message(STATUS "  Quill: ${OMNICPP_USE_QUILL}")
 message(STATUS "  GLM: ${OMNICPP_USE_GLM}")
 message(STATUS "  STB: ${OMNICPP_USE_STB}")
 message(STATUS "")

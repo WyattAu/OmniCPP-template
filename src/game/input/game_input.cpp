@@ -4,35 +4,35 @@
  */
 
 #include "game/input/game_input.hpp"
-#include <spdlog/spdlog.h>
+#include "engine/logging/Log.hpp"
 #include <string>
 
 namespace OmniCpp::Game::Input {
 
   GameInput::GameInput () : m_initialized (false) {
-    spdlog::info ("GameInput instance created");
+    omnicpp::log::info ("GameInput instance created");
   }
 
   GameInput::~GameInput () {
     if (m_initialized) {
-      spdlog::warn ("GameInput destroyed without explicit shutdown");
+      omnicpp::log::warn ("GameInput destroyed without explicit shutdown");
     }
-    spdlog::info ("GameInput instance destroyed");
+    omnicpp::log::info ("GameInput instance destroyed");
   }
 
   void GameInput::initialize () {
     if (m_initialized) {
-      spdlog::warn ("GameInput already initialized, skipping");
+      omnicpp::log::warn ("GameInput already initialized, skipping");
       return;
     }
 
-    spdlog::info ("Initializing game input...");
+    omnicpp::log::info ("Initializing game input...");
 
     // TODO: Initialize input subsystem
     // TODO: Setup input devices
 
     m_initialized = true;
-    spdlog::info ("GameInput initialized successfully");
+    omnicpp::log::info ("GameInput initialized successfully");
   }
 
   void GameInput::update () {
@@ -46,7 +46,7 @@ namespace OmniCpp::Game::Input {
 
   bool GameInput::is_action_pressed (const std::string& action) const {
     if (!m_initialized) {
-      spdlog::error ("Cannot check action: GameInput not initialized");
+      omnicpp::log::error ("Cannot check action: GameInput not initialized");
       return false;
     }
 

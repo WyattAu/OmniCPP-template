@@ -1,2576 +1,2103 @@
-# OmniCPP Template - Comprehensive Task Execution Graph
+# OmniCPP Template - Linux Support Expansion Tasks
 
-**Generated:** 2026-01-07
-**Purpose:** Detailed task breakdown for implementing the migration from current state to future state
-**Total Duration:** 15 weeks
-**Total Tasks:** 120
+**Generated:** 2026-01-27
+**Purpose:** Comprehensive execution graph for Linux support expansion
+**Scope:** Enhanced Linux/CachyOS support with Nix integration
 
 ---
 
 ## Table of Contents
 
-1. [Task Legend](#task-legend)
-2. [Phase 1: Preparation (Week 1)](#phase-1-preparation-week-1)
-3. [Phase 2: Python Script Consolidation (Weeks 2-3)](#phase-2-python-script-consolidation-weeks-2-3)
-4. [Phase 3: Cross-Platform Compilation (Weeks 4-5)](#phase-3-cross-platform-compilation-weeks-4-5)
-5. [Phase 4: Package Manager Integration (Week 6)](#phase-4-package-manager-integration-week-6)
-6. [Phase 5: Build System Refactoring (Week 7)](#phase-5-build-system-refactoring-week-7)
-7. [Phase 6: C++ Engine and Game (Weeks 8-9)](#phase-6-c-engine-and-game-weeks-8-9)
-8. [Phase 7: Logging System (Week 10)](#phase-7-logging-system-week-10)
-9. [Phase 8: Testing (Week 11)](#phase-8-testing-week-11)
-10. [Phase 9: VSCode Integration (Week 12)](#phase-9-vscode-integration-week-12)
-11. [Phase 10: Documentation (Week 13)](#phase-10-documentation-week-13)
-12. [Phase 11: Cleanup (Week 14)](#phase-11-cleanup-week-14)
-13. [Phase 12: Validation (Week 15)](#phase-12-validation-week-15)
-14. [Task Dependencies Graph](#task-dependencies-graph)
-15. [Milestone Definitions](#milestone-definitions)
-16. [Risk Register](#risk-register)
+1. [Task Overview](#task-overview)
+2. [Phase 1: Foundation](#phase-1-foundation-platform-detection--nix-integration)
+3. [Phase 2: Tooling](#phase-2-tooling-conan-setup-scripts-cmake)
+4. [Phase 3: Integration](#phase-3-integration-vscode)
+5. [Phase 4: Documentation](#phase-4-documentation)
+6. [Phase 5: Cleanup](#phase-5-cleanup)
+7. [Task Dependencies Graph](#task-dependencies-graph)
+8. [Critical Path Analysis](#critical-path-analysis)
+9. [Parallel Execution Opportunities](#parallel-execution-opportunities)
+10. [Task Execution Order](#task-execution-order)
+11. [Task Assignment](#task-assignment)
 
 ---
 
-## Task Legend
+## Task Overview
 
-- **ID:** Unique task identifier (Phase-Number)
-- **Title:** Brief task title
-- **Description:** Detailed task description
-- **Acceptance Criteria:** Specific conditions for task completion
-- **Priority:** Critical/High/Medium/Low
-- **Estimated Effort:** Hours
-- **Dependencies:** Tasks that must complete before this task
-- **Related Requirements:** REQ IDs linked to this task
-- **Related ADRs:** ADR IDs linked to this task
-- **Assignee:** TBD (To Be Determined)
-- **Status:** Not Started/In Progress/Completed
+This document defines 37 tasks organized into 5 phases for implementing comprehensive Linux support in the OmniCPP Template. Each task includes:
+
+- Task ID and Title
+- Description
+- Priority (Critical, High, Medium, Low)
+- Dependencies (other tasks)
+- Acceptance criteria
+- Related requirements
+- Related ADRs
+- Related threats
+- Definition of Done
+- Recommended role and skill requirements
 
 ---
 
-## Phase 1: Preparation (Week 1)
+## Phase 1: Foundation (Platform Detection & Nix Integration)
 
-### P1-001: Create Backup Branch
+### TASK-001: Implement Linux Distribution Detection
 
-**Description:** Create a backup branch to preserve the current state before starting refactoring
-
-**Acceptance Criteria:**
-- Branch named `backup/pre-refactoring` created
-- All current code committed to branch
-- Branch pushed to remote repository
-- Tag `v0.1.0-backup` created
+**Description:** Implement Linux distribution detection in OmniCppController.py to identify the running Linux distribution and version.
 
 **Priority:** Critical
-**Estimated Effort:** 2 hours
+
 **Dependencies:** None
-**Related Requirements:** None
-**Related ADRs:** None
-**Assignee:** TBD
-**Status:** Not Started
+
+**Acceptance Criteria:**
+- Function `detect_linux_distribution()` exists in `omni_scripts/platform/linux.py`
+- Returns valid LinuxDistribution object for Arch Linux
+- Returns valid LinuxDistribution object for Ubuntu
+- Returns valid LinuxDistribution object for Fedora
+- Returns valid LinuxDistribution object for Debian
+- Returns generic distribution object for unknown distributions
+- Handles missing `/etc/os-release` without crashing
+- Logs distribution detection at INFO level
+- Detection results are cached
+
+**Related Requirements:**
+- REQ-001-001: Detect Linux Distribution
+
+**Related ADRs:**
+- ADR-028: CachyOS as Primary Linux Target
+- ADR-030: Enhanced OmniCppController.py Architecture
+
+**Related Threats:**
+- TM-LX-002: Distribution-Specific Vulnerabilities
+
+**Definition of Done:**
+- Platform detection module is implemented and tested
+- All major Linux distributions are detected correctly
+- Detection failures are handled gracefully
+- Documentation is updated
+
+**Recommended Role:** Python Developer
+**Skill Requirements:**
+- Python 3.10+
+- Linux system administration knowledge
+- Experience with platform detection patterns
 
 ---
 
-### P1-002: Document Current State
+### TASK-002: Implement CachyOS Detection
 
-**Description:** Create comprehensive documentation of the current project state
-
-**Acceptance Criteria:**
-- Current architecture documented
-- Known issues cataloged
-- Existing dependencies listed
-- Current build process documented
-
-**Priority:** High
-**Estimated Effort:** 8 hours
-**Dependencies:** P1-001
-**Related Requirements:** None
-**Related ADRs:** None
-**Assignee:** TBD
-**Status:** Not Started
-
----
-
-### P1-003: Set Up Development Environment
-
-**Description:** Configure development environment for refactoring work
-
-**Acceptance Criteria:**
-- Python 3.11+ installed
-- CMake 4.0+ installed
-- Ninja build system installed
-- Git configured
-- VSCode extensions installed
+**Description:** Implement CachyOS-specific detection to identify CachyOS as a special case and mark it appropriately.
 
 **Priority:** Critical
-**Estimated Effort:** 4 hours
+
+**Dependencies:**
+- TASK-001: Implement Linux Distribution Detection
+
+**Acceptance Criteria:**
+- CachyOS detection logic exists in `omni_scripts/platform/linux.py`
+- Detects CachyOS when `ID=cachyos` is present
+- Detects CachyOS when `ID_LIKE=arch` with CachyOS markers
+- Sets `is_cachyos=True` in LinuxDistribution object
+- Logs CachyOS detection with version information
+- CachyOS is detected before generic Arch Linux
+- Supports CachyOS variants (KDE, GNOME)
+
+**Related Requirements:**
+- REQ-001-002: Detect CachyOS Specifically
+
+**Related ADRs:**
+- ADR-028: CachyOS as Primary Linux Target
+
+**Related Threats:**
+- TM-LX-002: Distribution-Specific Vulnerabilities
+
+**Definition of Done:**
+- CachyOS detection is implemented and tested
+- CachyOS variants are supported
+- Detection is prioritized over generic Arch detection
+- Documentation is updated
+
+**Recommended Role:** Python Developer
+**Skill Requirements:**
+- Python 3.10+
+- CachyOS/Arch Linux knowledge
+- Experience with distribution detection patterns
+
+---
+
+### TASK-003: Implement Nix Environment Detection
+
+**Description:** Implement Nix environment detection to identify if running within a Nix shell.
+
+**Priority:** Critical
+
 **Dependencies:** None
-**Related Requirements:** REQ-022, REQ-023
-**Related ADRs:** ADR-004
-**Assignee:** TBD
-**Status:** Not Started
+
+**Acceptance Criteria:**
+- Function `is_nix_environment()` exists in `omni_scripts/platform/linux.py`
+- Returns `True` when `IN_NIX_SHELL=1`
+- Returns `False` when `IN_NIX_SHELL` is not set
+- Logs Nix environment detection at INFO level
+- Detection result is cached
+- Function to get Nix store paths exists
+
+**Related Requirements:**
+- REQ-001-003: Detect Nix Environment
+
+**Related ADRs:**
+- ADR-027: Nix Package Manager Integration
+- ADR-029: Direnv for Environment Management
+
+**Related Threats:**
+- TM-LX-001: Nix Package Manager Security Risks
+
+**Definition of Done:**
+- Nix environment detection is implemented and tested
+- Detection works in both Nix and non-Nix environments
+- Nix store path retrieval is functional
+- Documentation is updated
+
+**Recommended Role:** Python Developer
+**Skill Requirements:**
+- Python 3.10+
+- Nix package manager knowledge
+- Experience with environment variable detection
 
 ---
 
-### P1-004: Install Required Tools
+### TASK-004: Implement Package Manager Detection
 
-**Description:** Install all necessary development tools and utilities
-
-**Acceptance Criteria:**
-- clang-format installed
-- clang-tidy installed
-- mypy installed
-- pytest installed
-- black installed
-- pylint installed
-
-**Priority:** High
-**Estimated Effort:** 3 hours
-**Dependencies:** P1-003
-**Related Requirements:** REQ-037, REQ-038
-**Related ADRs:** ADR-022, ADR-023
-**Assignee:** TBD
-**Status:** Not Started
-
----
-
-### P1-005: Configure Pre-Commit Hooks
-
-**Description:** Set up pre-commit hooks for code quality enforcement
-
-**Acceptance Criteria:**
-- pre-commit framework installed
-- Hooks configured for Python formatting
-- Hooks configured for C++ formatting
-- Hooks configured for linting
-- Hooks tested and working
-
-**Priority:** High
-**Estimated Effort:** 4 hours
-**Dependencies:** P1-004
-**Related Requirements:** REQ-003
-**Related ADRs:** ADR-009
-**Assignee:** TBD
-**Status:** Not Started
-
----
-
-### P1-006: Create Development Branch
-
-**Description:** Create main development branch for refactoring work
-
-**Acceptance Criteria:**
-- Branch named `feature/refactoring` created
-- Branch pushed to remote
-- Protected branch rules configured
-- CI/CD pipeline configured
+**Description:** Implement package manager detection to identify system package manager (pacman, apt, dnf, etc.).
 
 **Priority:** Critical
-**Estimated Effort:** 2 hours
-**Dependencies:** P1-001
-**Related Requirements:** None
-**Related ADRs:** None
-**Assignee:** TBD
-**Status:** Not Started
+
+**Dependencies:**
+- TASK-001: Implement Linux Distribution Detection
+
+**Acceptance Criteria:**
+- Function `detect_package_manager()` exists in `omni_scripts/platform/linux.py`
+- Detects pacman on Arch Linux systems
+- Detects apt on Ubuntu/Debian systems
+- Detects dnf on Fedora systems
+- Detects zypper on openSUSE systems
+- Returns valid PackageManager object
+- Logs package manager detection at INFO level
+- Detection result is cached
+
+**Related Requirements:**
+- REQ-001-004: Detect Package Manager
+
+**Related ADRs:**
+- ADR-031: Linux-Specific Multi-Package Manager Strategy
+
+**Related Threats:**
+- None directly
+
+**Definition of Done:**
+- Package manager detection is implemented and tested
+- All major package managers are detected
+- Detection failures are handled gracefully
+- Documentation is updated
+
+**Recommended Role:** Python Developer
+**Skill Requirements:**
+- Python 3.10+
+- Linux package manager knowledge
+- Experience with executable detection patterns
 
 ---
 
-### P1-007: Set Up CI/CD Pipeline
+### TASK-005: Define Nix Packages in flake.nix
 
-**Description:** Configure continuous integration and deployment pipeline
+**Description:** Define CachyOS-specific packages and versions in flake.nix to ensure reproducible builds.
+
+**Priority:** Critical
+
+**Dependencies:** None
 
 **Acceptance Criteria:**
-- GitHub Actions workflow created
-- Automated testing configured
-- Automated linting configured
-- Build verification configured
-- Pipeline tested and working
+- Nixpkgs input is `nixos-unstable`
+- System is defined as `x86_64-linux`
+- flake.lock pins specific Nixpkgs commit
+- CachyOS-specific packages are documented in comments
+- Shell loads successfully on CachyOS
+- All packages are available in Nix store
+
+**Related Requirements:**
+- REQ-002-001: Define CachyOS-Specific Packages
+
+**Related ADRs:**
+- ADR-027: Nix Package Manager Integration
+- ADR-028: CachyOS as Primary Linux Target
+
+**Related Threats:**
+- TM-LX-001: Nix Package Manager Security Risks
+
+**Definition of Done:**
+- flake.nix is created with CachyOS packages
+- flake.lock is generated and committed
+- Shell loads successfully on CachyOS
+- Documentation is updated
+
+**Recommended Role:** DevOps Engineer / Nix Specialist
+**Skill Requirements:**
+- Nix package manager expertise
+- Nix flakes knowledge
+- CachyOS familiarity
+
+---
+
+### TASK-006: Define Development Shell in flake.nix
+
+**Description:** Define comprehensive development shell in flake.nix with all required packages and environment setup.
+
+**Priority:** Critical
+
+**Dependencies:**
+- TASK-005: Define Nix Packages in flake.nix
+
+**Acceptance Criteria:**
+- `devShells.${system}.default` is defined
+- All compiler packages are included (GCC, Clang)
+- All build system packages are included (CMake, Ninja, ccache)
+- All package manager packages are included (Conan, Python, pip)
+- All Qt6 packages are included
+- All Vulkan packages are included
+- Documentation tools are included (Doxygen, graphviz)
+- Code quality tools are included (clang-tools, cppcheck)
+- Testing tools are included (gtest, gmock, pytest)
+- Debugging tools are included (gdb, lldb, valgrind)
+- Performance tools are included (perf-tools, hotspot)
+- Shell name is "omnicpp-cachyos-dev"
+- Welcome message is displayed
+- All environment variables are set
+
+**Related Requirements:**
+- REQ-002-006: Define Development Shell
+
+**Related ADRs:**
+- ADR-027: Nix Package Manager Integration
+- ADR-029: Direnv for Environment Management
+
+**Related Threats:**
+- TM-LX-001: Nix Package Manager Security Risks
+
+**Definition of Done:**
+- Development shell is defined in flake.nix
+- All required packages are included
+- Environment variables are properly set
+- Shell loads without errors
+- Documentation is updated
+
+**Recommended Role:** DevOps Engineer / Nix Specialist
+**Skill Requirements:**
+- Nix package manager expertise
+- C++ development environment setup
+- Environment variable configuration
+
+---
+
+### TASK-007: Configure CMake Integration in flake.nix
+
+**Description:** Configure CMake to work correctly with Nix-provided packages and toolchains.
+
+**Priority:** Critical
+
+**Dependencies:**
+- TASK-006: Define Development Shell in flake.nix
+
+**Acceptance Criteria:**
+- `CMAKE_GENERATOR="Ninja"` is set in shellHook
+- `CMAKE_BUILD_PARALLEL_LEVEL` is set in shellHook
+- `CMAKE_PREFIX_PATH` includes Qt6 and Vulkan
+- `CMAKE_LIBRARY_PATH` includes Nix library paths
+- `CMAKE_INCLUDE_PATH` includes Nix include paths
+- `CMAKE_C_COMPILER` is set based on toolchain
+- `CMAKE_CXX_COMPILER` is set based on toolchain
+- `CMAKE_EXPORT_COMPILE_COMMANDS=ON` is set
+- `CCACHE_DIR=$PWD/.ccache` is set
+
+**Related Requirements:**
+- REQ-002-007: Configure CMake Integration
+
+**Related ADRs:**
+- ADR-027: Nix Package Manager Integration
+- ADR-005: CMake 4 + Ninja Default Generator
+
+**Related Threats:**
+- None directly
+
+**Definition of Done:**
+- CMake integration is configured in flake.nix
+- All CMake environment variables are set
+- CMake works correctly with Nix toolchain
+- Documentation is updated
+
+**Recommended Role:** DevOps Engineer / CMake Specialist
+**Skill Requirements:**
+- Nix package manager expertise
+- CMake configuration knowledge
+- Build system integration
+
+---
+
+### TASK-008: Configure Conan Integration in flake.nix
+
+**Description:** Configure Conan integration for Nix environment to work with Nix-provided toolchains.
+
+**Priority:** Critical
+
+**Dependencies:**
+- TASK-006: Define Development Shell in flake.nix
+
+**Acceptance Criteria:**
+- `CONAN_USER_HOME=$PWD/.conan2` is set in shellHook
+- `CONAN_REVISIONS_ENABLED=1` is set in shellHook
+- `CONAN_V2_MODE=1` is set in shellHook
+- Conan environment variables are documented
+- Conan works correctly with Nix toolchain
+
+**Related Requirements:**
+- REQ-002-008: Configure Conan Integration
+
+**Related ADRs:**
+- ADR-027: Nix Package Manager Integration
+- ADR-031: Linux-Specific Multi-Package Manager Strategy
+
+**Related Threats:**
+- TM-001: Malicious Package Injection (Conan)
+- TM-LX-001: Nix Package Manager Security Risks
+
+**Definition of Done:**
+- Conan integration is configured in flake.nix
+- Conan environment variables are set
+- Conan works correctly with Nix
+- Documentation is updated
+
+**Recommended Role:** DevOps Engineer / Conan Specialist
+**Skill Requirements:**
+- Nix package manager expertise
+- Conan package manager knowledge
+- Environment configuration
+
+---
+
+## Phase 2: Tooling (Conan, Setup Scripts, CMake)
+
+### TASK-009: Create gcc-linux Conan Profile
+
+**Description:** Create Conan profile for GCC on Linux with release configuration.
 
 **Priority:** High
-**Estimated Effort:** 8 hours
-**Dependencies:** P1-006
-**Related Requirements:** REQ-042
-**Related ADRs:** None
-**Assignee:** TBD
-**Status:** Not Started
+
+**Dependencies:** None
+
+**Acceptance Criteria:**
+- `conan/profiles/gcc-linux` file exists
+- Profile has `os=Linux`
+- Profile has `arch=x86_64`
+- Profile has `compiler=gcc`
+- Profile has `compiler.version=13`
+- Profile has `compiler.libcxx=libstdc++11`
+- Profile has `build_type=Release`
+- Profile has compiler executables configured
+- Profile has CMake toolchain configured
+- Profile has usage comments
+
+**Related Requirements:**
+- REQ-004-001: Create gcc-linux Profile
+
+**Related ADRs:**
+- ADR-034: Conan Profile Expansion
+- ADR-031: Linux-Specific Multi-Package Manager Strategy
+
+**Related Threats:**
+- TM-001: Malicious Package Injection (Conan)
+
+**Definition of Done:**
+- gcc-linux profile is created
+- Profile is tested and working
+- Documentation is updated
+
+**Recommended Role:** DevOps Engineer / Conan Specialist
+**Skill Requirements:**
+- Conan package manager expertise
+- GCC toolchain knowledge
+- Profile configuration
 
 ---
 
-### P1-008: Create Project Tracking Board
+### TASK-010: Create gcc-linux-debug Conan Profile
 
-**Description:** Set up project tracking for task management
+**Description:** Create Conan profile for GCC on Linux with debug configuration.
+
+**Priority:** High
+
+**Dependencies:**
+- TASK-009: Create gcc-linux Conan Profile
 
 **Acceptance Criteria:**
-- Project board created (GitHub Projects/Jira)
-- All tasks imported
-- Assignees designated
-- Milestones defined
-- Progress tracking configured
+- `conan/profiles/gcc-linux-debug` file exists
+- Profile has `os=Linux`
+- Profile has `arch=x86_64`
+- Profile has `compiler=gcc`
+- Profile has `compiler.version=13`
+- Profile has `compiler.libcxx=libstdc++11`
+- Profile has `build_type=Debug`
+- Profile has compiler executables configured
+- Profile has CMake toolchain configured
+- Profile has usage comments
+
+**Related Requirements:**
+- REQ-004-002: Create gcc-linux-debug Profile
+
+**Related ADRs:**
+- ADR-034: Conan Profile Expansion
+- ADR-031: Linux-Specific Multi-Package Manager Strategy
+
+**Related Threats:**
+- TM-001: Malicious Package Injection (Conan)
+
+**Definition of Done:**
+- gcc-linux-debug profile is created
+- Profile is tested and working
+- Documentation is updated
+
+**Recommended Role:** DevOps Engineer / Conan Specialist
+**Skill Requirements:**
+- Conan package manager expertise
+- GCC toolchain knowledge
+- Profile configuration
+
+---
+
+### TASK-011: Create clang-linux Conan Profile
+
+**Description:** Create Conan profile for Clang on Linux with release configuration.
+
+**Priority:** High
+
+**Dependencies:** None
+
+**Acceptance Criteria:**
+- `conan/profiles/clang-linux` file exists
+- Profile has `os=Linux`
+- Profile has `arch=x86_64`
+- Profile has `compiler=clang`
+- Profile has `compiler.version=19`
+- Profile has `compiler.libcxx=libc++`
+- Profile has `build_type=Release`
+- Profile has compiler executables configured
+- Profile has CMake toolchain configured
+- Profile has usage comments
+
+**Related Requirements:**
+- REQ-004-003: Create clang-linux Profile
+
+**Related ADRs:**
+- ADR-034: Conan Profile Expansion
+- ADR-031: Linux-Specific Multi-Package Manager Strategy
+
+**Related Threats:**
+- TM-001: Malicious Package Injection (Conan)
+
+**Definition of Done:**
+- clang-linux profile is created
+- Profile is tested and working
+- Documentation is updated
+
+**Recommended Role:** DevOps Engineer / Conan Specialist
+**Skill Requirements:**
+- Conan package manager expertise
+- Clang toolchain knowledge
+- Profile configuration
+
+---
+
+### TASK-012: Create clang-linux-debug Conan Profile
+
+**Description:** Create Conan profile for Clang on Linux with debug configuration.
+
+**Priority:** High
+
+**Dependencies:**
+- TASK-011: Create clang-linux Conan Profile
+
+**Acceptance Criteria:**
+- `conan/profiles/clang-linux-debug` file exists
+- Profile has `os=Linux`
+- Profile has `arch=x86_64`
+- Profile has `compiler=clang`
+- Profile has `compiler.version=19`
+- Profile has `compiler.libcxx=libc++`
+- Profile has `build_type=Debug`
+- Profile has compiler executables configured
+- Profile has CMake toolchain configured
+- Profile has usage comments
+
+**Related Requirements:**
+- REQ-004-004: Create clang-linux-debug Profile
+
+**Related ADRs:**
+- ADR-034: Conan Profile Expansion
+- ADR-031: Linux-Specific Multi-Package Manager Strategy
+
+**Related Threats:**
+- TM-001: Malicious Package Injection (Conan)
+
+**Definition of Done:**
+- clang-linux-debug profile is created
+- Profile is tested and working
+- Documentation is updated
+
+**Recommended Role:** DevOps Engineer / Conan Specialist
+**Skill Requirements:**
+- Conan package manager expertise
+- Clang toolchain knowledge
+- Profile configuration
+
+---
+
+### TASK-013: Create cachyos Conan Profile
+
+**Description:** Create Conan profile for CachyOS with GCC and release configuration.
+
+**Priority:** High
+
+**Dependencies:**
+- TASK-009: Create gcc-linux Conan Profile
+
+**Acceptance Criteria:**
+- `conan/profiles/cachyos` file exists
+- Profile has `os=Linux`
+- Profile has `arch=x86_64`
+- Profile has `compiler=gcc`
+- Profile has `compiler.version=13`
+- Profile has `compiler.libcxx=libstdc++11`
+- Profile has `build_type=Release`
+- Profile has compiler executables configured
+- Profile has CMake toolchain configured
+- Profile has CachyOS-specific flags
+- Profile has usage comments
+
+**Related Requirements:**
+- REQ-004-005: Create cachyos Profile
+
+**Related ADRs:**
+- ADR-028: CachyOS as Primary Linux Target
+- ADR-034: Conan Profile Expansion
+
+**Related Threats:**
+- TM-001: Malicious Package Injection (Conan)
+
+**Definition of Done:**
+- cachyos profile is created
+- Profile is tested and working
+- Documentation is updated
+
+**Recommended Role:** DevOps Engineer / Conan Specialist
+**Skill Requirements:**
+- Conan package manager expertise
+- CachyOS knowledge
+- Profile configuration
+
+---
+
+### TASK-014: Create cachyos-debug Conan Profile
+
+**Description:** Create Conan profile for CachyOS with GCC and debug configuration.
+
+**Priority:** High
+
+**Dependencies:**
+- TASK-013: Create cachyos Conan Profile
+
+**Acceptance Criteria:**
+- `conan/profiles/cachyos-debug` file exists
+- Profile has `os=Linux`
+- Profile has `arch=x86_64`
+- Profile has `compiler=gcc`
+- Profile has `compiler.version=13`
+- Profile has `compiler.libcxx=libstdc++11`
+- Profile has `build_type=Debug`
+- Profile has compiler executables configured
+- Profile has CMake toolchain configured
+- Profile has CachyOS-specific debug flags
+- Profile has usage comments
+
+**Related Requirements:**
+- REQ-004-006: Create cachyos-debug Profile
+
+**Related ADRs:**
+- ADR-028: CachyOS as Primary Linux Target
+- ADR-034: Conan Profile Expansion
+
+**Related Threats:**
+- TM-001: Malicious Package Injection (Conan)
+
+**Definition of Done:**
+- cachyos-debug profile is created
+- Profile is tested and working
+- Documentation is updated
+
+**Recommended Role:** DevOps Engineer / Conan Specialist
+**Skill Requirements:**
+- Conan package manager expertise
+- CachyOS knowledge
+- Profile configuration
+
+---
+
+### TASK-015: Create cachyos-clang Conan Profile
+
+**Description:** Create Conan profile for CachyOS with Clang and release configuration.
+
+**Priority:** High
+
+**Dependencies:**
+- TASK-011: Create clang-linux Conan Profile
+
+**Acceptance Criteria:**
+- `conan/profiles/cachyos-clang` file exists
+- Profile has `os=Linux`
+- Profile has `arch=x86_64`
+- Profile has `compiler=clang`
+- Profile has `compiler.version=19`
+- Profile has `compiler.libcxx=libc++`
+- Profile has `build_type=Release`
+- Profile has compiler executables configured
+- Profile has CMake toolchain configured
+- Profile has CachyOS-specific flags
+- Profile has usage comments
+
+**Related Requirements:**
+- REQ-004-007: Create cachyos-clang Profile
+
+**Related ADRs:**
+- ADR-028: CachyOS as Primary Linux Target
+- ADR-034: Conan Profile Expansion
+
+**Related Threats:**
+- TM-001: Malicious Package Injection (Conan)
+
+**Definition of Done:**
+- cachyos-clang profile is created
+- Profile is tested and working
+- Documentation is updated
+
+**Recommended Role:** DevOps Engineer / Conan Specialist
+**Skill Requirements:**
+- Conan package manager expertise
+- CachyOS knowledge
+- Clang toolchain knowledge
+
+---
+
+### TASK-016: Create cachyos-clang-debug Conan Profile
+
+**Description:** Create Conan profile for CachyOS with Clang and debug configuration.
+
+**Priority:** High
+
+**Dependencies:**
+- TASK-015: Create cachyos-clang Conan Profile
+
+**Acceptance Criteria:**
+- `conan/profiles/cachyos-clang-debug` file exists
+- Profile has `os=Linux`
+- Profile has `arch=x86_64`
+- Profile has `compiler=clang`
+- Profile has `compiler.version=19`
+- Profile has `compiler.libcxx=libc++`
+- Profile has `build_type=Debug`
+- Profile has compiler executables configured
+- Profile has CMake toolchain configured
+- Profile has CachyOS-specific debug flags
+- Profile has usage comments
+
+**Related Requirements:**
+- REQ-004-008: Create cachyos-clang-debug Profile
+
+**Related ADRs:**
+- ADR-028: CachyOS as Primary Linux Target
+- ADR-034: Conan Profile Expansion
+
+**Related Threats:**
+- TM-001: Malicious Package Injection (Conan)
+
+**Definition of Done:**
+- cachyos-clang-debug profile is created
+- Profile is tested and working
+- Documentation is updated
+
+**Recommended Role:** DevOps Engineer / Conan Specialist
+**Skill Requirements:**
+- Conan package manager expertise
+- CachyOS knowledge
+- Clang toolchain knowledge
+
+---
+
+### TASK-017: Create setup_gcc.sh Script
+
+**Description:** Create setup script for GCC compiler environment on Linux.
+
+**Priority:** High
+
+**Dependencies:**
+- TASK-004: Implement Package Manager Detection
+
+**Acceptance Criteria:**
+- `scripts/setup_gcc.sh` file exists
+- Script is executable
+- Script detects GCC installation
+- Script configures GCC environment variables
+- Script validates GCC version
+- Script provides error handling
+- Script has usage documentation
+
+**Related Requirements:**
+- REQ-005-001: Create Setup Scripts
+
+**Related ADRs:**
+- ADR-011: Terminal Invocation Patterns
+
+**Related Threats:**
+- TM-005: Terminal Invocation Security
+
+**Definition of Done:**
+- setup_gcc.sh script is created
+- Script is tested on multiple distributions
+- Documentation is updated
+
+**Recommended Role:** DevOps Engineer / Shell Scripting
+**Skill Requirements:**
+- Bash scripting expertise
+- GCC toolchain knowledge
+- Linux system administration
+
+---
+
+### TASK-018: Create setup_clang.sh Script
+
+**Description:** Create setup script for Clang compiler environment on Linux.
+
+**Priority:** High
+
+**Dependencies:**
+- TASK-004: Implement Package Manager Detection
+
+**Acceptance Criteria:**
+- `scripts/setup_clang.sh` file exists
+- Script is executable
+- Script detects Clang installation
+- Script configures Clang environment variables
+- Script validates Clang version
+- Script provides error handling
+- Script has usage documentation
+
+**Related Requirements:**
+- REQ-005-001: Create Setup Scripts
+
+**Related ADRs:**
+- ADR-011: Terminal Invocation Patterns
+
+**Related Threats:**
+- TM-005: Terminal Invocation Security
+
+**Definition of Done:**
+- setup_clang.sh script is created
+- Script is tested on multiple distributions
+- Documentation is updated
+
+**Recommended Role:** DevOps Engineer / Shell Scripting
+**Skill Requirements:**
+- Bash scripting expertise
+- Clang toolchain knowledge
+- Linux system administration
+
+---
+
+### TASK-019: Create setup_cachyos.sh Script
+
+**Description:** Create setup script for CachyOS-specific compiler environment.
+
+**Priority:** High
+
+**Dependencies:**
+- TASK-002: Implement CachyOS Detection
+
+**Acceptance Criteria:**
+- `scripts/setup_cachyos.sh` file exists
+- Script is executable
+- Script detects CachyOS
+- Script applies CachyOS-specific optimizations
+- Script configures CachyOS environment
+- Script provides error handling
+- Script has usage documentation
+
+**Related Requirements:**
+- REQ-005-001: Create Setup Scripts
+
+**Related ADRs:**
+- ADR-028: CachyOS as Primary Linux Target
+- ADR-011: Terminal Invocation Patterns
+
+**Related Threats:**
+- TM-005: Terminal Invocation Security
+
+**Definition of Done:**
+- setup_cachyos.sh script is created
+- Script is tested on CachyOS
+- Documentation is updated
+
+**Recommended Role:** DevOps Engineer / Shell Scripting
+**Skill Requirements:**
+- Bash scripting expertise
+- CachyOS knowledge
+- Linux system administration
+
+---
+
+### TASK-020: Create setup_nix.sh Script
+
+**Description:** Create setup script for Nix environment initialization.
+
+**Priority:** High
+
+**Dependencies:**
+- TASK-003: Implement Nix Environment Detection
+
+**Acceptance Criteria:**
+- `scripts/setup_nix.sh` file exists
+- Script is executable
+- Script checks for Nix installation
+- Script initializes Nix environment
+- Script configures Nix paths
+- Script provides error handling
+- Script has usage documentation
+
+**Related Requirements:**
+- REQ-005-001: Create Setup Scripts
+
+**Related ADRs:**
+- ADR-027: Nix Package Manager Integration
+- ADR-029: Direnv for Environment Management
+
+**Related Threats:**
+- TM-LX-001: Nix Package Manager Security Risks
+
+**Definition of Done:**
+- setup_nix.sh script is created
+- Script is tested on multiple distributions
+- Documentation is updated
+
+**Recommended Role:** DevOps Engineer / Nix Specialist
+**Skill Requirements:**
+- Bash scripting expertise
+- Nix package manager knowledge
+- Linux system administration
+
+---
+
+### TASK-021: Create setup_qt6_vulkan.sh Script
+
+**Description:** Create setup script for Qt6 and Vulkan graphics libraries.
+
+**Priority:** High
+
+**Dependencies:**
+- TASK-006: Define Development Shell in flake.nix
+
+**Acceptance Criteria:**
+- `scripts/setup_qt6_vulkan.sh` file exists
+- Script is executable
+- Script checks for Qt6 installation
+- Script checks for Vulkan installation
+- Script configures Qt6 environment variables
+- Script configures Vulkan environment variables
+- Script provides error handling
+- Script has usage documentation
+
+**Related Requirements:**
+- REQ-005-001: Create Setup Scripts
+
+**Related ADRs:**
+- ADR-034: Qt6 and Vulkan Integration
+
+**Related Threats:**
+- None directly
+
+**Definition of Done:**
+- setup_qt6_vulkan.sh script is created
+- Script is tested on multiple distributions
+- Documentation is updated
+
+**Recommended Role:** DevOps Engineer / Graphics Specialist
+**Skill Requirements:**
+- Bash scripting expertise
+- Qt6 and Vulkan knowledge
+- Linux graphics stack
+
+---
+
+### TASK-022: Create validate_environment.sh Script
+
+**Description:** Create validation script to verify Linux build environment is complete.
+
+**Priority:** High
+
+**Dependencies:**
+- TASK-001: Implement Linux Distribution Detection
+- TASK-003: Implement Nix Environment Detection
+
+**Acceptance Criteria:**
+- `scripts/validate_environment.sh` file exists
+- Script is executable
+- Script validates compiler availability
+- Script validates CMake availability
+- Script validates Ninja availability
+- Script validates Qt6 availability
+- Script validates Vulkan availability
+- Script validates Conan availability
+- Script provides detailed error messages
+- Script returns exit codes for automation
+
+**Related Requirements:**
+- REQ-001-007: Validate Linux Build Environment
+
+**Related ADRs:**
+- ADR-030: Enhanced OmniCppController.py Architecture
+
+**Related Threats:**
+- None directly
+
+**Definition of Done:**
+- validate_environment.sh script is created
+- Script is tested on multiple distributions
+- Documentation is updated
+
+**Recommended Role:** DevOps Engineer / QA Engineer
+**Skill Requirements:**
+- Bash scripting expertise
+- Build system validation
+- Linux environment troubleshooting
+
+---
+
+### TASK-023: Add Nix-Aware CMake Presets
+
+**Description:** Add CMake presets for Nix environment to CMakePresets.json.
+
+**Priority:** High
+
+**Dependencies:**
+- TASK-007: Configure CMake Integration in flake.nix
+
+**Acceptance Criteria:**
+- Nix-aware presets exist in CMakePresets.json
+- Presets use Nix toolchain paths
+- Presets configure CMake for Nix environment
+- Presets include GCC and Clang variants
+- Presets include debug and release configurations
+- Presets are documented
+
+**Related Requirements:**
+- REQ-008-001: CMake Integration
+
+**Related ADRs:**
+- ADR-005: CMake 4 + Ninja Default Generator
+- ADR-024: CMake Presets Cross-Platform Configuration
+
+**Related Threats:**
+- None directly
+
+**Definition of Done:**
+- Nix-aware CMake presets are added
+- Presets are tested and working
+- Documentation is updated
+
+**Recommended Role:** CMake Specialist / Build Engineer
+**Skill Requirements:**
+- CMake configuration expertise
+- Nix environment knowledge
+- Cross-platform build systems
+
+---
+
+### TASK-024: Add CachyOS Build Configurations to CMake Presets
+
+**Description:** Add CachyOS-specific build configurations to CMakePresets.json.
+
+**Priority:** High
+
+**Dependencies:**
+- TASK-013: Create cachyos Conan Profile
+
+**Acceptance Criteria:**
+- CachyOS presets exist in CMakePresets.json
+- Presets use CachyOS-specific compiler flags
+- Presets configure CMake for CachyOS
+- Presets include GCC and Clang variants
+- Presets include debug and release configurations
+- Presets are documented
+
+**Related Requirements:**
+- REQ-008-001: CMake Integration
+
+**Related ADRs:**
+- ADR-028: CachyOS as Primary Linux Target
+- ADR-024: CMake Presets Cross-Platform Configuration
+
+**Related Threats:**
+- None directly
+
+**Definition of Done:**
+- CachyOS CMake presets are added
+- Presets are tested and working
+- Documentation is updated
+
+**Recommended Role:** CMake Specialist / Build Engineer
+**Skill Requirements:**
+- CMake configuration expertise
+- CachyOS knowledge
+- Compiler flag optimization
+
+---
+
+## Phase 3: Integration (VSCode)
+
+### TASK-025: Add Linux Build Tasks to VSCode tasks.json
+
+**Description:** Add Linux-specific build tasks for GCC and Clang to VSCode tasks.json.
+
+**Priority:** High
+
+**Dependencies:**
+- TASK-023: Add Nix-Aware CMake Presets
+- TASK-024: Add CachyOS Build Configurations to CMake Presets
+
+**Acceptance Criteria:**
+- "Configure Build (Linux GCC - Debug)" task exists
+- "Configure Build (Linux GCC - Release)" task exists
+- "Configure Build (Linux Clang - Debug)" task exists
+- "Configure Build (Linux Clang - Release)" task exists
+- "Build Engine (Linux GCC - Debug)" task exists
+- "Build Engine (Linux GCC - Release)" task exists
+- "Build Engine (Linux Clang - Debug)" task exists
+- "Build Engine (Linux Clang - Release)" task exists
+- "Build Game (Linux GCC - Debug)" task exists
+- "Build Game (Linux GCC - Release)" task exists
+- "Build Game (Linux Clang - Debug)" task exists
+- "Build Game (Linux Clang - Release)" task exists
+- "Build Standalone (Linux GCC - Debug)" task exists
+- "Build Standalone (Linux GCC - Release)" task exists
+- "Build Standalone (Linux Clang - Debug)" task exists
+- "Build Standalone (Linux Clang - Release)" task exists
+- All tasks include "--use-nix" flag
+- GCC tasks use "$gcc" problemMatcher
+- Clang tasks use "$clang" problemMatcher
+- All tasks are in "build" group
+
+**Related Requirements:**
+- REQ-003-001: Add Linux Build Tasks
+
+**Related ADRs:**
+- ADR-026: VSCode Tasks and Launch Configuration
+- ADR-032: VSCode Platform-Specific Tasks
+
+**Related Threats:**
+- None directly
+
+**Definition of Done:**
+- Linux build tasks are added to tasks.json
+- Tasks are tested and working
+- Documentation is updated
+
+**Recommended Role:** VSCode Configuration Specialist
+**Skill Requirements:**
+- VSCode configuration expertise
+- Build system integration
+- Task automation
+
+---
+
+### TASK-026: Add Linux Debug Configurations to VSCode launch.json
+
+**Description:** Add Linux-specific debug configurations for GDB and LLDB to VSCode launch.json.
+
+**Priority:** High
+
+**Dependencies:**
+- TASK-025: Add Linux Build Tasks to VSCode tasks.json
+
+**Acceptance Criteria:**
+- "Debug Engine (Linux GDB)" configuration exists
+- "Debug Engine (Linux LLDB)" configuration exists
+- "Debug Game (Linux GDB)" configuration exists
+- "Debug Game (Linux LLDB)" configuration exists
+- "Debug Standalone (Linux GDB)" configuration exists
+- "Debug Standalone (Linux LLDB)" configuration exists
+- All configurations have "type": "cppdbg"
+- All configurations have "request": "launch"
+- GDB configurations have "MIMode": "gdb"
+- LLDB configurations have "MIMode": "lldb"
+- GDB configurations have "miDebuggerPath": "gdb"
+- LLDB configurations have "miDebuggerPath": "lldb"
+- All configurations have "setupCommands"
+- All configurations have "preLaunchTask"
+- All configurations have "cwd": "${workspaceFolder}"
+
+**Related Requirements:**
+- REQ-003-002: Add Linux Debug Configurations
+
+**Related ADRs:**
+- ADR-026: VSCode Tasks and Launch Configuration
+- ADR-032: VSCode Platform-Specific Tasks
+
+**Related Threats:**
+- None directly
+
+**Definition of Done:**
+- Linux debug configurations are added to launch.json
+- Configurations are tested and working
+- Documentation is updated
+
+**Recommended Role:** VSCode Configuration Specialist
+**Skill Requirements:**
+- VSCode configuration expertise
+- Debugger configuration (GDB, LLDB)
+- IDE integration
+
+---
+
+### TASK-027: Add Nix Shell Task to VSCode tasks.json
+
+**Description:** Add task to load Nix development shell to VSCode tasks.json.
+
+**Priority:** High
+
+**Dependencies:**
+- TASK-020: Create setup_nix.sh Script
+
+**Acceptance Criteria:**
+- "Load Nix Shell" task exists
+- Task has "type": "shell"
+- Task has "command": "nix"
+- Task has "args": ["develop"]
+- Task has "options.cwd": "${workspaceFolder}"
+- Task has "problemMatcher": []
+- Task is in "build" group
+- Task has "detail" description
+- Task has "presentation" configuration
+
+**Related Requirements:**
+- REQ-003-003: Add Nix Shell Task
+
+**Related ADRs:**
+- ADR-027: Nix Package Manager Integration
+- ADR-029: Direnv for Environment Management
+
+**Related Threats:**
+- TM-LX-001: Nix Package Manager Security Risks
+
+**Definition of Done:**
+- Nix shell task is added to tasks.json
+- Task is tested and working
+- Documentation is updated
+
+**Recommended Role:** VSCode Configuration Specialist
+**Skill Requirements:**
+- VSCode configuration expertise
+- Nix environment knowledge
+- Task automation
+
+---
+
+### TASK-028: Add CachyOS Validation Task to VSCode tasks.json
+
+**Description:** Add task to validate CachyOS build environment to VSCode tasks.json.
 
 **Priority:** Medium
-**Estimated Effort:** 4 hours
-**Dependencies:** None
-**Related Requirements:** None
-**Related ADRs:** None
-**Assignee:** TBD
-**Status:** Not Started
 
----
-
-**Phase 1 Summary:**
-- **Total Tasks:** 8
-- **Total Effort:** 35 hours
-- **Critical Path:** P1-001 → P1-006 → P1-007
-
----
-
-## Phase 2: Python Script Consolidation (Weeks 2-3)
-
-### P2-001: Analyze Existing Python Scripts
-
-**Description:** Comprehensive analysis of all Python scripts in scripts/ and impl/
+**Dependencies:**
+- TASK-022: Create validate_environment.sh Script
 
 **Acceptance Criteria:**
-- All Python scripts cataloged
-- Functionality documented
-- Dependencies mapped
-- Duplicate code identified
-- Integration points documented
+- "Validate CachyOS Environment" task exists
+- Task has "type": "shell"
+- Task has "command": "python"
+- Task has "args": ["OmniCppController.py", "validate", "--platform", "linux"]
+- Task has "options.cwd": "${workspaceFolder}"
+- Task has "problemMatcher": []
+- Task is in "test" group
+- Task has "detail" description
+- Task has "presentation" configuration
 
-**Priority:** Critical
-**Estimated Effort:** 16 hours
-**Dependencies:** P1-002
-**Related Requirements:** REQ-004
-**Related ADRs:** ADR-007
-**Assignee:** TBD
-**Status:** Not Started
+**Related Requirements:**
+- REQ-003-004: Add CachyOS Validation Task
 
----
+**Related ADRs:**
+- ADR-028: CachyOS as Primary Linux Target
 
-### P2-002: Design Consolidated Structure
+**Related Threats:**
+- None directly
 
-**Description:** Design the new omni_scripts/ directory structure
+**Definition of Done:**
+- CachyOS validation task is added to tasks.json
+- Task is tested and working
+- Documentation is updated
 
-**Acceptance Criteria:**
-- New directory structure designed
-- Module organization defined
-- Import paths planned
-- Migration strategy documented
-- Backward compatibility plan created
-
-**Priority:** Critical
-**Estimated Effort:** 12 hours
-**Dependencies:** P2-001
-**Related Requirements:** REQ-004, REQ-002
-**Related ADRs:** ADR-007, ADR-008
-**Assignee:** TBD
-**Status:** Not Started
+**Recommended Role:** VSCode Configuration Specialist
+**Skill Requirements:**
+- VSCode configuration expertise
+- Build validation knowledge
+- Task automation
 
 ---
 
-### P2-003: Create New omni_scripts/ Structure
+## Phase 4: Documentation
 
-**Description:** Create the new directory structure for consolidated scripts
+### TASK-029: Create nix-development.md Documentation
 
-**Acceptance Criteria:**
-- omni_scripts/ directory created
-- All subdirectories created (controller/, logging/, platform/, compilers/, utils/, validators/)
-- __init__.py files created
-- Package structure validated
-
-**Priority:** Critical
-**Estimated Effort:** 4 hours
-**Dependencies:** P2-002
-**Related Requirements:** REQ-004
-**Related ADRs:** ADR-007
-**Assignee:** TBD
-**Status:** Not Started
-
----
-
-### P2-004: Migrate Scripts from scripts/
-
-**Description:** Migrate and refactor scripts from scripts/ directory
-
-**Acceptance Criteria:**
-- All scripts migrated to omni_scripts/
-- Code refactored for consistency
-- Imports updated
-- Functionality preserved
-- Tests pass
-
-**Priority:** Critical
-**Estimated Effort:** 24 hours
-**Dependencies:** P2-003
-**Related Requirements:** REQ-004
-**Related ADRs:** ADR-007
-**Assignee:** TBD
-**Status:** Not Started
-
----
-
-### P2-005: Migrate Scripts from impl/
-
-**Description:** Migrate and refactor scripts from impl/ directory
-
-**Acceptance Criteria:**
-- All scripts migrated to omni_scripts/
-- Code refactored for consistency
-- Imports updated
-- Functionality preserved
-- Tests pass
-
-**Priority:** Critical
-**Estimated Effort:** 20 hours
-**Dependencies:** P2-003
-**Related Requirements:** REQ-004
-**Related ADRs:** ADR-007
-**Assignee:** TBD
-**Status:** Not Started
-
----
-
-### P2-006: Update Imports and Dependencies
-
-**Description:** Update all import statements and dependencies
-
-**Acceptance Criteria:**
-- All imports updated to new structure
-- Circular dependencies resolved
-- Dependency graph validated
-- No import errors
-- All scripts import correctly
-
-**Priority:** Critical
-**Estimated Effort:** 16 hours
-**Dependencies:** P2-004, P2-005
-**Related Requirements:** REQ-004
-**Related ADRs:** ADR-007
-**Assignee:** TBD
-**Status:** Not Started
-
----
-
-### P2-007: Remove Duplicate Files
-
-**Description:** Identify and remove duplicate or obsolete files
-
-**Acceptance Criteria:**
-- Duplicate files identified
-- Obsolete files cataloged
-- Safe to remove files deleted
-- No functionality lost
-- Documentation updated
+**Description:** Create comprehensive documentation for Nix development environment setup and usage.
 
 **Priority:** High
-**Estimated Effort:** 8 hours
-**Dependencies:** P2-006
-**Related Requirements:** REQ-004
-**Related ADRs:** ADR-007
-**Assignee:** TBD
-**Status:** Not Started
 
----
-
-### P2-008: Add Type Hints
-
-**Description:** Add comprehensive type hints to all Python code
+**Dependencies:**
+- TASK-006: Define Development Shell in flake.nix
+- TASK-020: Create setup_nix.sh Script
 
 **Acceptance Criteria:**
-- All functions have type hints
-- All classes have type hints
-- All variables have type hints where appropriate
-- Zero Pylance errors
-- Type checking passes
+- `docs/nix-development.md` file exists
+- Document covers Nix installation
+- Document covers flake.nix structure
+- Document covers Nix shell usage
+- Document covers Nix package management
+- Document covers Nix integration with Conan
+- Document covers Nix integration with CMake
+- Document covers troubleshooting Nix issues
+- Document includes examples and code snippets
 
-**Priority:** Critical
-**Estimated Effort:** 32 hours
-**Dependencies:** P2-006
-**Related Requirements:** REQ-003
-**Related ADRs:** ADR-009
-**Assignee:** TBD
-**Status:** Not Started
+**Related Requirements:**
+- REQ-006-001: Documentation
 
----
+**Related ADRs:**
+- ADR-027: Nix Package Manager Integration
+- ADR-029: Direnv for Environment Management
 
-### P2-009: Fix Pylance Errors
+**Related Threats:**
+- TM-LX-001: Nix Package Manager Security Risks
 
-**Description:** Resolve all Pylance errors and warnings
+**Definition of Done:**
+- nix-development.md is created
+- Documentation is comprehensive and accurate
+- Documentation is reviewed and approved
 
-**Acceptance Criteria:**
-- Zero Pylance errors
-- Zero critical warnings
-- All warnings addressed or suppressed with justification
-- Code quality improved
-
-**Priority:** Critical
-**Estimated Effort:** 16 hours
-**Dependencies:** P2-008
-**Related Requirements:** REQ-003
-**Related ADRs:** ADR-009
-**Assignee:** TBD
-**Status:** Not Started
+**Recommended Role:** Technical Writer
+**Skill Requirements:**
+- Technical writing expertise
+- Nix package manager knowledge
+- Documentation tools (Markdown)
 
 ---
 
-### P2-010: Update OmniCppController.py
+### TASK-030: Create cachyos-builds.md Documentation
 
-**Description:** Refactor OmniCppController.py to use new modular structure
-
-**Acceptance Criteria:**
-- OmniCppController.py updated
-- Imports from omni_modules/
-- Modular controller pattern implemented
-- Backward compatibility maintained
-- All tests pass
-
-**Priority:** Critical
-**Estimated Effort:** 20 hours
-**Dependencies:** P2-006
-**Related Requirements:** REQ-001, REQ-002
-**Related ADRs:** ADR-008, ADR-025
-**Assignee:** TBD
-**Status:** Not Started
-
----
-
-### P2-011: Test Python Scripts
-
-**Description:** Comprehensive testing of all migrated Python scripts
-
-**Acceptance Criteria:**
-- Unit tests created for all modules
-- Integration tests created
-- All tests pass
-- Code coverage > 80%
-- Performance benchmarks established
-
-**Priority:** Critical
-**Estimated Effort:** 24 hours
-**Dependencies:** P2-009, P2-010
-**Related Requirements:** REQ-038, REQ-039
-**Related ADRs:** ADR-023, ADR-024
-**Assignee:** TBD
-**Status:** Not Started
-
----
-
-**Phase 2 Summary:**
-- **Total Tasks:** 11
-- **Total Effort:** 182 hours
-- **Critical Path:** P2-001 → P2-002 → P2-003 → P2-004/P2-005 → P2-006 → P2-008 → P2-009 → P2-011
-
----
-
-## Phase 3: Cross-Platform Compilation (Weeks 4-5)
-
-### P3-001: Implement Platform Detection
-
-**Description:** Create comprehensive platform detection system
-
-**Acceptance Criteria:**
-- Platform detection module created
-- Windows, Linux, macOS detection working
-- Architecture detection (x86_64, ARM64) working
-- Platform info data structure defined
-- Detection tests pass
-
-**Priority:** Critical
-**Estimated Effort:** 16 hours
-**Dependencies:** P2-011
-**Related Requirements:** REQ-009
-**Related ADRs:** ADR-011, ADR-012
-**Assignee:** TBD
-**Status:** Not Started
-
----
-
-### P3-002: Implement Compiler Detection
-
-**Description:** Create compiler detection system for all supported compilers
-
-**Acceptance Criteria:**
-- Compiler detection module created
-- MSVC detection working
-- MSVC-Clang detection working
-- MinGW-GCC detection working
-- MinGW-Clang detection working
-- Linux GCC detection working
-- Linux Clang detection working
-- Emscripten detection working
-- Detection tests pass
-
-**Priority:** Critical
-**Estimated Effort:** 32 hours
-**Dependencies:** P3-001
-**Related Requirements:** REQ-010
-**Related ADRs:** ADR-011
-**Assignee:** TBD
-**Status:** Not Started
-
----
-
-### P3-003: Create Terminal Invocation Patterns
-
-**Description:** Implement terminal invocation patterns for different compilers
-
-**Acceptance Criteria:**
-- Terminal invocation module created
-- Patterns for MSVC defined
-- Patterns for MinGW defined
-- Patterns for Linux defined
-- Patterns for Emscripten defined
-- Invocation tests pass
-
-**Priority:** Critical
-**Estimated Effort:** 20 hours
-**Dependencies:** P3-002
-**Related Requirements:** REQ-011
-**Related ADRs:** ADR-010
-**Assignee:** TBD
-**Status:** Not Started
-
----
-
-### P3-004: Implement MSVC Developer Command Prompt Integration
-
-**Description:** Integrate MSVC Developer Command Prompt setup
-
-**Acceptance Criteria:**
-- VS Dev Prompt setup function created
-- vcvars64.bat detection working
-- Environment variable setup working
-- x64 and ARM64 support working
-- Integration tests pass
-
-**Priority:** Critical
-**Estimated Effort:** 16 hours
-**Dependencies:** P3-002
-**Related Requirements:** REQ-012
-**Related ADRs:** ADR-010, ADR-021
-**Assignee:** TBD
-**Status:** Not Started
-
----
-
-### P3-005: Implement MSYS2 Terminal Integration
-
-**Description:** Integrate MSYS2 terminal setup for MinGW builds
-
-**Acceptance Criteria:**
-- MSYS2 setup function created
-- UCRT64 environment support working
-- MSYS2 environment support working
-- Path conversion working
-- Integration tests pass
-
-**Priority:** Critical
-**Estimated Effort:** 16 hours
-**Dependencies:** P3-002
-**Related Requirements:** REQ-013
-**Related ADRs:** ADR-010
-**Assignee:** TBD
-**Status:** Not Started
-
----
-
-### P3-006: Create Compiler Configuration Schemas
-
-**Description:** Create JSON schemas for compiler configuration
-
-**Acceptance Criteria:**
-- Compiler configuration schema created
-- Schema validation working
-- Default configurations defined
-- Configuration examples created
-- Schema tests pass
+**Description:** Create comprehensive documentation for CachyOS build setup and optimization.
 
 **Priority:** High
-**Estimated Effort:** 12 hours
-**Dependencies:** P3-002
-**Related Requirements:** REQ-010
-**Related ADRs:** ADR-011
-**Assignee:** TBD
-**Status:** Not Started
 
----
-
-### P3-007: Implement Cross-Compilation Support
-
-**Description:** Implement cross-compilation support for different targets
+**Dependencies:**
+- TASK-013: Create cachyos Conan Profile
+- TASK-019: Create setup_cachyos.sh Script
+- TASK-024: Add CachyOS Build Configurations to CMake Presets
 
 **Acceptance Criteria:**
-- Cross-compilation module created
-- Windows to Linux cross-compilation working
-- Windows to WASM cross-compilation working
-- Toolchain selection working
-- Cross-compilation tests pass
+- `docs/cachyos-builds.md` file exists
+- Document covers CachyOS detection
+- Document covers CachyOS-specific optimizations
+- Document covers CachyOS compiler flags
+- Document covers CachyOS Conan profiles
+- Document covers CachyOS CMake presets
+- Document covers CachyOS troubleshooting
+- Document includes examples and code snippets
 
-**Priority:** Critical
-**Estimated Effort:** 24 hours
-**Dependencies:** P3-003, P3-006
-**Related Requirements:** REQ-014
-**Related ADRs:** ADR-012
-**Assignee:** TBD
-**Status:** Not Started
+**Related Requirements:**
+- REQ-006-001: Documentation
 
----
+**Related ADRs:**
+- ADR-028: CachyOS as Primary Linux Target
 
-### P3-008: Test MSVC Compiler
+**Related Threats:**
+- TM-LX-002: Distribution-Specific Vulnerabilities
 
-**Description:** Comprehensive testing of MSVC compiler integration
+**Definition of Done:**
+- cachyos-builds.md is created
+- Documentation is comprehensive and accurate
+- Documentation is reviewed and approved
 
-**Acceptance Criteria:**
-- MSVC detection tests pass
-- MSVC build tests pass
-- MSVC C++23 support verified
-- MSVC environment setup tests pass
-- All MSVC tests pass
-
-**Priority:** Critical
-**Estimated Effort:** 12 hours
-**Dependencies:** P3-004
-**Related Requirements:** REQ-010, REQ-012
-**Related ADRs:** ADR-011
-**Assignee:** TBD
-**Status:** Not Started
+**Recommended Role:** Technical Writer
+**Skill Requirements:**
+- Technical writing expertise
+- CachyOS knowledge
+- Documentation tools (Markdown)
 
 ---
 
-### P3-009: Test MSVC-Clang Compiler
+### TASK-031: Create linux-troubleshooting.md Documentation
 
-**Description:** Comprehensive testing of MSVC-Clang compiler integration
-
-**Acceptance Criteria:**
-- MSVC-Clang detection tests pass
-- MSVC-Clang build tests pass
-- MSVC-Clang C++23 support verified
-- MSVC-Clang environment setup tests pass
-- All MSVC-Clang tests pass
-
-**Priority:** Critical
-**Estimated Effort:** 12 hours
-**Dependencies:** P3-004
-**Related Requirements:** REQ-010, REQ-012
-**Related ADRs:** ADR-011
-**Assignee:** TBD
-**Status:** Not Started
-
----
-
-### P3-010: Test MinGW-GCC Compiler
-
-**Description:** Comprehensive testing of MinGW-GCC compiler integration
-
-**Acceptance Criteria:**
-- MinGW-GCC detection tests pass
-- MinGW-GCC build tests pass
-- MinGW-GCC C++23 support verified
-- MinGW-GCC environment setup tests pass
-- All MinGW-GCC tests pass
-
-**Priority:** Critical
-**Estimated Effort:** 12 hours
-**Dependencies:** P3-005
-**Related Requirements:** REQ-010, REQ-013
-**Related ADRs:** ADR-011
-**Assignee:** TBD
-**Status:** Not Started
-
----
-
-### P3-011: Test MinGW-Clang Compiler
-
-**Description:** Comprehensive testing of MinGW-Clang compiler integration
-
-**Acceptance Criteria:**
-- MinGW-Clang detection tests pass
-- MinGW-Clang build tests pass
-- MinGW-Clang C++23 support verified
-- MinGW-Clang environment setup tests pass
-- All MinGW-Clang tests pass
-
-**Priority:** Critical
-**Estimated Effort:** 12 hours
-**Dependencies:** P3-005
-**Related Requirements:** REQ-010, REQ-013
-**Related ADRs:** ADR-011
-**Assignee:** TBD
-**Status:** Not Started
-
----
-
-### P3-012: Test Cross-Compilation
-
-**Description:** Comprehensive testing of cross-compilation support
-
-**Acceptance Criteria:**
-- Windows to Linux cross-compilation tests pass
-- Windows to WASM cross-compilation tests pass
-- Toolchain selection tests pass
-- Cross-compilation build tests pass
-- All cross-compilation tests pass
-
-**Priority:** Critical
-**Estimated Effort:** 16 hours
-**Dependencies:** P3-007
-**Related Requirements:** REQ-014
-**Related ADRs:** ADR-012
-**Assignee:** TBD
-**Status:** Not Started
-
----
-
-**Phase 3 Summary:**
-- **Total Tasks:** 12
-- **Total Effort:** 200 hours
-- **Critical Path:** P3-001 → P3-002 → P3-003 → P3-007 → P3-012
-
----
-
-## Phase 4: Package Manager Integration (Week 6)
-
-### P4-001: Implement Conan Integration
-
-**Description:** Integrate Conan package manager into build system
-
-**Acceptance Criteria:**
-- Conan integration module created
-- Conan profile configuration working
-- Conan dependency resolution working
-- Conan package installation working
-- Conan integration tests pass
-
-**Priority:** Critical
-**Estimated Effort:** 20 hours
-**Dependencies:** P3-012
-**Related Requirements:** REQ-016
-**Related ADRs:** ADR-001
-**Assignee:** TBD
-**Status:** Not Started
-
----
-
-### P4-002: Implement vcpkg Integration
-
-**Description:** Integrate vcpkg package manager into build system
-
-**Acceptance Criteria:**
-- vcpkg integration module created
-- vcpkg triplet configuration working
-- vcpkg dependency resolution working
-- vcpkg package installation working
-- vcpkg integration tests pass
-
-**Priority:** Critical
-**Estimated Effort:** 20 hours
-**Dependencies:** P3-012
-**Related Requirements:** REQ-017
-**Related ADRs:** ADR-001
-**Assignee:** TBD
-**Status:** Not Started
-
----
-
-### P4-003: Implement CPM Integration
-
-**Description:** Integrate CPM.cmake into build system
-
-**Acceptance Criteria:**
-- CPM integration module created
-- CPM dependency resolution working
-- CPM package installation working
-- CPM integration tests pass
-- CPM cache working
-
-**Priority:** Critical
-**Estimated Effort:** 16 hours
-**Dependencies:** P3-012
-**Related Requirements:** REQ-018
-**Related ADRs:** ADR-001
-**Assignee:** TBD
-**Status:** Not Started
-
----
-
-### P4-004: Create Priority-Based Selection
-
-**Description:** Implement priority-based package manager selection
-
-**Acceptance Criteria:**
-- Priority selection algorithm implemented
-- Conan → vcpkg → CPM fallback working
-- Configuration-based selection working
-- Selection tests pass
-- Documentation updated
-
-**Priority:** Critical
-**Estimated Effort:** 16 hours
-**Dependencies:** P4-001, P4-002, P4-003
-**Related Requirements:** REQ-019
-**Related ADRs:** ADR-002
-**Assignee:** TBD
-**Status:** Not Started
-
----
-
-### P4-005: Implement Package Security Verification
-
-**Description:** Implement security verification for packages
-
-**Acceptance Criteria:**
-- Security verification module created
-- Package integrity checking working
-- Signature verification working
-- Vulnerability scanning working
-- Security tests pass
-
-**Priority:** Critical
-**Estimated Effort:** 20 hours
-**Dependencies:** P4-004
-**Related Requirements:** REQ-020
-**Related ADRs:** ADR-003, ADR-020
-**Assignee:** TBD
-**Status:** Not Started
-
----
-
-### P4-006: Test Package Manager Integration
-
-**Description:** Comprehensive testing of package manager integration
-
-**Acceptance Criteria:**
-- Conan integration tests pass
-- vcpkg integration tests pass
-- CPM integration tests pass
-- Priority selection tests pass
-- Security verification tests pass
-- All package manager tests pass
-
-**Priority:** Critical
-**Estimated Effort:** 16 hours
-**Dependencies:** P4-005
-**Related Requirements:** REQ-016, REQ-017, REQ-018, REQ-019, REQ-020
-**Related ADRs:** ADR-001, ADR-002, ADR-003
-**Assignee:** TBD
-**Status:** Not Started
-
----
-
-**Phase 4 Summary:**
-- **Total Tasks:** 6
-- **Total Effort:** 108 hours
-- **Critical Path:** P4-001/P4-002/P4-003 → P4-004 → P4-005 → P4-006
-
----
-
-## Phase 5: Build System Refactoring (Week 7)
-
-### P5-001: Update CMake Configuration
-
-**Description:** Update CMakeLists.txt for C++23 and new features
-
-**Acceptance Criteria:**
-- CMakeLists.txt updated to CMake 4.0
-- C++23 standard enabled
-- New compiler flags added
-- Module support configured
-- CMake configuration tests pass
-
-**Priority:** Critical
-**Estimated Effort:** 24 hours
-**Dependencies:** P4-006
-**Related Requirements:** REQ-022, REQ-028
-**Related ADRs:** ADR-004, ADR-016
-**Assignee:** TBD
-**Status:** Not Started
-
----
-
-### P5-002: Create CMake Presets
-
-**Description:** Create comprehensive CMake presets for all configurations
-
-**Acceptance Criteria:**
-- CMakePresets.json created
-- Presets for all compilers defined
-- Presets for all targets defined
-- Presets for all configurations defined
-- Preset tests pass
-
-**Priority:** Critical
-**Estimated Effort:** 16 hours
-**Dependencies:** P5-001
-**Related Requirements:** REQ-024
-**Related ADRs:** ADR-005
-**Assignee:** TBD
-**Status:** Not Started
-
----
-
-### P5-003: Update Toolchain Files
-
-**Description:** Update all toolchain files for cross-compilation
-
-**Acceptance Criteria:**
-- All toolchain files updated
-- Cross-compilation toolchains working
-- Toolchain validation working
-- Toolchain tests pass
-- Documentation updated
-
-**Priority:** Critical
-**Estimated Effort:** 20 hours
-**Dependencies:** P5-001
-**Related Requirements:** REQ-025
-**Related ADRs:** ADR-006
-**Assignee:** TBD
-**Status:** Not Started
-
----
-
-### P5-004: Implement Build Optimization
-
-**Description:** Implement build optimization and caching
-
-**Acceptance Criteria:**
-- Build optimization module created
-- ccache integration working
-- Build caching working
-- Parallel builds working
-- Optimization tests pass
-
-**Priority:** High
-**Estimated Effort:** 16 hours
-**Dependencies:** P5-002
-**Related Requirements:** REQ-026, REQ-027
-**Related ADRs:** None
-**Assignee:** TBD
-**Status:** Not Started
-
----
-
-### P5-005: Test Build System
-
-**Description:** Comprehensive testing of build system
-
-**Acceptance Criteria:**
-- CMake configuration tests pass
-- CMake preset tests pass
-- Toolchain tests pass
-- Build optimization tests pass
-- All build system tests pass
-
-**Priority:** Critical
-**Estimated Effort:** 16 hours
-**Dependencies:** P5-004
-**Related Requirements:** REQ-022, REQ-023, REQ-024, REQ-025, REQ-026, REQ-027
-**Related ADRs:** ADR-004, ADR-005, ADR-006
-**Assignee:** TBD
-**Status:** Not Started
-
----
-
-**Phase 5 Summary:**
-- **Total Tasks:** 5
-- **Total Effort:** 92 hours
-- **Critical Path:** P5-001 → P5-002 → P5-004 → P5-005
-
----
-
-## Phase 6: C++ Engine and Game (Weeks 8-9)
-
-### P6-001: Update C++ Code to C++23 Standard
-
-**Description:** Update all C++ code to use C++23 features
-
-**Acceptance Criteria:**
-- All C++ files updated to C++23
-- Modern C++ features adopted
-- Legacy code patterns removed
-- Code compiles with C++23
-- No compilation errors
-
-**Priority:** Critical
-**Estimated Effort:** 40 hours
-**Dependencies:** P5-005
-**Related Requirements:** REQ-028, REQ-029
-**Related ADRs:** ADR-016, ADR-017
-**Assignee:** TBD
-**Status:** Not Started
-
----
-
-### P6-002: Implement spdlog Integration
-
-**Description:** Integrate spdlog for C++ logging
-
-**Acceptance Criteria:**
-- spdlog integrated into build system
-- Logging infrastructure created
-- Log configuration working
-- File rotation working
-- spdlog integration tests pass
-
-**Priority:** Critical
-**Estimated Effort:** 16 hours
-**Dependencies:** P6-001
-**Related Requirements:** REQ-031
-**Related ADRs:** ADR-013
-**Assignee:** TBD
-**Status:** Not Started
-
----
-
-### P6-003: Update Engine Architecture
-
-**Description:** Refactor engine architecture to modern standards
-
-**Acceptance Criteria:**
-- Engine architecture updated
-- ECS pattern implemented
-- Component system working
-- System architecture working
-- Engine tests pass
-
-**Priority:** Critical
-**Estimated Effort:** 32 hours
-**Dependencies:** P6-001
-**Related Requirements:** REQ-035
-**Related ADRs:** ADR-018
-**Assignee:** TBD
-**Status:** Not Started
-
----
-
-### P6-004: Update Game Architecture
-
-**Description:** Refactor game architecture to modern standards
-
-**Acceptance Criteria:**
-- Game architecture updated
-- Scene system working
-- Entity system working
-- Component system working
-- Game tests pass
-
-**Priority:** Critical
-**Estimated Effort:** 32 hours
-**Dependencies:** P6-001
-**Related Requirements:** REQ-036
-**Related ADRs:** ADR-018
-**Assignee:** TBD
-**Status:** Not Started
-
----
-
-### P6-005: Add Logging to C++ Code
-
-**Description:** Add comprehensive logging to all C++ code
-
-**Acceptance Criteria:**
-- Logging added to engine code
-- Logging added to game code
-- Log levels configured
-- Structured logging implemented
-- Logging tests pass
-
-**Priority:** High
-**Estimated Effort:** 24 hours
-**Dependencies:** P6-002
-**Related Requirements:** REQ-031, REQ-032, REQ-033
-**Related ADRs:** ADR-013, ADR-014, ADR-015
-**Assignee:** TBD
-**Status:** Not Started
-
----
-
-### P6-006: Test C++ Code
-
-**Description:** Comprehensive testing of C++ engine and game code
-
-**Acceptance Criteria:**
-- Engine tests pass
-- Game tests pass
-- Logging tests pass
-- Integration tests pass
-- All C++ tests pass
-
-**Priority:** Critical
-**Estimated Effort:** 24 hours
-**Dependencies:** P6-005
-**Related Requirements:** REQ-028, REQ-029, REQ-030, REQ-031, REQ-035, REQ-036
-**Related ADRs:** ADR-016, ADR-017, ADR-018
-**Assignee:** TBD
-**Status:** Not Started
-
----
-
-**Phase 6 Summary:**
-- **Total Tasks:** 6
-- **Total Effort:** 168 hours
-- **Critical Path:** P6-001 → P6-002 → P6-005 → P6-006
-
----
-
-## Phase 7: Logging System (Week 10)
-
-### P7-001: Implement Python Logging System
-
-**Description:** Implement comprehensive Python logging system
-
-**Acceptance Criteria:**
-- Python logging module created
-- Custom formatters implemented
-- File handlers implemented
-- Console handlers implemented
-- Python logging tests pass
-
-**Priority:** Critical
-**Estimated Effort:** 20 hours
-**Dependencies:** P6-006
-**Related Requirements:** REQ-005
-**Related ADRs:** ADR-013, ADR-014, ADR-015
-**Assignee:** TBD
-**Status:** Not Started
-
----
-
-### P7-002: Implement C++ Logging System
-
-**Description:** Implement comprehensive C++ logging system with spdlog
-
-**Acceptance Criteria:**
-- C++ logging infrastructure complete
-- spdlog fully integrated
-- Custom sinks implemented
-- Structured logging working
-- C++ logging tests pass
-
-**Priority:** Critical
-**Estimated Effort:** 16 hours
-**Dependencies:** P6-006
-**Related Requirements:** REQ-031, REQ-032, REQ-033
-**Related ADRs:** ADR-013, ADR-014, ADR-015
-**Assignee:** TBD
-**Status:** Not Started
-
----
-
-### P7-003: Create Logging Configuration
-
-**Description:** Create comprehensive logging configuration system
-
-**Acceptance Criteria:**
-- Logging configuration schema created
-- Configuration files created
-- Environment variable support working
-- Dynamic configuration changes working
-- Configuration tests pass
-
-**Priority:** Critical
-**Estimated Effort:** 12 hours
-**Dependencies:** P7-001, P7-002
-**Related Requirements:** REQ-005, REQ-031
-**Related ADRs:** ADR-013
-**Assignee:** TBD
-**Status:** Not Started
-
----
-
-### P7-004: Implement File Rotation
-
-**Description:** Implement log file rotation and retention
-
-**Acceptance Criteria:**
-- File rotation implemented
-- Size-based rotation working
-- Time-based rotation working
-- Retention policy working
-- Rotation tests pass
-
-**Priority:** High
-**Estimated Effort:** 12 hours
-**Dependencies:** P7-003
-**Related Requirements:** REQ-032
-**Related ADRs:** ADR-014
-**Assignee:** TBD
-**Status:** Not Started
-
----
-
-### P7-005: Test Logging System
-
-**Description:** Comprehensive testing of logging system
-
-**Acceptance Criteria:**
-- Python logging tests pass
-- C++ logging tests pass
-- Configuration tests pass
-- Rotation tests pass
-- All logging tests pass
-
-**Priority:** Critical
-**Estimated Effort:** 16 hours
-**Dependencies:** P7-004
-**Related Requirements:** REQ-005, REQ-031, REQ-032, REQ-033
-**Related ADRs:** ADR-013, ADR-014, ADR-015
-**Assignee:** TBD
-**Status:** Not Started
-
----
-
-**Phase 7 Summary:**
-- **Total Tasks:** 5
-- **Total Effort:** 76 hours
-- **Critical Path:** P7-001/P7-002 → P7-003 → P7-004 → P7-005
-
----
-
-## Phase 8: Testing (Week 11)
-
-### P8-001: Implement Unit Tests
-
-**Description:** Implement comprehensive unit tests for all code
-
-**Acceptance Criteria:**
-- Python unit tests created
-- C++ unit tests created
-- All unit tests pass
-- Code coverage > 80%
-- Unit test documentation complete
-
-**Priority:** Critical
-**Estimated Effort:** 32 hours
-**Dependencies:** P7-005
-**Related Requirements:** REQ-037, REQ-038, REQ-039
-**Related ADRs:** ADR-022, ADR-023, ADR-024
-**Assignee:** TBD
-**Status:** Not Started
-
----
-
-### P8-002: Implement Integration Tests
-
-**Description:** Implement comprehensive integration tests
-
-**Acceptance Criteria:**
-- Integration test suite created
-- Cross-component tests created
-- All integration tests pass
-- Integration test documentation complete
-- Test automation working
-
-**Priority:** Critical
-**Estimated Effort:** 24 hours
-**Dependencies:** P8-001
-**Related Requirements:** REQ-040, REQ-042
-**Related ADRs:** None
-**Assignee:** TBD
-**Status:** Not Started
-
----
-
-### P8-003: Implement Cross-Platform Tests
-
-**Description:** Implement cross-platform test execution
-
-**Acceptance Criteria:**
-- Cross-platform test suite created
-- Windows tests working
-- Linux tests working
-- WASM tests working
-- All cross-platform tests pass
-
-**Priority:** Critical
-**Estimated Effort:** 24 hours
-**Dependencies:** P8-002
-**Related Requirements:** REQ-041
-**Related ADRs:** None
-**Assignee:** TBD
-**Status:** Not Started
-
----
-
-### P8-004: Implement Security Tests
-
-**Description:** Implement security testing suite
-
-**Acceptance Criteria:**
-- Security test suite created
-- Dependency integrity tests working
-- Secure terminal invocation tests working
-- Secure logging tests working
-- All security tests pass
-
-**Priority:** Critical
-**Estimated Effort:** 20 hours
-**Dependencies:** P8-003
-**Related Requirements:** REQ-043, REQ-044, REQ-045, REQ-046, REQ-047
-**Related ADRs:** ADR-019, ADR-020, ADR-021
-**Assignee:** TBD
-**Status:** Not Started
-
----
-
-### P8-005: Configure CI/CD
-
-**Description:** Configure CI/CD pipeline for automated testing
-
-**Acceptance Criteria:**
-- CI/CD pipeline configured
-- Automated testing working
-- Automated coverage reporting working
-- Automated security scanning working
-- Pipeline tested and working
-
-**Priority:** High
-**Estimated Effort:** 16 hours
-**Dependencies:** P8-004
-**Related Requirements:** REQ-042
-**Related ADRs:** None
-**Assignee:** TBD
-**Status:** Not Started
-
----
-
-### P8-006: Run Tests and Achieve 80% Coverage
-
-**Description:** Execute full test suite and achieve 80% code coverage
-
-**Acceptance Criteria:**
-- Full test suite executed
-- Code coverage > 80%
-- All tests passing
-- Coverage report generated
-- Coverage gaps documented
-
-**Priority:** Critical
-**Estimated Effort:** 16 hours
-**Dependencies:** P8-005
-**Related Requirements:** REQ-039
-**Related ADRs:** ADR-024
-**Assignee:** TBD
-**Status:** Not Started
-
----
-
-**Phase 8 Summary:**
-- **Total Tasks:** 6
-- **Total Effort:** 132 hours
-- **Critical Path:** P8-001 → P8-002 → P8-003 → P8-004 → P8-005 → P8-006
-
----
-
-## Phase 9: VSCode Integration (Week 12)
-
-### P9-001: Update tasks.json
-
-**Description:** Update VSCode tasks.json with all build tasks
-
-**Acceptance Criteria:**
-- tasks.json updated
-- All build tasks configured
-- All test tasks configured
-- All format tasks configured
-- All lint tasks configured
-- Tasks tested and working
-
-**Priority:** Critical
-**Estimated Effort:** 12 hours
-**Dependencies:** P8-006
-**Related Requirements:** REQ-048, REQ-052
-**Related ADRs:** ADR-026
-**Assignee:** TBD
-**Status:** Not Started
-
----
-
-### P9-002: Update launch.json
-
-**Description:** Update VSCode launch.json with debug configurations
-
-**Acceptance Criteria:**
-- launch.json updated
-- Debug configurations for all targets
-- Debug configurations for all compilers
-- Debug configurations for tests
-- Launch configurations tested and working
-
-**Priority:** Critical
-**Estimated Effort:** 12 hours
-**Dependencies:** P8-006
-**Related Requirements:** REQ-049, REQ-051
-**Related ADRs:** ADR-026
-**Assignee:** TBD
-**Status:** Not Started
-
----
-
-### P9-003: Integrate OmniCppController.py
-
-**Description:** Integrate OmniCppController.py with VSCode
-
-**Acceptance Criteria:**
-- OmniCppController.py integrated
-- VSCode tasks use OmniCppController.py
-- VSCode launch uses OmniCppController.py
-- Integration tested and working
-- Documentation updated
-
-**Priority:** Critical
-**Estimated Effort:** 8 hours
-**Dependencies:** P9-001, P9-002
-**Related Requirements:** REQ-050
-**Related ADRs:** ADR-025
-**Assignee:** TBD
-**Status:** Not Started
-
----
-
-### P9-004: Test VSCode Integration
-
-**Description:** Comprehensive testing of VSCode integration
-
-**Acceptance Criteria:**
-- All tasks tested and working
-- All launch configurations tested and working
-- OmniCppController.py integration tested
-- Debugging tested and working
-- All VSCode integration tests pass
-
-**Priority:** Critical
-**Estimated Effort:** 12 hours
-**Dependencies:** P9-003
-**Related Requirements:** REQ-048, REQ-049, REQ-050, REQ-051, REQ-052
-**Related ADRs:** ADR-025, ADR-026
-**Assignee:** TBD
-**Status:** Not Started
-
----
-
-**Phase 9 Summary:**
-- **Total Tasks:** 4
-- **Total Effort:** 44 hours
-- **Critical Path:** P9-001/P9-002 → P9-003 → P9-004
-
----
-
-## Phase 10: Documentation (Week 13)
-
-### P10-001: Update API Documentation
-
-**Description:** Update API documentation for all modules
-
-**Acceptance Criteria:**
-- Python API documentation updated
-- C++ API documentation updated
-- All public APIs documented
-- Examples provided
-- API documentation validated
-
-**Priority:** High
-**Estimated Effort:** 24 hours
-**Dependencies:** P9-004
-**Related Requirements:** REQ-053
-**Related ADRs:** None
-**Assignee:** TBD
-**Status:** Not Started
-
----
-
-### P10-002: Update User Documentation
-
-**Description:** Update user documentation and guides
-
-**Acceptance Criteria:**
-- User guide updated
-- Installation guide updated
-- Quick start guide updated
-- Troubleshooting guide updated
-- User documentation validated
-
-**Priority:** High
-**Estimated Effort:** 20 hours
-**Dependencies:** P9-004
-**Related Requirements:** REQ-054
-**Related ADRs:** None
-**Assignee:** TBD
-**Status:** Not Started
-
----
-
-### P10-003: Update Developer Documentation
-
-**Description:** Update developer documentation and guides
-
-**Acceptance Criteria:**
-- Developer guide updated
-- Architecture documentation updated
-- Build system documentation updated
-- Testing documentation updated
-- Developer documentation validated
-
-**Priority:** High
-**Estimated Effort:** 24 hours
-**Dependencies:** P9-004
-**Related Requirements:** REQ-055
-**Related ADRs:** None
-**Assignee:** TBD
-**Status:** Not Started
-
----
-
-### P10-004: Create Migration Guide
-
-**Description:** Create comprehensive migration guide
-
-**Acceptance Criteria:**
-- Migration guide created
-- Step-by-step instructions provided
-- Common issues documented
-- Rollback procedures documented
-- Migration guide validated
-
-**Priority:** Critical
-**Estimated Effort:** 16 hours
-**Dependencies:** P10-001, P10-002, P10-003
-**Related Requirements:** REQ-054, REQ-055
-**Related ADRs:** None
-**Assignee:** TBD
-**Status:** Not Started
-
----
-
-### P10-005: Update README
-
-**Description:** Update README with new information
-
-**Acceptance Criteria:**
-- README updated with new features
-- Installation instructions updated
-- Quick start updated
-- Links to documentation added
-- README validated
-
-**Priority:** High
-**Estimated Effort:** 8 hours
-**Dependencies:** P10-004
-**Related Requirements:** REQ-054
-**Related ADRs:** None
-**Assignee:** TBD
-**Status:** Not Started
-
----
-
-**Phase 10 Summary:**
-- **Total Tasks:** 5
-- **Total Effort:** 92 hours
-- **Critical Path:** P10-001/P10-002/P10-003 → P10-004 → P10-005
-
----
-
-## Phase 11: Cleanup (Week 14)
-
-### P11-001: Remove Deprecated Files
-
-**Description:** Remove all deprecated and obsolete files
-
-**Acceptance Criteria:**
-- Deprecated files identified
-- Obsolete files identified
-- Safe to remove files deleted
-- No functionality lost
-- Documentation updated
-
-**Priority:** High
-**Estimated Effort:** 12 hours
-**Dependencies:** P10-005
-**Related Requirements:** None
-**Related ADRs:** None
-**Assignee:** TBD
-**Status:** Not Started
-
----
-
-### P11-002: Remove Duplicate Files
-
-**Description:** Remove all duplicate files
-
-**Acceptance Criteria:**
-- Duplicate files identified
-- Safe to remove files deleted
-- No functionality lost
-- Documentation updated
-- File structure validated
-
-**Priority:** High
-**Estimated Effort:** 8 hours
-**Dependencies:** P10-005
-**Related Requirements:** None
-**Related ADRs:** None
-**Assignee:** TBD
-**Status:** Not Started
-
----
-
-### P11-003: Remove Legacy Directories
-
-**Description:** Remove all legacy directories
-
-**Acceptance Criteria:**
-- Legacy directories identified
-- Safe to remove directories deleted
-- No functionality lost
-- Documentation updated
-- Directory structure validated
-
-**Priority:** High
-**Estimated Effort:** 8 hours
-**Dependencies:** P11-001, P11-002
-**Related Requirements:** None
-**Related ADRs:** None
-**Assignee:** TBD
-**Status:** Not Started
-
----
-
-### P11-004: Clean Up Build Artifacts
-
-**Description:** Clean up all build artifacts and caches
-
-**Acceptance Criteria:**
-- Build artifacts cleaned
-- Caches cleaned
-- Temporary files cleaned
-- Build directories cleaned
-- Cleanup validated
+**Description:** Create comprehensive troubleshooting guide for Linux build issues.
 
 **Priority:** Medium
-**Estimated Effort:** 4 hours
-**Dependencies:** P11-003
-**Related Requirements:** None
-**Related ADRs:** None
-**Assignee:** TBD
-**Status:** Not Started
 
----
-
-### P11-005: Final Cleanup
-
-**Description:** Perform final cleanup and validation
+**Dependencies:**
+- TASK-022: Create validate_environment.sh Script
+- TASK-029: Create nix-development.md Documentation
+- TASK-030: Create cachyos-builds.md Documentation
 
 **Acceptance Criteria:**
-- All cleanup tasks completed
-- Project structure validated
-- No orphaned files
-- No broken references
-- Final cleanup validated
+- `docs/linux-troubleshooting.md` file exists
+- Document covers common Linux build errors
+- Document covers Nix troubleshooting
+- Document covers CachyOS troubleshooting
+- Document covers Conan troubleshooting
+- Document covers CMake troubleshooting
+- Document includes diagnostic steps
+- Document includes solutions and workarounds
+- Document includes references to other documentation
 
-**Priority:** High
-**Estimated Effort:** 8 hours
-**Dependencies:** P11-004
-**Related Requirements:** None
-**Related ADRs:** None
-**Assignee:** TBD
-**Status:** Not Started
+**Related Requirements:**
+- REQ-006-001: Documentation
+
+**Related ADRs:**
+- ADR-027: Nix Package Manager Integration
+- ADR-028: CachyOS as Primary Linux Target
+
+**Related Threats:**
+- None directly
+
+**Definition of Done:**
+- linux-troubleshooting.md is created
+- Documentation is comprehensive and accurate
+- Documentation is reviewed and approved
+
+**Recommended Role:** Technical Writer / Support Engineer
+**Skill Requirements:**
+- Technical writing expertise
+- Linux troubleshooting experience
+- Build system debugging
 
 ---
 
-**Phase 11 Summary:**
-- **Total Tasks:** 5
-- **Total Effort:** 40 hours
-- **Critical Path:** P11-001/P11-002 → P11-003 → P11-004 → P11-005
+### TASK-032: Create conan-linux-profiles.md Documentation
 
----
+**Description:** Create documentation for Linux Conan profiles and their usage.
 
-## Phase 12: Validation (Week 15)
+**Priority:** Medium
 
-### P12-001: Run Full Test Suite
-
-**Description:** Execute complete test suite
+**Dependencies:**
+- TASK-009: Create gcc-linux Conan Profile
+- TASK-010: Create gcc-linux-debug Conan Profile
+- TASK-011: Create clang-linux Conan Profile
+- TASK-012: Create clang-linux-debug Conan Profile
+- TASK-013: Create cachyos Conan Profile
+- TASK-014: Create cachyos-debug Conan Profile
+- TASK-015: Create cachyos-clang Conan Profile
+- TASK-016: Create cachyos-clang-debug Conan Profile
 
 **Acceptance Criteria:**
-- Full test suite executed
-- All tests passing
-- Test report generated
-- Test coverage verified
-- No critical issues found
+- `docs/conan-linux-profiles.md` file exists
+- Document covers all Linux Conan profiles
+- Document explains profile structure
+- Document explains when to use each profile
+- Document includes profile examples
+- Document covers profile customization
+- Document includes troubleshooting tips
 
-**Priority:** Critical
-**Estimated Effort:** 16 hours
-**Dependencies:** P11-005
-**Related Requirements:** REQ-037, REQ-038, REQ-039, REQ-040, REQ-041, REQ-042
-**Related ADRs:** ADR-022, ADR-023, ADR-024
-**Assignee:** TBD
-**Status:** Not Started
+**Related Requirements:**
+- REQ-006-001: Documentation
+
+**Related ADRs:**
+- ADR-034: Conan Profile Expansion
+- ADR-031: Linux-Specific Multi-Package Manager Strategy
+
+**Related Threats:**
+- TM-001: Malicious Package Injection (Conan)
+
+**Definition of Done:**
+- conan-linux-profiles.md is created
+- Documentation is comprehensive and accurate
+- Documentation is reviewed and approved
+
+**Recommended Role:** Technical Writer
+**Skill Requirements:**
+- Technical writing expertise
+- Conan package manager knowledge
+- Documentation tools (Markdown)
 
 ---
 
-### P12-002: Validate Cross-Platform Compilation
+### TASK-033: Create vscode-linux-setup.md Documentation
 
-**Description:** Validate cross-platform compilation on all platforms
+**Description:** Create documentation for VSCode Linux setup and configuration.
+
+**Priority:** Medium
+
+**Dependencies:**
+- TASK-025: Add Linux Build Tasks to VSCode tasks.json
+- TASK-026: Add Linux Debug Configurations to VSCode launch.json
+- TASK-027: Add Nix Shell Task to VSCode tasks.json
+- TASK-028: Add CachyOS Validation Task to VSCode tasks.json
 
 **Acceptance Criteria:**
-- Windows builds validated
-- Linux builds validated
-- WASM builds validated
-- Cross-compilation validated
-- All builds successful
+- `docs/vscode-linux-setup.md` file exists
+- Document covers VSCode installation on Linux
+- Document covers Linux task configuration
+- Document covers Linux debug configuration
+- Document covers Nix shell integration
+- Document covers CachyOS validation
+- Document covers VSCode extensions for Linux development
+- Document includes examples and screenshots
 
-**Priority:** Critical
-**Estimated Effort:** 20 hours
-**Dependencies:** P12-001
-**Related Requirements:** REQ-009, REQ-010, REQ-011, REQ-012, REQ-013, REQ-014
-**Related ADRs:** ADR-010, ADR-011, ADR-012
-**Assignee:** TBD
-**Status:** Not Started
+**Related Requirements:**
+- REQ-006-001: Documentation
+
+**Related ADRs:**
+- ADR-026: VSCode Tasks and Launch Configuration
+- ADR-032: VSCode Platform-Specific Tasks
+
+**Related Threats:**
+- None directly
+
+**Definition of Done:**
+- vscode-linux-setup.md is created
+- Documentation is comprehensive and accurate
+- Documentation is reviewed and approved
+
+**Recommended Role:** Technical Writer
+**Skill Requirements:**
+- Technical writing expertise
+- VSCode configuration knowledge
+- Documentation tools (Markdown)
 
 ---
 
-### P12-003: Validate Package Manager Integration
+## Phase 5: Cleanup
 
-**Description:** Validate package manager integration
+### TASK-034: Archive Windows-Specific Scripts
+
+**Description:** Archive Windows-specific scripts to reduce repository clutter and improve organization.
+
+**Priority:** Low
+
+**Dependencies:** None
 
 **Acceptance Criteria:**
-- Conan integration validated
-- vcpkg integration validated
-- CPM integration validated
-- Priority selection validated
-- Security verification validated
+- Windows-specific scripts are identified
+- Scripts are moved to `archive/windows/` directory
+- Archive directory is created
+- Archive is documented in README
+- No Windows scripts remain in root directory
 
-**Priority:** Critical
-**Estimated Effort:** 16 hours
-**Dependencies:** P12-001
-**Related Requirements:** REQ-016, REQ-017, REQ-018, REQ-019, REQ-020
-**Related ADRs:** ADR-001, ADR-002, ADR-003
-**Assignee:** TBD
-**Status:** Not Started
+**Related Requirements:**
+- REQ-007-001: Repository Cleanup
+
+**Related ADRs:**
+- ADR-033: Repository Cleanup Strategy
+
+**Related Threats:**
+- None directly
+
+**Definition of Done:**
+- Windows scripts are archived
+- Repository is cleaner
+- Documentation is updated
+
+**Recommended Role:** DevOps Engineer
+**Skill Requirements:**
+- File system organization
+- Repository management
+- Documentation skills
 
 ---
 
-### P12-004: Validate Logging System
+### TASK-035: Reorganize Test Files
 
-**Description:** Validate logging system functionality
+**Description:** Reorganize test files to improve discoverability and organization.
+
+**Priority:** Low
+
+**Dependencies:** None
 
 **Acceptance Criteria:**
-- Python logging validated
-- C++ logging validated
-- Configuration validated
-- File rotation validated
-- All logging features working
+- Test files are identified
+- Test files are organized by type (unit, integration, e2e)
+- Test directory structure is created
+- Test files are moved to appropriate directories
+- Test organization is documented in README
 
-**Priority:** Critical
-**Estimated Effort:** 12 hours
-**Dependencies:** P12-001
-**Related Requirements:** REQ-005, REQ-031, REQ-032, REQ-033
-**Related ADRs:** ADR-013, ADR-014, ADR-015
-**Assignee:** TBD
-**Status:** Not Started
+**Related Requirements:**
+- REQ-007-002: Repository Cleanup
+
+**Related ADRs:**
+- ADR-033: Repository Cleanup Strategy
+
+**Related Threats:**
+- None directly
+
+**Definition of Done:**
+- Test files are reorganized
+- Test structure is logical
+- Documentation is updated
+
+**Recommended Role:** QA Engineer / DevOps Engineer
+**Skill Requirements:**
+- Test organization
+- File system management
+- Documentation skills
 
 ---
 
-### P12-005: Validate VSCode Integration
+### TASK-036: Remove Duplicate Files
 
-**Description:** Validate VSCode integration
+**Description:** Identify and remove duplicate files to reduce repository size and confusion.
+
+**Priority:** Low
+
+**Dependencies:** None
 
 **Acceptance Criteria:**
-- All tasks validated
-- All launch configurations validated
-- OmniCppController.py integration validated
-- Debugging validated
-- All VSCode features working
+- Duplicate files are identified
+- Duplicates are verified (hash comparison)
+- Duplicates are removed
+- Removal is documented in README
+- No critical files are accidentally removed
 
-**Priority:** Critical
-**Estimated Effort:** 12 hours
-**Dependencies:** P12-001
-**Related Requirements:** REQ-048, REQ-049, REQ-050, REQ-051, REQ-052
-**Related ADRs:** ADR-025, ADR-026
-**Assignee:** TBD
-**Status:** Not Started
+**Related Requirements:**
+- REQ-007-003: Repository Cleanup
+
+**Related ADRs:**
+- ADR-033: Repository Cleanup Strategy
+
+**Related Threats:**
+- None directly
+
+**Definition of Done:**
+- Duplicate files are removed
+- Repository is cleaner
+- Documentation is updated
+
+**Recommended Role:** DevOps Engineer
+**Skill Requirements:**
+- File system analysis
+- Repository management
+- Attention to detail
 
 ---
 
-### P12-006: Performance Testing
+### TASK-037: Update Documentation
 
-**Description:** Conduct comprehensive performance testing
+**Description:** Update all documentation to reflect repository cleanup and new structure.
+
+**Priority:** Medium
+
+**Dependencies:**
+- TASK-034: Archive Windows-Specific Scripts
+- TASK-035: Reorganize Test Files
+- TASK-036: Remove Duplicate Files
 
 **Acceptance Criteria:**
-- Build performance tested
-- Runtime performance tested
-- Memory usage tested
-- Logging overhead tested
-- Performance benchmarks established
+- README.md reflects new repository structure
+- All documentation references are updated
+- Broken links are fixed
+- New directories are documented
+- Archive contents are documented
+- Documentation is consistent across all files
 
-**Priority:** High
-**Estimated Effort:** 16 hours
-**Dependencies:** P12-002, P12-003, P12-004, P12-005
-**Related Requirements:** None
-**Related ADRs:** None
-**Assignee:** TBD
-**Status:** Not Started
+**Related Requirements:**
+- REQ-006-001: Documentation
+- REQ-007-004: Repository Cleanup
 
----
+**Related ADRs:**
+- ADR-033: Repository Cleanup Strategy
 
-### P12-007: Security Testing
+**Related Threats:**
+- None directly
 
-**Description:** Conduct comprehensive security testing
+**Definition of Done:**
+- All documentation is updated
+- Documentation is consistent
+- Documentation is reviewed and approved
 
-**Acceptance Criteria:**
-- Dependency integrity verified
-- Secure terminal invocation verified
-- Secure logging verified
-- Build system security verified
-- Package manager security verified
-- No critical security issues found
-
-**Priority:** Critical
-**Estimated Effort:** 16 hours
-**Dependencies:** P12-006
-**Related Requirements:** REQ-043, REQ-044, REQ-045, REQ-046, REQ-047
-**Related ADRs:** ADR-019, ADR-020, ADR-021
-**Assignee:** TBD
-**Status:** Not Started
-
----
-
-### P12-008: User Acceptance Testing
-
-**Description:** Conduct user acceptance testing
-
-**Acceptance Criteria:**
-- User acceptance tests executed
-- All acceptance criteria met
-- User feedback collected
-- Issues documented
-- UAT report generated
-
-**Priority:** Critical
-**Estimated Effort:** 16 hours
-**Dependencies:** P12-007
-**Related Requirements:** All requirements
-**Related ADRs:** All ADRs
-**Assignee:** TBD
-**Status:** Not Started
-
----
-
-**Phase 12 Summary:**
-- **Total Tasks:** 8
-- **Total Effort:** 124 hours
-- **Critical Path:** P12-001 → P12-002 → P12-006 → P12-007 → P12-008
+**Recommended Role:** Technical Writer
+**Skill Requirements:**
+- Technical writing expertise
+- Documentation review
+- Markdown formatting
 
 ---
 
 ## Task Dependencies Graph
 
-### Phase-Level Dependencies
+```mermaid
+graph TD
+    %% Phase 1: Foundation
+    TASK001[TASK-001: Linux Distribution Detection]
+    TASK002[TASK-002: CachyOS Detection]
+    TASK003[TASK-003: Nix Environment Detection]
+    TASK004[TASK-004: Package Manager Detection]
+    TASK005[TASK-005: Nix Packages in flake.nix]
+    TASK006[TASK-006: Development Shell in flake.nix]
+    TASK007[TASK-007: CMake Integration in flake.nix]
+    TASK008[TASK-008: Conan Integration in flake.nix]
+
+    %% Phase 2: Tooling
+    TASK009[TASK-009: gcc-linux Conan Profile]
+    TASK010[TASK-010: gcc-linux-debug Conan Profile]
+    TASK011[TASK-011: clang-linux Conan Profile]
+    TASK012[TASK-012: clang-linux-debug Conan Profile]
+    TASK013[TASK-013: cachyos Conan Profile]
+    TASK014[TASK-014: cachyos-debug Conan Profile]
+    TASK015[TASK-015: cachyos-clang Conan Profile]
+    TASK016[TASK-016: cachyos-clang-debug Conan Profile]
+    TASK017[TASK-017: setup_gcc.sh Script]
+    TASK018[TASK-018: setup_clang.sh Script]
+    TASK019[TASK-019: setup_cachyos.sh Script]
+    TASK020[TASK-020: setup_nix.sh Script]
+    TASK021[TASK-021: setup_qt6_vulkan.sh Script]
+    TASK022[TASK-022: validate_environment.sh Script]
+    TASK023[TASK-023: Nix-Aware CMake Presets]
+    TASK024[TASK-024: CachyOS CMake Presets]
+
+    %% Phase 3: Integration
+    TASK025[TASK-025: Linux Build Tasks in VSCode]
+    TASK026[TASK-026: Linux Debug Configurations in VSCode]
+    TASK027[TASK-027: Nix Shell Task in VSCode]
+    TASK028[TASK-028: CachyOS Validation Task in VSCode]
+
+    %% Phase 4: Documentation
+    TASK029[TASK-029: nix-development.md]
+    TASK030[TASK-030: cachyos-builds.md]
+    TASK031[TASK-031: linux-troubleshooting.md]
+    TASK032[TASK-032: conan-linux-profiles.md]
+    TASK033[TASK-033: vscode-linux-setup.md]
+
+    %% Phase 5: Cleanup
+    TASK034[TASK-034: Archive Windows Scripts]
+    TASK035[TASK-035: Reorganize Test Files]
+    TASK036[TASK-036: Remove Duplicate Files]
+    TASK037[TASK-037: Update Documentation]
+
+    %% Dependencies within Phase 1
+    TASK002 --> TASK001
+    TASK004 --> TASK001
+    TASK005 --> TASK006
+    TASK006 --> TASK007
+    TASK006 --> TASK008
+
+    %% Dependencies within Phase 2
+    TASK010 --> TASK009
+    TASK012 --> TASK011
+    TASK014 --> TASK013
+    TASK016 --> TASK015
+    TASK017 --> TASK004
+    TASK018 --> TASK004
+    TASK019 --> TASK002
+    TASK020 --> TASK003
+    TASK021 --> TASK006
+    TASK022 --> TASK001
+    TASK022 --> TASK003
+    TASK023 --> TASK007
+    TASK024 --> TASK013
+
+    %% Dependencies within Phase 3
+    TASK025 --> TASK023
+    TASK025 --> TASK024
+    TASK026 --> TASK025
+    TASK027 --> TASK020
+    TASK028 --> TASK022
+
+    %% Dependencies within Phase 4
+    TASK029 --> TASK006
+    TASK029 --> TASK020
+    TASK030 --> TASK013
+    TASK030 --> TASK019
+    TASK030 --> TASK024
+    TASK031 --> TASK022
+    TASK031 --> TASK029
+    TASK031 --> TASK030
+    TASK032 --> TASK009
+    TASK032 --> TASK010
+    TASK032 --> TASK011
+    TASK032 --> TASK012
+    TASK032 --> TASK013
+    TASK032 --> TASK014
+    TASK032 --> TASK015
+    TASK032 --> TASK016
+    TASK033 --> TASK025
+    TASK033 --> TASK026
+    TASK033 --> TASK027
+    TASK033 --> TASK028
+
+    %% Dependencies within Phase 5
+    TASK037 --> TASK034
+    TASK037 --> TASK035
+    TASK037 --> TASK036
+
+    %% Phase gates
+    classDef phase1 fill:#e1f5fe,stroke:#333,color:#fff
+    classDef phase2 fill:#4caf50,stroke:#333,color:#fff
+    classDef phase3 fill:#2196f3,stroke:#333,color:#fff
+    classDef phase4 fill:#ff9800,stroke:#333,color:#fff
+    classDef phase5 fill:#9c27b0,stroke:#333,color:#fff
+
+    TASK001:::phase1
+    TASK002:::phase1
+    TASK003:::phase1
+    TASK004:::phase1
+    TASK005:::phase1
+    TASK006:::phase1
+    TASK007:::phase1
+    TASK008:::phase1
+
+    TASK009:::phase2
+    TASK010:::phase2
+    TASK011:::phase2
+    TASK012:::phase2
+    TASK013:::phase2
+    TASK014:::phase2
+    TASK015:::phase2
+    TASK016:::phase2
+    TASK017:::phase2
+    TASK018:::phase2
+    TASK019:::phase2
+    TASK020:::phase2
+    TASK021:::phase2
+    TASK022:::phase2
+    TASK023:::phase2
+    TASK024:::phase2
+
+    TASK025:::phase3
+    TASK026:::phase3
+    TASK027:::phase3
+    TASK028:::phase3
+
+    TASK029:::phase4
+    TASK030:::phase4
+    TASK031:::phase4
+    TASK032:::phase4
+    TASK033:::phase4
+
+    TASK034:::phase5
+    TASK035:::phase5
+    TASK036:::phase5
+    TASK037:::phase5
+```
+
+---
+
+## Critical Path Analysis
+
+The critical path represents the longest sequence of dependent tasks that determines the minimum project duration. Based on the task dependencies, the critical path is:
 
 ```
-Phase 1 (Preparation)
-    ↓
-Phase 2 (Python Script Consolidation)
-    ↓
-Phase 3 (Cross-Platform Compilation)
-    ↓
-Phase 4 (Package Manager Integration)
-    ↓
-Phase 5 (Build System Refactoring)
-    ↓
-Phase 6 (C++ Engine and Game)
-    ↓
-Phase 7 (Logging System)
-    ↓
-Phase 8 (Testing)
-    ↓
-Phase 9 (VSCode Integration)
-    ↓
-Phase 10 (Documentation)
-    ↓
-Phase 11 (Cleanup)
-    ↓
-Phase 12 (Validation)
+TASK-001 → TASK-002 → TASK-019 → TASK-030 → TASK-031 → TASK-032 → TASK-033 → TASK-037
 ```
 
-### Critical Path Tasks
+**Critical Path Tasks (Must Complete Sequentially):**
+1. TASK-001: Implement Linux Distribution Detection
+2. TASK-002: Implement CachyOS Detection
+3. TASK-019: Create setup_cachyos.sh Script
+4. TASK-030: Create cachyos-builds.md Documentation
+5. TASK-031: Create linux-troubleshooting.md Documentation
+6. TASK-032: Create conan-linux-profiles.md Documentation
+7. TASK-033: Create vscode-linux-setup.md Documentation
+8. TASK-037: Update Documentation
 
-```
-P1-001 → P1-006 → P1-007
-    ↓
-P2-001 → P2-002 → P2-003 → P2-004/P2-005 → P2-006 → P2-008 → P2-009 → P2-011
-    ↓
-P3-001 → P3-002 → P3-003 → P3-007 → P3-012
-    ↓
-P4-001/P4-002/P4-003 → P4-004 → P4-005 → P4-006
-    ↓
-P5-001 → P5-002 → P5-004 → P5-005
-    ↓
-P6-001 → P6-002 → P6-005 → P6-006
-    ↓
-P7-001/P7-002 → P7-003 → P7-004 → P7-005
-    ↓
-P8-001 → P8-002 → P8-003 → P8-004 → P8-005 → P8-006
-    ↓
-P9-001/P9-002 → P9-003 → P9-004
-    ↓
-P10-001/P10-002/P10-003 → P10-004 → P10-005
-    ↓
-P11-001/P11-002 → P11-003 → P11-004 → P11-005
-    ↓
-P12-001 → P12-002 → P12-006 → P12-007 → P12-008
-```
+**Why This is Critical:**
+- TASK-001 is foundation for all platform detection
+- TASK-002 depends on TASK-001 and is required for CachyOS support
+- TASK-019 depends on TASK-002 and is required for CachyOS tooling
+- TASK-030 depends on TASK-019 and is required for documentation
+- TASK-031 depends on TASK-030 and is required for troubleshooting guide
+- TASK-032 depends on all Conan profile tasks and is required for profile documentation
+- TASK-033 depends on all VSCode tasks and is required for setup documentation
+- TASK-037 depends on all cleanup tasks and is the final task
 
-### Parallel Execution Opportunities
-
-**Phase 2:**
-- P2-004 and P2-005 can run in parallel
-
-**Phase 3:**
-- P3-008, P3-009, P3-010, P3-011 can run in parallel after P3-004 and P3-005
-
-**Phase 4:**
-- P4-001, P4-002, P4-003 can run in parallel
-
-**Phase 6:**
-- P6-003 and P6-004 can run in parallel
-
-**Phase 7:**
-- P7-001 and P7-002 can run in parallel
-
-**Phase 10:**
-- P10-001, P10-002, P10-003 can run in parallel
-
-**Phase 11:**
-- P11-001 and P11-002 can run in parallel
-
-**Phase 12:**
-- P12-002, P12-003, P12-004, P12-005 can run in parallel after P12-001
+**Alternative Critical Paths:**
+- TASK-003 → TASK-020 → TASK-027 → TASK-033 → TASK-037 (Nix-focused path)
+- TASK-004 → TASK-017 → TASK-023 → TASK-025 → TASK-033 → TASK-037 (GCC-focused path)
+- TASK-004 → TASK-018 → TASK-023 → TASK-025 → TASK-033 → TASK-037 (Clang-focused path)
 
 ---
 
-## Milestone Definitions
+## Parallel Execution Opportunities
 
-### Milestone 1: Foundation Complete (End of Week 1)
+### Phase 1 Parallel Tasks (Can Execute Simultaneously)
+- **TASK-003 (Nix Environment Detection)** - No dependencies
+- **TASK-004 (Package Manager Detection)** - Depends only on TASK-001
+- **TASK-005 (Nix Packages in flake.nix)** - No dependencies
 
-**Description:** Preparation phase completed, development environment ready
+### Phase 2 Parallel Tasks (Can Execute Simultaneously)
+- **TASK-009 (gcc-linux Conan Profile)** - No dependencies
+- **TASK-011 (clang-linux Conan Profile)** - No dependencies
+- **TASK-017 (setup_gcc.sh)** - Depends only on TASK-004
+- **TASK-018 (setup_clang.sh)** - Depends only on TASK-004
+- **TASK-021 (setup_qt6_vulkan.sh)** - Depends only on TASK-006
 
-**Deliverables:**
-- Backup branch created
-- Current state documented
-- Development environment configured
-- CI/CD pipeline operational
-- Project tracking board set up
+### Phase 3 Parallel Tasks (Can Execute Simultaneously)
+- **TASK-027 (Nix Shell Task)** - Depends only on TASK-020
+- **TASK-028 (CachyOS Validation Task)** - Depends only on TASK-022
 
-**Success Criteria:**
-- All Phase 1 tasks completed
-- Development environment validated
-- CI/CD pipeline passing
+### Phase 4 Parallel Tasks (Can Execute Simultaneously)
+- **TASK-029 (nix-development.md)** - Depends only on TASK-006, TASK-020
+- **TASK-030 (cachyos-builds.md)** - Depends only on TASK-013, TASK-019, TASK-024
+- **TASK-031 (linux-troubleshooting.md)** - Depends only on TASK-022, TASK-029, TASK-030
+- **TASK-032 (conan-linux-profiles.md)** - Depends on all Conan profile tasks
+- **TASK-033 (vscode-linux-setup.md)** - Depends on all VSCode tasks
 
-**Related Tasks:** P1-001 through P1-008
-
----
-
-### Milestone 2: Python Consolidation Complete (End of Week 3)
-
-**Description:** Python scripts consolidated and refactored
-
-**Deliverables:**
-- All Python scripts migrated to omni_scripts/
-- Type hints added to all code
-- Zero Pylance errors
-- OmniCppController.py refactored
-- All Python tests passing
-
-**Success Criteria:**
-- All Phase 2 tasks completed
-- Code coverage > 80%
-- Zero Pylance errors
-
-**Related Tasks:** P2-001 through P2-011
+### Phase 5 Parallel Tasks (Can Execute Simultaneously)
+- **TASK-034 (Archive Windows Scripts)** - No dependencies
+- **TASK-035 (Reorganize Test Files)** - No dependencies
+- **TASK-036 (Remove Duplicate Files)** - No dependencies
 
 ---
 
-### Milestone 3: Cross-Platform Ready (End of Week 5)
+## Task Execution Order
 
-**Description:** Cross-platform compilation support implemented
+### Sequential Tasks (Must Execute in Order)
 
-**Deliverables:**
-- Platform detection working
-- Compiler detection working
-- Terminal invocation patterns implemented
-- MSVC integration working
-- MinGW integration working
-- Cross-compilation working
+**Phase 1 Sequential Flow:**
+1. TASK-001 → TASK-002 (CachyOS detection requires distribution detection)
+2. TASK-001 → TASK-004 (Package manager detection requires distribution detection)
+3. TASK-005 → TASK-006 → TASK-007 → TASK-008 (Nix setup flow)
+4. TASK-004 → TASK-017 (GCC setup requires package manager detection)
+5. TASK-004 → TASK-018 (Clang setup requires package manager detection)
 
-**Success Criteria:**
-- All Phase 3 tasks completed
-- All compilers tested and working
-- Cross-compilation validated
+**Phase 2 Sequential Flow:**
+1. TASK-009 → TASK-010 (Debug profile extends release profile)
+2. TASK-011 → TASK-012 (Debug profile extends release profile)
+3. TASK-013 → TASK-014 (Debug profile extends release profile)
+4. TASK-015 → TASK-016 (Debug profile extends release profile)
+5. TASK-007 → TASK-023 (CMake presets require CMake integration)
+6. TASK-013 → TASK-024 (CachyOS presets require CachyOS profile)
 
-**Related Tasks:** P3-001 through P3-012
+**Phase 3 Sequential Flow:**
+1. TASK-023 + TASK-024 → TASK-025 (Build tasks require CMake presets)
+2. TASK-025 → TASK-026 (Debug configs require build tasks)
 
----
+**Phase 4 Sequential Flow:**
+1. TASK-006 + TASK-020 → TASK-029 (Nix docs require shell and setup script)
+2. TASK-013 + TASK-019 + TASK-024 → TASK-030 (CachyOS docs require profile, script, and presets)
+3. TASK-022 + TASK-029 + TASK-030 → TASK-031 (Troubleshooting requires validation and other docs)
+4. All Conan profiles → TASK-032 (Profile docs require all profiles)
+5. All VSCode tasks → TASK-033 (VSCode docs require all tasks)
 
-### Milestone 4: Package Management Complete (End of Week 6)
+**Phase 5 Sequential Flow:**
+1. TASK-034 + TASK-035 + TASK-036 → TASK-037 (Documentation update requires all cleanup tasks)
 
-**Description:** Package manager integration complete
+### Parallel Tasks (Can Execute Simultaneously)
 
-**Deliverables:**
-- Conan integration working
-- vcpkg integration working
-- CPM integration working
-- Priority-based selection working
-- Security verification working
+**Within Phase 1:**
+- TASK-003, TASK-004, TASK-005 (after TASK-001 completes)
+- TASK-007, TASK-008 (after TASK-006 completes)
 
-**Success Criteria:**
-- All Phase 4 tasks completed
-- All package managers tested
-- Security verification passing
+**Within Phase 2:**
+- TASK-009, TASK-011, TASK-013, TASK-015 (all release profiles)
+- TASK-010, TASK-012, TASK-014, TASK-016 (all debug profiles, after respective release profiles)
+- TASK-017, TASK-018 (after TASK-004)
+- TASK-021 (after TASK-006)
+- TASK-022 (after TASK-001, TASK-003)
 
-**Related Tasks:** P4-001 through P4-006
+**Within Phase 3:**
+- TASK-027, TASK-028 (after TASK-020, TASK-022)
 
----
+**Within Phase 4:**
+- TASK-029, TASK-030 (after respective dependencies)
+- TASK-031, TASK-032, TASK-033 (after respective dependencies)
 
-### Milestone 5: Build System Refactored (End of Week 7)
+**Within Phase 5:**
+- TASK-034, TASK-035, TASK-036 (all independent)
 
-**Description:** Build system refactored and optimized
+### Gate Tasks (Must Complete Before Next Phase)
 
-**Deliverables:**
-- CMake configuration updated
-- CMake presets created
-- Toolchain files updated
-- Build optimization implemented
+**Phase 1 → Phase 2 Gate:**
+- TASK-006 (Development Shell) must complete before Phase 2 tooling
+- TASK-008 (Conan Integration) must complete before Phase 2 tooling
 
-**Success Criteria:**
-- All Phase 5 tasks completed
-- All builds successful
-- Build optimization working
+**Phase 2 → Phase 3 Gate:**
+- TASK-023 (Nix-Aware CMake Presets) must complete before Phase 3 integration
+- TASK-024 (CachyOS CMake Presets) must complete before Phase 3 integration
 
-**Related Tasks:** P5-001 through P5-005
+**Phase 2 → Phase 4 Gate:**
+- TASK-022 (validate_environment.sh) must complete before Phase 4 documentation
+- All Conan profile tasks (TASK-009 through TASK-016) must complete before TASK-032
 
----
+**Phase 3 → Phase 4 Gate:**
+- All VSCode tasks (TASK-025 through TASK-028) must complete before TASK-033
 
-### Milestone 6: C++ Modernization Complete (End of Week 9)
-
-**Description:** C++ code modernized to C++23
-
-**Deliverables:**
-- C++ code updated to C++23
-- spdlog integrated
-- Engine architecture updated
-- Game architecture updated
-- Logging added to C++ code
-
-**Success Criteria:**
-- All Phase 6 tasks completed
-- All C++ tests passing
-- C++23 features working
-
-**Related Tasks:** P6-001 through P6-006
+**Phase 5 → Final Gate:**
+- TASK-037 (Update Documentation) must complete last
 
 ---
 
-### Milestone 7: Logging System Complete (End of Week 10)
+## Task Assignment
 
-**Description:** Comprehensive logging system implemented
+### Recommended Roles
 
-**Deliverables:**
-- Python logging system working
-- C++ logging system working
-- Logging configuration working
-- File rotation working
+**Python Developer**
+- TASK-001: Implement Linux Distribution Detection
+- TASK-002: Implement CachyOS Detection
+- TASK-003: Implement Nix Environment Detection
+- TASK-004: Implement Package Manager Detection
 
-**Success Criteria:**
-- All Phase 7 tasks completed
-- All logging tests passing
-- File rotation working
+**Skill Requirements:**
+- Python 3.10+
+- Linux system administration knowledge
+- Platform detection patterns
+- Package manager knowledge
 
-**Related Tasks:** P7-001 through P7-005
+**DevOps Engineer / Nix Specialist**
+- TASK-005: Define Nix Packages in flake.nix
+- TASK-006: Define Development Shell in flake.nix
+- TASK-007: Configure CMake Integration in flake.nix
+- TASK-008: Configure Conan Integration in flake.nix
+- TASK-020: Create setup_nix.sh Script
 
----
+**Skill Requirements:**
+- Nix package manager expertise
+- Nix flakes knowledge
+- CMake configuration
+- Conan package manager knowledge
+- Environment variable configuration
 
-### Milestone 8: Testing Complete (End of Week 11)
+**DevOps Engineer / Conan Specialist**
+- TASK-009: Create gcc-linux Conan Profile
+- TASK-010: Create gcc-linux-debug Conan Profile
+- TASK-011: Create clang-linux Conan Profile
+- TASK-012: Create clang-linux-debug Conan Profile
+- TASK-013: Create cachyos Conan Profile
+- TASK-014: Create cachyos-debug Conan Profile
+- TASK-015: Create cachyos-clang Conan Profile
+- TASK-016: Create cachyos-clang-debug Conan Profile
 
-**Description:** Comprehensive testing suite implemented
+**Skill Requirements:**
+- Conan package manager expertise
+- GCC and Clang toolchain knowledge
+- Profile configuration
+- CachyOS knowledge
 
-**Deliverables:**
-- Unit tests implemented
-- Integration tests implemented
-- Cross-platform tests implemented
-- Security tests implemented
-- CI/CD configured
-- 80% code coverage achieved
+**DevOps Engineer / Shell Scripting**
+- TASK-017: Create setup_gcc.sh Script
+- TASK-018: Create setup_clang.sh Script
+- TASK-019: Create setup_cachyos.sh Script
+- TASK-021: Create setup_qt6_vulkan.sh Script
+- TASK-022: Create validate_environment.sh Script
 
-**Success Criteria:**
-- All Phase 8 tasks completed
-- All tests passing
-- Code coverage > 80%
+**Skill Requirements:**
+- Bash scripting expertise
+- GCC and Clang toolchain knowledge
+- CachyOS knowledge
+- Qt6 and Vulkan knowledge
+- Build system validation
 
-**Related Tasks:** P8-001 through P8-006
+**CMake Specialist / Build Engineer**
+- TASK-023: Add Nix-Aware CMake Presets
+- TASK-024: Add CachyOS Build Configurations to CMake Presets
 
----
+**Skill Requirements:**
+- CMake configuration expertise
+- Nix environment knowledge
+- CachyOS knowledge
+- Compiler flag optimization
+- Cross-platform build systems
 
-### Milestone 9: VSCode Integration Complete (End of Week 12)
+**VSCode Configuration Specialist**
+- TASK-025: Add Linux Build Tasks to VSCode tasks.json
+- TASK-026: Add Linux Debug Configurations to VSCode launch.json
+- TASK-027: Add Nix Shell Task to VSCode tasks.json
+- TASK-028: Add CachyOS Validation Task to VSCode tasks.json
 
-**Description:** VSCode integration complete
+**Skill Requirements:**
+- VSCode configuration expertise
+- Build system integration
+- Task automation
+- Debugger configuration (GDB, LLDB)
+- Nix environment knowledge
 
-**Deliverables:**
-- tasks.json updated
-- launch.json updated
-- OmniCppController.py integrated
-- All VSCode features working
+**Technical Writer**
+- TASK-029: Create nix-development.md Documentation
+- TASK-030: Create cachyos-builds.md Documentation
+- TASK-031: Create linux-troubleshooting.md Documentation
+- TASK-032: Create conan-linux-profiles.md Documentation
+- TASK-033: Create vscode-linux-setup.md Documentation
+- TASK-037: Update Documentation
 
-**Success Criteria:**
-- All Phase 9 tasks completed
-- All VSCode tasks working
-- All launch configurations working
+**Skill Requirements:**
+- Technical writing expertise
+- Nix package manager knowledge
+- CachyOS knowledge
+- Documentation tools (Markdown)
+- Documentation review
 
-**Related Tasks:** P9-001 through P9-004
+**DevOps Engineer**
+- TASK-034: Archive Windows-Specific Scripts
+- TASK-035: Reorganize Test Files
+- TASK-036: Remove Duplicate Files
 
----
-
-### Milestone 10: Documentation Complete (End of Week 13)
-
-**Description:** All documentation updated
-
-**Deliverables:**
-- API documentation updated
-- User documentation updated
-- Developer documentation updated
-- Migration guide created
-- README updated
-
-**Success Criteria:**
-- All Phase 10 tasks completed
-- All documentation validated
-- Migration guide complete
-
-**Related Tasks:** P10-001 through P10-005
-
----
-
-### Milestone 11: Cleanup Complete (End of Week 14)
-
-**Description:** All cleanup tasks completed
-
-**Deliverables:**
-- Deprecated files removed
-- Duplicate files removed
-- Legacy directories removed
-- Build artifacts cleaned
-- Final cleanup validated
-
-**Success Criteria:**
-- All Phase 11 tasks completed
-- Project structure clean
-- No orphaned files
-
-**Related Tasks:** P11-001 through P11-005
-
----
-
-### Milestone 12: Project Complete (End of Week 15)
-
-**Description:** All validation complete, project ready for release
-
-**Deliverables:**
-- Full test suite executed
-- Cross-platform compilation validated
-- Package manager integration validated
-- Logging system validated
-- VSCode integration validated
-- Performance testing complete
-- Security testing complete
-- User acceptance testing complete
-
-**Success Criteria:**
-- All Phase 12 tasks completed
-- All validations passing
-- No critical issues
-- Ready for release
-
-**Related Tasks:** P12-001 through P12-008
+**Skill Requirements:**
+- File system organization
+- Repository management
+- Documentation skills
+- Attention to detail
 
 ---
 
-## Risk Register
+## Summary
 
-### Risk 1: Scope Creep
+### Task Count by Phase
+- **Phase 1 (Foundation):** 8 tasks (TASK-001 through TASK-008)
+- **Phase 2 (Tooling):** 16 tasks (TASK-009 through TASK-024)
+- **Phase 3 (Integration):** 4 tasks (TASK-025 through TASK-028)
+- **Phase 4 (Documentation):** 5 tasks (TASK-029 through TASK-033)
+- **Phase 5 (Cleanup):** 4 tasks (TASK-034 through TASK-037)
+- **Total:** 37 tasks
 
-**Description:** Project scope expands beyond original requirements
+### Task Count by Priority
+- **Critical:** 8 tasks (TASK-001, TASK-002, TASK-003, TASK-004, TASK-005, TASK-006, TASK-007, TASK-008)
+- **High:** 21 tasks (TASK-009 through TASK-028)
+- **Medium:** 6 tasks (TASK-028, TASK-029, TASK-030, TASK-031, TASK-032, TASK-033, TASK-037)
+- **Low:** 2 tasks (TASK-034, TASK-035, TASK-036)
 
-**Probability:** Medium
-**Impact:** High
-**Risk Score:** 12 (Medium × High)
+### Task Count by Role
+- **Python Developer:** 4 tasks
+- **DevOps Engineer / Nix Specialist:** 5 tasks
+- **DevOps Engineer / Conan Specialist:** 8 tasks
+- **DevOps Engineer / Shell Scripting:** 5 tasks
+- **CMake Specialist / Build Engineer:** 2 tasks
+- **VSCode Configuration Specialist:** 4 tasks
+- **Technical Writer:** 6 tasks
+- **DevOps Engineer:** 3 tasks
 
-**Mitigation Strategies:**
-- Strict change control process
-- Regular scope reviews
-- Clear definition of done
-- Stakeholder alignment
+### Estimated Completion Strategy
+1. **Start with Phase 1** (Foundation) - All tasks are critical and provide foundation for subsequent phases
+2. **Execute Phase 2 in parallel** where possible - Multiple tooling tasks can be done simultaneously
+3. **Execute Phase 3** after Phase 2 completes - VSCode integration requires tooling to be complete
+4. **Execute Phase 4 in parallel** - Documentation can be written as soon as respective components are ready
+5. **Execute Phase 5** - Cleanup can be done independently or in parallel with documentation
 
-**Owner:** TBD
-**Status:** Open
-
----
-
-### Risk 2: Technical Complexity Underestimated
-
-**Description:** Technical challenges more complex than anticipated
-
-**Probability:** Medium
-**Impact:** High
-**Risk Score:** 12 (Medium × High)
-
-**Mitigation Strategies:**
-- Technical spikes for complex tasks
-- Regular technical reviews
-- Expert consultation
-- Buffer time in schedule
-
-**Owner:** TBD
-**Status:** Open
-
----
-
-### Risk 3: Resource Constraints
-
-**Description:** Insufficient resources (time, personnel, budget)
-
-**Probability:** Medium
-**Impact:** High
-**Risk Score:** 12 (Medium × High)
-
-**Mitigation Strategies:**
-- Resource planning and allocation
-- Prioritization of critical tasks
-- Parallel execution where possible
-- External resource consideration
-
-**Owner:** TBD
-**Status:** Open
+### Risk Mitigation
+- **Critical Path Focus:** Prioritize tasks on critical path to avoid delays
+- **Parallel Execution:** Execute independent tasks simultaneously to reduce overall duration
+- **Early Testing:** Test foundation tasks (Phase 1) thoroughly before proceeding to Phase 2
+- **Documentation:** Write documentation as components are completed to avoid bottlenecks
+- **Validation:** Use validation scripts (TASK-022) to catch issues early
 
 ---
 
-### Risk 4: Integration Issues
-
-**Description:** Problems integrating new components with existing code
-
-**Probability:** High
-**Impact:** High
-**Risk Score:** 16 (High × High)
-
-**Mitigation Strategies:**
-- Incremental integration
-- Comprehensive testing
-- Backward compatibility layer
-- Rollback procedures
-
-**Owner:** TBD
-**Status:** Open
-
----
-
-### Risk 5: Cross-Platform Compatibility Issues
-
-**Description:** Unexpected issues on specific platforms
-
-**Probability:** High
-**Impact:** High
-**Risk Score:** 16 (High × High)
-
-**Mitigation Strategies:**
-- Early cross-platform testing
-- Platform-specific testing
-- Continuous integration on all platforms
-- Platform expert consultation
-
-**Owner:** TBD
-**Status:** Open
-
----
-
-### Risk 6: Package Manager Conflicts
-
-**Description:** Conflicts between different package managers
-
-**Probability:** Medium
-**Impact:** High
-**Risk Score:** 12 (Medium × High)
-
-**Mitigation Strategies:**
-- Priority-based selection
-- Comprehensive testing
-- Fallback mechanisms
-- Clear documentation
-
-**Owner:** TBD
-**Status:** Open
-
----
-
-### Risk 7: Performance Degradation
-
-**Description:** New implementation performs worse than current
-
-**Probability:** Medium
-**Impact:** High
-**Risk Score:** 12 (Medium × High)
-
-**Mitigation Strategies:**
-- Performance benchmarking
-- Performance testing
-- Optimization iterations
-- Performance monitoring
-
-**Owner:** TBD
-**Status:** Open
-
----
-
-### Risk 8: Security Vulnerabilities
-
-**Description:** Security issues introduced during refactoring
-
-**Probability:** Medium
-**Impact:** Critical
-**Risk Score:** 15 (Medium × Critical)
-
-**Mitigation Strategies:**
-- Security-first approach
-- Security testing
-- Code reviews
-- Dependency scanning
-
-**Owner:** TBD
-**Status:** Open
-
----
-
-### Risk 9: Documentation Gaps
-
-**Description:** Incomplete or inaccurate documentation
-
-**Probability:** Medium
-**Impact:** Medium
-**Risk Score:** 8 (Medium × Medium)
-
-**Mitigation Strategies:**
-- Documentation-first approach
-- Regular documentation reviews
-- User feedback
-- Documentation testing
-
-**Owner:** TBD
-**Status:** Open
-
----
-
-### Risk 10: Testing Coverage Gaps
-
-**Description:** Insufficient test coverage leading to bugs
-
-**Probability:** Medium
-**Impact:** High
-**Risk Score:** 12 (Medium × High)
-
-**Mitigation Strategies:**
-- Test-driven development
-- Continuous testing
-- Coverage requirements
-- Regular test reviews
-
-**Owner:** TBD
-**Status:** Open
-
----
-
-### Risk 11: Toolchain Compatibility Issues
-
-**Description:** Issues with compiler or toolchain versions
-
-**Probability:** High
-**Impact:** High
-**Risk Score:** 16 (High × High)
-
-**Mitigation Strategies:**
-- Toolchain version testing
-- Compatibility matrix
-- Fallback mechanisms
-- Toolchain expert consultation
-
-**Owner:** TBD
-**Status:** Open
-
----
-
-### Risk 12: Team Knowledge Gaps
-
-**Description:** Team lacks expertise in specific areas
-
-**Probability:** Medium
-**Impact:** High
-**Risk Score:** 12 (Medium × High)
-
-**Mitigation Strategies:**
-- Training and knowledge sharing
-- Expert consultation
-- Pair programming
-- Documentation and guides
-
-**Owner:** TBD
-**Status:** Open
-
----
-
-### Risk 13: Timeline Delays
-
-**Description:** Project timeline exceeds 15 weeks
-
-**Probability:** Medium
-**Impact:** High
-**Risk Score:** 12 (Medium × High)
-
-**Mitigation Strategies:**
-- Regular progress tracking
-- Buffer time in schedule
-- Critical path management
-- Scope adjustment if needed
-
-**Owner:** TBD
-**Status:** Open
-
----
-
-### Risk 14: Quality Issues
-
-**Description:** Code quality standards not met
-
-**Probability:** Medium
-**Impact:** High
-**Risk Score:** 12 (Medium × High)
-
-**Mitigation Strategies:**
-- Code reviews
-- Static analysis
-- Linting and formatting
-- Quality gates
-
-**Owner:** TBD
-**Status:** Open
-
----
-
-### Risk 15: Rollback Complexity
-
-**Description:** Difficulty rolling back if issues arise
-
-**Probability:** Low
-**Impact:** Critical
-**Risk Score:** 10 (Low × Critical)
-
-**Mitigation Strategies:**
-- Comprehensive backup strategy
-- Incremental deployment
-- Rollback procedures documented
-- Regular rollback testing
-
-**Owner:** TBD
-**Status:** Open
-
----
-
-## Summary Statistics
-
-### Overall Project Statistics
-
-- **Total Phases:** 12
-- **Total Tasks:** 120
-- **Total Estimated Effort:** 1,485 hours
-- **Total Duration:** 15 weeks
-- **Average Tasks per Phase:** 10
-- **Average Effort per Phase:** 123.75 hours
-
-### Priority Distribution
-
-- **Critical Tasks:** 67 (55.8%)
-- **High Tasks:** 48 (40.0%)
-- **Medium Tasks:** 5 (4.2%)
-- **Low Tasks:** 0 (0.0%)
-
-### Effort Distribution by Phase
-
-| Phase | Tasks | Effort (hours) | Percentage |
-|-------|-------|----------------|------------|
-| Phase 1 | 8 | 35 | 2.4% |
-| Phase 2 | 11 | 182 | 12.3% |
-| Phase 3 | 12 | 200 | 13.5% |
-| Phase 4 | 6 | 108 | 7.3% |
-| Phase 5 | 5 | 92 | 6.2% |
-| Phase 6 | 6 | 168 | 11.3% |
-| Phase 7 | 5 | 76 | 5.1% |
-| Phase 8 | 6 | 132 | 8.9% |
-| Phase 9 | 4 | 44 | 3.0% |
-| Phase 10 | 5 | 92 | 6.2% |
-| Phase 11 | 5 | 40 | 2.7% |
-| Phase 12 | 8 | 124 | 8.3% |
-| **Total** | **120** | **1,485** | **100%** |
-
-### Milestone Summary
-
-- **Total Milestones:** 12
-- **Average Duration per Milestone:** 1.25 weeks
-- **Critical Path Milestones:** All 12
-
-### Risk Summary
-
-- **Total Risks:** 15
-- **High Risk Score (≥12):** 13
-- **Medium Risk Score (8-11):** 2
-- **Low Risk Score (<8):** 0
-
-### Key Success Factors
-
-1. **Incremental Implementation:** Each phase builds on the previous
-2. **Continuous Testing:** Testing integrated throughout
-3. **Clear Dependencies:** Task dependencies well-defined
-4. **Comprehensive Documentation:** Documentation updated continuously
-5. **Risk Management:** Proactive risk identification and mitigation
-6. **Quality Gates:** Each phase has clear acceptance criteria
-7. **Parallel Execution:** Opportunities for parallel work identified
-8. **Rollback Strategy:** Backup and rollback procedures in place
-
----
-
-## Conclusion
-
-This comprehensive task breakdown provides a detailed roadmap for the OmniCPP Template refactoring project. The 12-phase approach ensures systematic progression from preparation through validation, with clear dependencies, milestones, and risk management strategies.
-
-**Key Points:**
-
-- **120 tasks** organized into **12 phases** over **15 weeks**
-- **1,485 hours** of estimated effort
-- **67 critical tasks** (55.8%) requiring immediate attention
-- **12 milestones** marking key project achievements
-- **15 identified risks** with mitigation strategies
-- **Clear critical path** for project completion
-
-**Next Steps:**
-
-1. Assign tasks to team members
-2. Set up project tracking board
-3. Begin Phase 1: Preparation
-4. Monitor progress against milestones
-5. Manage risks proactively
-6. Adjust timeline as needed
-
-**Success Criteria:**
-
-- All 120 tasks completed
-- All 12 milestones achieved
-- All acceptance criteria met
-- Code coverage > 80%
-- Zero critical security issues
-- All platforms validated
-- Ready for production release
-
----
-
-**Document Version:** 1.0
-**Last Updated:** 2026-01-07
-**Next Review:** 2026-01-14
+## Document Control
+
+| Version | Date | Author | Changes |
+|---------|------|---------|---------|
+| 1.0 | 2026-01-27 | Project Manager | Initial version - 37 tasks defined across 5 phases |

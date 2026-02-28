@@ -5,7 +5,7 @@
  */
 
 #include "engine/IResourceManager.hpp"
-#include <spdlog/spdlog.h>
+#include "engine/logging/Log.hpp"
 
 namespace omnicpp {
 
@@ -15,23 +15,23 @@ public:
     ~ResourceManagerStub() override = default;
 
     bool initialize() override {
-        spdlog::info("ResourceManagerStub: Initialized");
+        omnicpp::log::info("ResourceManagerStub: Initialized");
         return true;
     }
 
     void shutdown() override {
-        spdlog::info("ResourceManagerStub: Shutdown");
+        omnicpp::log::info("ResourceManagerStub: Shutdown");
     }
 
     uint32_t load_resource(const char* file_path, ResourceType type) override {
-        spdlog::debug("ResourceManagerStub: Loading resource from {} (type: {})", file_path, static_cast<int>(type));
+        omnicpp::log::debug("ResourceManagerStub: Loading resource from {} (type: {})", file_path, static_cast<int>(type));
         (void)file_path;
         (void)type;
         return 0;
     }
 
     void unload_resource(uint32_t resource_id) override {
-        spdlog::debug("ResourceManagerStub: Unloading resource {}", resource_id);
+        omnicpp::log::debug("ResourceManagerStub: Unloading resource {}", resource_id);
         (void)resource_id;
     }
 
@@ -41,13 +41,13 @@ public:
     }
 
     bool reload_resource(uint32_t resource_id) override {
-        spdlog::debug("ResourceManagerStub: Reloading resource {}", resource_id);
+        omnicpp::log::debug("ResourceManagerStub: Reloading resource {}", resource_id);
         (void)resource_id;
         return true;
     }
 
     void set_search_path(const char* path) override {
-        spdlog::debug("ResourceManagerStub: Setting search path to {}", path);
+        omnicpp::log::debug("ResourceManagerStub: Setting search path to {}", path);
         (void)path;
     }
 

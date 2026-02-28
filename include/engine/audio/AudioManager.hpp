@@ -18,6 +18,15 @@ namespace audio {
 class SoundEngine;
 class Sound;
 
+// Deleters for unique_ptr - needed for complete type definitions
+struct SoundEngineDeleter {
+    void operator()(SoundEngine* ptr) const;
+};
+
+struct SoundDeleter {
+    void operator()(Sound* ptr) const {
+};
+
 /**
  * @brief Audio manager for sound playback
  * 

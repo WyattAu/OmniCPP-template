@@ -734,6 +734,756 @@
       "detail": "Build Engine target with Clang compiler in Release mode"
     },
     {
+      "label": "Build Engine (Linux GCC - RelWithDebInfo)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "engine",
+        "default",
+        "linux-gcc-relwithdebinfo",
+        "relwithdebinfo"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Linux GCC - RelWithDebInfo)"
+      ],
+      "detail": "Build Engine target with GCC compiler in RelWithDebInfo mode"
+    },
+    {
+      "label": "Build Engine (Linux GCC - MinSizeRel)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "engine",
+        "default",
+        "linux-gcc-minsizerel",
+        "minsizerel"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Linux GCC - MinSizeRel)"
+      ],
+      "detail": "Build Engine target with GCC compiler in MinSizeRel mode"
+    },
+    {
+      "label": "Build Engine (Linux Clang - RelWithDebInfo)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "engine",
+        "default",
+        "linux-clang-relwithdebinfo",
+        "relwithdebinfo"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Linux Clang - RelWithDebInfo)"
+      ],
+      "detail": "Build Engine target with Clang compiler in RelWithDebInfo mode"
+    },
+    {
+      "label": "Build Engine (Linux Clang - MinSizeRel)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "engine",
+        "default",
+        "linux-clang-minsizerel",
+        "minsizerel"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Linux Clang - MinSizeRel)"
+      ],
+      "detail": "Build Engine target with Clang compiler in MinSizeRel mode"
+    },
+    {
+      "label": "Build Engine (CachyOS GCC - Debug)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "engine",
+        "default",
+        "cachyos-gcc-debug",
+        "debug"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (CachyOS GCC - Debug)"
+      ],
+      "detail": "Build Engine target with CachyOS GCC compiler in Debug mode"
+    },
+    {
+      "label": "Build Engine (CachyOS GCC - Release)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "engine",
+        "default",
+        "cachyos-gcc-release",
+        "release"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (CachyOS GCC - Release)"
+      ],
+      "detail": "Build Engine target with CachyOS GCC compiler in Release mode"
+    },
+    {
+      "label": "Build Engine (CachyOS GCC - RelWithDebInfo)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "engine",
+        "default",
+        "cachyos-gcc-relwithdebinfo",
+        "relwithdebinfo"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (CachyOS GCC - RelWithDebInfo)"
+      ],
+      "detail": "Build Engine target with CachyOS GCC compiler in RelWithDebInfo mode"
+    },
+    {
+      "label": "Build Engine (CachyOS GCC - MinSizeRel)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "engine",
+        "default",
+        "cachyos-gcc-minsizerel",
+        "minsizerel"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (CachyOS GCC - MinSizeRel)"
+      ],
+      "detail": "Build Engine target with CachyOS GCC compiler in MinSizeRel mode"
+    },
+    {
+      "label": "Build Engine (CachyOS Clang - Debug)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "engine",
+        "default",
+        "cachyos-clang-debug",
+        "debug"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (CachyOS Clang - Debug)"
+      ],
+      "detail": "Build Engine target with CachyOS Clang compiler in Debug mode"
+    },
+    {
+      "label": "Build Engine (CachyOS Clang - Release)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "engine",
+        "default",
+        "cachyos-clang-release",
+        "release"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (CachyOS Clang - Release)"
+      ],
+      "detail": "Build Engine target with CachyOS Clang compiler in Release mode"
+    },
+    {
+      "label": "Build Engine (CachyOS Clang - RelWithDebInfo)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "engine",
+        "default",
+        "cachyos-clang-relwithdebinfo",
+        "relwithdebinfo"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (CachyOS Clang - RelWithDebInfo)"
+      ],
+      "detail": "Build Engine target with CachyOS Clang compiler in RelWithDebInfo mode"
+    },
+    {
+      "label": "Build Engine (CachyOS Clang - MinSizeRel)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "engine",
+        "default",
+        "cachyos-clang-minsizerel",
+        "minsizerel"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (CachyOS Clang - MinSizeRel)"
+      ],
+      "detail": "Build Engine target with CachyOS Clang compiler in MinSizeRel mode"
+    },
+    {
+      "label": "Build Engine (Nix GCC - Debug)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "engine",
+        "default",
+        "nix-gcc-debug",
+        "debug"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Nix GCC - Debug)"
+      ],
+      "detail": "Build Engine target with Nix GCC compiler in Debug mode"
+    },
+    {
+      "label": "Build Engine (Nix GCC - Release)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "engine",
+        "default",
+        "nix-gcc-release",
+        "release"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Nix GCC - Release)"
+      ],
+      "detail": "Build Engine target with Nix GCC compiler in Release mode"
+    },
+    {
+      "label": "Build Engine (Nix GCC - RelWithDebInfo)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "engine",
+        "default",
+        "nix-gcc-relwithdebinfo",
+        "relwithdebinfo"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Nix GCC - RelWithDebInfo)"
+      ],
+      "detail": "Build Engine target with Nix GCC compiler in RelWithDebInfo mode"
+    },
+    {
+      "label": "Build Engine (Nix GCC - MinSizeRel)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "engine",
+        "default",
+        "nix-gcc-minsizerel",
+        "minsizerel"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Nix GCC - MinSizeRel)"
+      ],
+      "detail": "Build Engine target with Nix GCC compiler in MinSizeRel mode"
+    },
+    {
+      "label": "Build Engine (Nix Clang - Debug)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "engine",
+        "default",
+        "nix-clang-debug",
+        "debug"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Nix Clang - Debug)"
+      ],
+      "detail": "Build Engine target with Nix Clang compiler in Debug mode"
+    },
+    {
+      "label": "Build Engine (Nix Clang - Release)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "engine",
+        "default",
+        "nix-clang-release",
+        "release"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Nix Clang - Release)"
+      ],
+      "detail": "Build Engine target with Nix Clang compiler in Release mode"
+    },
+    {
+      "label": "Build Engine (Nix Clang - RelWithDebInfo)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "engine",
+        "default",
+        "nix-clang-relwithdebinfo",
+        "relwithdebinfo"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Nix Clang - RelWithDebInfo)"
+      ],
+      "detail": "Build Engine target with Nix Clang compiler in RelWithDebInfo mode"
+    },
+    {
+      "label": "Build Engine (Nix Clang - MinSizeRel)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "engine",
+        "default",
+        "nix-clang-minsizerel",
+        "minsizerel"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Nix Clang - MinSizeRel)"
+      ],
+      "detail": "Build Engine target with Nix Clang compiler in MinSizeRel mode"
+    },
+    {
+      "label": "Build Engine (Nix CachyOS GCC - Debug)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "engine",
+        "default",
+        "nix-cachyos-gcc-debug",
+        "debug"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Nix CachyOS GCC - Debug)"
+      ],
+      "detail": "Build Engine target with Nix CachyOS GCC compiler in Debug mode"
+    },
+    {
+      "label": "Build Engine (Nix CachyOS GCC - Release)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "engine",
+        "default",
+        "nix-cachyos-gcc-release",
+        "release"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Nix CachyOS GCC - Release)"
+      ],
+      "detail": "Build Engine target with Nix CachyOS GCC compiler in Release mode"
+    },
+    {
+      "label": "Build Engine (Nix CachyOS GCC - RelWithDebInfo)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "engine",
+        "default",
+        "nix-cachyos-gcc-relwithdebinfo",
+        "relwithdebinfo"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Nix CachyOS GCC - RelWithDebInfo)"
+      ],
+      "detail": "Build Engine target with Nix CachyOS GCC compiler in RelWithDebInfo mode"
+    },
+    {
+      "label": "Build Engine (Nix CachyOS GCC - MinSizeRel)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "engine",
+        "default",
+        "nix-cachyos-gcc-minsizerel",
+        "minsizerel"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Nix CachyOS GCC - MinSizeRel)"
+      ],
+      "detail": "Build Engine target with Nix CachyOS GCC compiler in MinSizeRel mode"
+    },
+    {
+      "label": "Build Engine (Nix CachyOS Clang - Debug)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "engine",
+        "default",
+        "nix-cachyos-clang-debug",
+        "debug"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Nix CachyOS Clang - Debug)"
+      ],
+      "detail": "Build Engine target with Nix CachyOS Clang compiler in Debug mode"
+    },
+    {
+      "label": "Build Engine (Nix CachyOS Clang - Release)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "engine",
+        "default",
+        "nix-cachyos-clang-release",
+        "release"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Nix CachyOS Clang - Release)"
+      ],
+      "detail": "Build Engine target with Nix CachyOS Clang compiler in Release mode"
+    },
+    {
+      "label": "Build Engine (Nix CachyOS Clang - RelWithDebInfo)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "engine",
+        "default",
+        "nix-cachyos-clang-relwithdebinfo",
+        "relwithdebinfo"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Nix CachyOS Clang - RelWithDebInfo)"
+      ],
+      "detail": "Build Engine target with Nix CachyOS Clang compiler in RelWithDebInfo mode"
+    },
+    {
+      "label": "Build Engine (Nix CachyOS Clang - MinSizeRel)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "engine",
+        "default",
+        "nix-cachyos-clang-minsizerel",
+        "minsizerel"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Nix CachyOS Clang - MinSizeRel)"
+      ],
+      "detail": "Build Engine target with Nix CachyOS Clang compiler in MinSizeRel mode"
+    },
+    {
+      "label": "Build Engine (Nix Qt6 Vulkan - Debug)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "engine",
+        "default",
+        "nix-qt6-vulkan-debug",
+        "debug"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Nix Qt6 Vulkan - Debug)"
+      ],
+      "detail": "Build Engine target with Nix Qt6 and Vulkan libraries in Debug mode"
+    },
+    {
+      "label": "Build Engine (Nix Qt6 Vulkan - Release)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "engine",
+        "default",
+        "nix-qt6-vulkan-release",
+        "release"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Nix Qt6 Vulkan - Debug)"
+      ],
+      "detail": "Build Engine target with Nix Qt6 and Vulkan libraries in Release mode"
+    },
+    {
       "label": "Build Game (Windows MSVC - Debug)",
       "type": "shell",
       "command": "python",
@@ -1032,6 +1782,756 @@
         "Configure Build (Linux Clang - Release)"
       ],
       "detail": "Build Game target with Clang compiler in Release mode"
+    },
+    {
+      "label": "Build Game (Linux GCC - RelWithDebInfo)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "game",
+        "default",
+        "linux-gcc-relwithdebinfo",
+        "relwithdebinfo"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Linux GCC - RelWithDebInfo)"
+      ],
+      "detail": "Build Game target with GCC compiler in RelWithDebInfo mode"
+    },
+    {
+      "label": "Build Game (Linux GCC - MinSizeRel)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "game",
+        "default",
+        "linux-gcc-minsizerel",
+        "minsizerel"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Linux GCC - MinSizeRel)"
+      ],
+      "detail": "Build Game target with GCC compiler in MinSizeRel mode"
+    },
+    {
+      "label": "Build Game (Linux Clang - RelWithDebInfo)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "game",
+        "default",
+        "linux-clang-relwithdebinfo",
+        "relwithdebinfo"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Linux Clang - RelWithDebInfo)"
+      ],
+      "detail": "Build Game target with Clang compiler in RelWithDebInfo mode"
+    },
+    {
+      "label": "Build Game (Linux Clang - MinSizeRel)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "game",
+        "default",
+        "linux-clang-minsizerel",
+        "minsizerel"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Linux Clang - MinSizeRel)"
+      ],
+      "detail": "Build Game target with Clang compiler in MinSizeRel mode"
+    },
+    {
+      "label": "Build Game (CachyOS GCC - Debug)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "game",
+        "default",
+        "cachyos-gcc-debug",
+        "debug"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (CachyOS GCC - Debug)"
+      ],
+      "detail": "Build Game target with CachyOS GCC compiler in Debug mode"
+    },
+    {
+      "label": "Build Game (CachyOS GCC - Release)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "game",
+        "default",
+        "cachyos-gcc-release",
+        "release"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (CachyOS GCC - Release)"
+      ],
+      "detail": "Build Game target with CachyOS GCC compiler in Release mode"
+    },
+    {
+      "label": "Build Game (CachyOS GCC - RelWithDebInfo)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "game",
+        "default",
+        "cachyos-gcc-relwithdebinfo",
+        "relwithdebinfo"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (CachyOS GCC - RelWithDebInfo)"
+      ],
+      "detail": "Build Game target with CachyOS GCC compiler in RelWithDebInfo mode"
+    },
+    {
+      "label": "Build Game (CachyOS GCC - MinSizeRel)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "game",
+        "default",
+        "cachyos-gcc-minsizerel",
+        "minsizerel"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (CachyOS GCC - MinSizeRel)"
+      ],
+      "detail": "Build Game target with CachyOS GCC compiler in MinSizeRel mode"
+    },
+    {
+      "label": "Build Game (CachyOS Clang - Debug)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "game",
+        "default",
+        "cachyos-clang-debug",
+        "debug"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (CachyOS Clang - Debug)"
+      ],
+      "detail": "Build Game target with CachyOS Clang compiler in Debug mode"
+    },
+    {
+      "label": "Build Game (CachyOS Clang - Release)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "game",
+        "default",
+        "cachyos-clang-release",
+        "release"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (CachyOS Clang - Release)"
+      ],
+      "detail": "Build Game target with CachyOS Clang compiler in Release mode"
+    },
+    {
+      "label": "Build Game (CachyOS Clang - RelWithDebInfo)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "game",
+        "default",
+        "cachyos-clang-relwithdebinfo",
+        "relwithdebinfo"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (CachyOS Clang - RelWithDebInfo)"
+      ],
+      "detail": "Build Game target with CachyOS Clang compiler in RelWithDebInfo mode"
+    },
+    {
+      "label": "Build Game (CachyOS Clang - MinSizeRel)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "game",
+        "default",
+        "cachyos-clang-minsizerel",
+        "minsizerel"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (CachyOS Clang - MinSizeRel)"
+      ],
+      "detail": "Build Game target with CachyOS Clang compiler in MinSizeRel mode"
+    },
+    {
+      "label": "Build Game (Nix GCC - Debug)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "game",
+        "default",
+        "nix-gcc-debug",
+        "debug"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Nix GCC - Debug)"
+      ],
+      "detail": "Build Game target with Nix GCC compiler in Debug mode"
+    },
+    {
+      "label": "Build Game (Nix GCC - Release)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "game",
+        "default",
+        "nix-gcc-release",
+        "release"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Nix GCC - Release)"
+      ],
+      "detail": "Build Game target with Nix GCC compiler in Release mode"
+    },
+    {
+      "label": "Build Game (Nix GCC - RelWithDebInfo)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "game",
+        "default",
+        "nix-gcc-relwithdebinfo",
+        "relwithdebinfo"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Nix GCC - RelWithDebInfo)"
+      ],
+      "detail": "Build Game target with Nix GCC compiler in RelWithDebInfo mode"
+    },
+    {
+      "label": "Build Game (Nix GCC - MinSizeRel)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "game",
+        "default",
+        "nix-gcc-minsizerel",
+        "minsizerel"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Nix GCC - MinSizeRel)"
+      ],
+      "detail": "Build Game target with Nix GCC compiler in MinSizeRel mode"
+    },
+    {
+      "label": "Build Game (Nix Clang - Debug)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "game",
+        "default",
+        "nix-clang-debug",
+        "debug"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Nix Clang - Debug)"
+      ],
+      "detail": "Build Game target with Nix Clang compiler in Debug mode"
+    },
+    {
+      "label": "Build Game (Nix Clang - Release)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "game",
+        "default",
+        "nix-clang-release",
+        "release"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Nix Clang - Release)"
+      ],
+      "detail": "Build Game target with Nix Clang compiler in Release mode"
+    },
+    {
+      "label": "Build Game (Nix Clang - RelWithDebInfo)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "game",
+        "default",
+        "nix-clang-relwithdebinfo",
+        "relwithdebinfo"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Nix Clang - RelWithDebInfo)"
+      ],
+      "detail": "Build Game target with Nix Clang compiler in RelWithDebInfo mode"
+    },
+    {
+      "label": "Build Game (Nix Clang - MinSizeRel)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "game",
+        "default",
+        "nix-clang-minsizerel",
+        "minsizerel"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Nix Clang - MinSizeRel)"
+      ],
+      "detail": "Build Game target with Nix Clang compiler in MinSizeRel mode"
+    },
+    {
+      "label": "Build Game (Nix CachyOS GCC - Debug)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "game",
+        "default",
+        "nix-cachyos-gcc-debug",
+        "debug"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Nix CachyOS GCC - Debug)"
+      ],
+      "detail": "Build Game target with Nix CachyOS GCC compiler in Debug mode"
+    },
+    {
+      "label": "Build Game (Nix CachyOS GCC - Release)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "game",
+        "default",
+        "nix-cachyos-gcc-release",
+        "release"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Nix CachyOS GCC - Release)"
+      ],
+      "detail": "Build Game target with Nix CachyOS GCC compiler in Release mode"
+    },
+    {
+      "label": "Build Game (Nix CachyOS GCC - RelWithDebInfo)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "game",
+        "default",
+        "nix-cachyos-gcc-relwithdebinfo",
+        "relwithdebinfo"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Nix CachyOS GCC - RelWithDebInfo)"
+      ],
+      "detail": "Build Game target with Nix CachyOS GCC compiler in RelWithDebInfo mode"
+    },
+    {
+      "label": "Build Game (Nix CachyOS GCC - MinSizeRel)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "game",
+        "default",
+        "nix-cachyos-gcc-minsizerel",
+        "minsizerel"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Nix CachyOS GCC - MinSizeRel)"
+      ],
+      "detail": "Build Game target with Nix CachyOS GCC compiler in MinSizeRel mode"
+    },
+    {
+      "label": "Build Game (Nix CachyOS Clang - Debug)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "game",
+        "default",
+        "nix-cachyos-clang-debug",
+        "debug"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Nix CachyOS Clang - Debug)"
+      ],
+      "detail": "Build Game target with Nix CachyOS Clang compiler in Debug mode"
+    },
+    {
+      "label": "Build Game (Nix CachyOS Clang - Release)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "game",
+        "default",
+        "nix-cachyos-clang-release",
+        "release"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Nix CachyOS Clang - Release)"
+      ],
+      "detail": "Build Game target with Nix CachyOS Clang compiler in Release mode"
+    },
+    {
+      "label": "Build Game (Nix CachyOS Clang - RelWithDebInfo)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "game",
+        "default",
+        "nix-cachyos-clang-relwithdebinfo",
+        "relwithdebinfo"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Nix CachyOS Clang - RelWithDebInfo)"
+      ],
+      "detail": "Build Game target with Nix CachyOS Clang compiler in RelWithDebInfo mode"
+    },
+    {
+      "label": "Build Game (Nix CachyOS Clang - MinSizeRel)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "game",
+        "default",
+        "nix-cachyos-clang-minsizerel",
+        "minsizerel"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Nix CachyOS Clang - MinSizeRel)"
+      ],
+      "detail": "Build Game target with Nix CachyOS Clang compiler in MinSizeRel mode"
+    },
+    {
+      "label": "Build Game (Nix Qt6 Vulkan - Debug)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "game",
+        "default",
+        "nix-qt6-vulkan-debug",
+        "debug"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Nix Qt6 Vulkan - Debug)"
+      ],
+      "detail": "Build Game target with Nix Qt6 and Vulkan libraries in Debug mode"
+    },
+    {
+      "label": "Build Game (Nix Qt6 Vulkan - Release)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "game",
+        "default",
+        "nix-qt6-vulkan-release",
+        "release"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Nix Qt6 Vulkan - Release)"
+      ],
+      "detail": "Build Game target with Nix Qt6 and Vulkan libraries in Release mode"
     },
     {
       "label": "Build Standalone (Windows MSVC - Debug)",
@@ -1334,6 +2834,756 @@
       "detail": "Build Standalone target with Clang compiler in Release mode"
     },
     {
+      "label": "Build Standalone (Linux GCC - RelWithDebInfo)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "standalone",
+        "default",
+        "linux-gcc-relwithdebinfo",
+        "relwithdebinfo"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Linux GCC - RelWithDebInfo)"
+      ],
+      "detail": "Build Standalone target with GCC compiler in RelWithDebInfo mode"
+    },
+    {
+      "label": "Build Standalone (Linux GCC - MinSizeRel)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "standalone",
+        "default",
+        "linux-gcc-minsizerel",
+        "minsizerel"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Linux GCC - MinSizeRel)"
+      ],
+      "detail": "Build Standalone target with GCC compiler in MinSizeRel mode"
+    },
+    {
+      "label": "Build Standalone (Linux Clang - RelWithDebInfo)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "standalone",
+        "default",
+        "linux-clang-relwithdebinfo",
+        "relwithdebinfo"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Linux Clang - RelWithDebInfo)"
+      ],
+      "detail": "Build Standalone target with Clang compiler in RelWithDebInfo mode"
+    },
+    {
+      "label": "Build Standalone (Linux Clang - MinSizeRel)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "standalone",
+        "default",
+        "linux-clang-minsizerel",
+        "minsizerel"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Linux Clang - MinSizeRel)"
+      ],
+      "detail": "Build Standalone target with Clang compiler in MinSizeRel mode"
+    },
+    {
+      "label": "Build Standalone (CachyOS GCC - Debug)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "standalone",
+        "default",
+        "cachyos-gcc-debug",
+        "debug"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (CachyOS GCC - Debug)"
+      ],
+      "detail": "Build Standalone target with CachyOS GCC compiler in Debug mode"
+    },
+    {
+      "label": "Build Standalone (CachyOS GCC - Release)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "standalone",
+        "default",
+        "cachyos-gcc-release",
+        "release"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (CachyOS GCC - Release)"
+      ],
+      "detail": "Build Standalone target with CachyOS GCC compiler in Release mode"
+    },
+    {
+      "label": "Build Standalone (CachyOS GCC - RelWithDebInfo)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "standalone",
+        "default",
+        "cachyos-gcc-relwithdebinfo",
+        "relwithdebinfo"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (CachyOS GCC - RelWithDebInfo)"
+      ],
+      "detail": "Build Standalone target with CachyOS GCC compiler in RelWithDebInfo mode"
+    },
+    {
+      "label": "Build Standalone (CachyOS GCC - MinSizeRel)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "standalone",
+        "default",
+        "cachyos-gcc-minsizerel",
+        "minsizerel"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (CachyOS GCC - MinSizeRel)"
+      ],
+      "detail": "Build Standalone target with CachyOS GCC compiler in MinSizeRel mode"
+    },
+    {
+      "label": "Build Standalone (CachyOS Clang - Debug)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "standalone",
+        "default",
+        "cachyos-clang-debug",
+        "debug"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (CachyOS Clang - Debug)"
+      ],
+      "detail": "Build Standalone target with CachyOS Clang compiler in Debug mode"
+    },
+    {
+      "label": "Build Standalone (CachyOS Clang - Release)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "standalone",
+        "default",
+        "cachyos-clang-release",
+        "release"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (CachyOS Clang - Release)"
+      ],
+      "detail": "Build Standalone target with CachyOS Clang compiler in Release mode"
+    },
+    {
+      "label": "Build Standalone (CachyOS Clang - RelWithDebInfo)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "standalone",
+        "default",
+        "cachyos-clang-relwithdebinfo",
+        "relwithdebinfo"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (CachyOS Clang - RelWithDebInfo)"
+      ],
+      "detail": "Build Standalone target with CachyOS Clang compiler in RelWithDebInfo mode"
+    },
+    {
+      "label": "Build Standalone (CachyOS Clang - MinSizeRel)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "standalone",
+        "default",
+        "cachyos-clang-minsizerel",
+        "minsizerel"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (CachyOS Clang - MinSizeRel)"
+      ],
+      "detail": "Build Standalone target with CachyOS Clang compiler in MinSizeRel mode"
+    },
+    {
+      "label": "Build Standalone (Nix GCC - Debug)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "standalone",
+        "default",
+        "nix-gcc-debug",
+        "debug"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Nix GCC - Debug)"
+      ],
+      "detail": "Build Standalone target with Nix GCC compiler in Debug mode"
+    },
+    {
+      "label": "Build Standalone (Nix GCC - Release)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "standalone",
+        "default",
+        "nix-gcc-release",
+        "release"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Nix GCC - Release)"
+      ],
+      "detail": "Build Standalone target with Nix GCC compiler in Release mode"
+    },
+    {
+      "label": "Build Standalone (Nix GCC - RelWithDebInfo)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "standalone",
+        "default",
+        "nix-gcc-relwithdebinfo",
+        "relwithdebinfo"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Nix GCC - RelWithDebInfo)"
+      ],
+      "detail": "Build Standalone target with Nix GCC compiler in RelWithDebInfo mode"
+    },
+    {
+      "label": "Build Standalone (Nix GCC - MinSizeRel)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "standalone",
+        "default",
+        "nix-gcc-minsizerel",
+        "minsizerel"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Nix GCC - MinSizeRel)"
+      ],
+      "detail": "Build Standalone target with Nix GCC compiler in MinSizeRel mode"
+    },
+    {
+      "label": "Build Standalone (Nix Clang - Debug)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "standalone",
+        "default",
+        "nix-clang-debug",
+        "debug"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Nix Clang - Debug)"
+      ],
+      "detail": "Build Standalone target with Nix Clang compiler in Debug mode"
+    },
+    {
+      "label": "Build Standalone (Nix Clang - Release)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "standalone",
+        "default",
+        "nix-clang-release",
+        "release"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Nix Clang - Release)"
+      ],
+      "detail": "Build Standalone target with Nix Clang compiler in Release mode"
+    },
+    {
+      "label": "Build Standalone (Nix Clang - RelWithDebInfo)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "standalone",
+        "default",
+        "nix-clang-relwithdebinfo",
+        "relwithdebinfo"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Nix Clang - RelWithDebInfo)"
+      ],
+      "detail": "Build Standalone target with Nix Clang compiler in RelWithDebInfo mode"
+    },
+    {
+      "label": "Build Standalone (Nix Clang - MinSizeRel)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "standalone",
+        "default",
+        "nix-clang-minsizerel",
+        "minsizerel"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Nix Clang - MinSizeRel)"
+      ],
+      "detail": "Build Standalone target with Nix Clang compiler in MinSizeRel mode"
+    },
+    {
+      "label": "Build Standalone (Nix CachyOS GCC - Debug)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "standalone",
+        "default",
+        "nix-cachyos-gcc-debug",
+        "debug"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Nix CachyOS GCC - Debug)"
+      ],
+      "detail": "Build Standalone target with Nix CachyOS GCC compiler in Debug mode"
+    },
+    {
+      "label": "Build Standalone (Nix CachyOS GCC - Release)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "standalone",
+        "default",
+        "nix-cachyos-gcc-release",
+        "release"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Nix CachyOS GCC - Release)"
+      ],
+      "detail": "Build Standalone target with Nix CachyOS GCC compiler in Release mode"
+    },
+    {
+      "label": "Build Standalone (Nix CachyOS GCC - RelWithDebInfo)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "standalone",
+        "default",
+        "nix-cachyos-gcc-relwithdebinfo",
+        "relwithdebinfo"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Nix CachyOS GCC - RelWithDebInfo)"
+      ],
+      "detail": "Build Standalone target with Nix CachyOS GCC compiler in RelWithDebInfo mode"
+    },
+    {
+      "label": "Build Standalone (Nix CachyOS GCC - MinSizeRel)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "standalone",
+        "default",
+        "nix-cachyos-gcc-minsizerel",
+        "minsizerel"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Nix CachyOS GCC - MinSizeRel)"
+      ],
+      "detail": "Build Standalone target with Nix CachyOS GCC compiler in MinSizeRel mode"
+    },
+    {
+      "label": "Build Standalone (Nix CachyOS Clang - Debug)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "standalone",
+        "default",
+        "nix-cachyos-clang-debug",
+        "debug"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Nix CachyOS Clang - Debug)"
+      ],
+      "detail": "Build Standalone target with Nix CachyOS Clang compiler in Debug mode"
+    },
+    {
+      "label": "Build Standalone (Nix CachyOS Clang - Release)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "standalone",
+        "default",
+        "nix-cachyos-clang-release",
+        "release"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Nix CachyOS Clang - Release)"
+      ],
+      "detail": "Build Standalone target with Nix CachyOS Clang compiler in Release mode"
+    },
+    {
+      "label": "Build Standalone (Nix CachyOS Clang - RelWithDebInfo)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "standalone",
+        "default",
+        "nix-cachyos-clang-relwithdebinfo",
+        "relwithdebinfo"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Nix CachyOS Clang - RelWithDebInfo)"
+      ],
+      "detail": "Build Standalone target with Nix CachyOS Clang compiler in RelWithDebInfo mode"
+    },
+    {
+      "label": "Build Standalone (Nix CachyOS Clang - MinSizeRel)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "standalone",
+        "default",
+        "nix-cachyos-clang-minsizerel",
+        "minsizerel"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Nix CachyOS Clang - MinSizeRel)"
+      ],
+      "detail": "Build Standalone target with Nix CachyOS Clang compiler in MinSizeRel mode"
+    },
+    {
+      "label": "Build Standalone (Nix Qt6 Vulkan - Debug)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "standalone",
+        "default",
+        "nix-qt6-vulkan-debug",
+        "debug"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Nix Qt6 Vulkan - Debug)"
+      ],
+      "detail": "Build Standalone target with Nix Qt6 and Vulkan libraries in Debug mode"
+    },
+    {
+      "label": "Build Standalone (Nix Qt6 Vulkan - Release)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "standalone",
+        "default",
+        "nix-qt6-vulkan-release",
+        "release"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Nix Qt6 Vulkan - Release)"
+      ],
+      "detail": "Build Standalone target with Nix Qt6 and Vulkan libraries in Release mode"
+    },
+    {
       "label": "Build Tests (Windows MSVC - Debug)",
       "type": "shell",
       "command": "python",
@@ -1432,6 +3682,756 @@
         "Configure Build (Linux GCC - Release)"
       ],
       "detail": "Build Tests target with GCC compiler in Release mode"
+    },
+    {
+      "label": "Build Tests (Linux GCC - RelWithDebInfo)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "tests",
+        "default",
+        "linux-gcc-relwithdebinfo",
+        "relwithdebinfo"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Linux GCC - RelWithDebInfo)"
+      ],
+      "detail": "Build Tests target with GCC compiler in RelWithDebInfo mode"
+    },
+    {
+      "label": "Build Tests (Linux GCC - MinSizeRel)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "tests",
+        "default",
+        "linux-gcc-minsizerel",
+        "minsizerel"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Linux GCC - MinSizeRel)"
+      ],
+      "detail": "Build Tests target with GCC compiler in MinSizeRel mode"
+    },
+    {
+      "label": "Build Tests (Linux Clang - RelWithDebInfo)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "tests",
+        "default",
+        "linux-clang-relwithdebinfo",
+        "relwithdebinfo"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Linux Clang - RelWithDebInfo)"
+      ],
+      "detail": "Build Tests target with Clang compiler in RelWithDebInfo mode"
+    },
+    {
+      "label": "Build Tests (Linux Clang - MinSizeRel)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "tests",
+        "default",
+        "linux-clang-minsizerel",
+        "minsizerel"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Linux Clang - MinSizeRel)"
+      ],
+      "detail": "Build Tests target with Clang compiler in MinSizeRel mode"
+    },
+    {
+      "label": "Build Tests (CachyOS GCC - Debug)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "tests",
+        "default",
+        "cachyos-gcc-debug",
+        "debug"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (CachyOS GCC - Debug)"
+      ],
+      "detail": "Build Tests target with CachyOS GCC compiler in Debug mode"
+    },
+    {
+      "label": "Build Tests (CachyOS GCC - Release)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "tests",
+        "default",
+        "cachyos-gcc-release",
+        "release"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (CachyOS GCC - Release)"
+      ],
+      "detail": "Build Tests target with CachyOS GCC compiler in Release mode"
+    },
+    {
+      "label": "Build Tests (CachyOS GCC - RelWithDebInfo)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "tests",
+        "default",
+        "cachyos-gcc-relwithdebinfo",
+        "relwithdebinfo"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (CachyOS GCC - RelWithDebInfo)"
+      ],
+      "detail": "Build Tests target with CachyOS GCC compiler in RelWithDebInfo mode"
+    },
+    {
+      "label": "Build Tests (CachyOS GCC - MinSizeRel)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "tests",
+        "default",
+        "cachyos-gcc-minsizerel",
+        "minsizerel"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (CachyOS GCC - MinSizeRel)"
+      ],
+      "detail": "Build Tests target with CachyOS GCC compiler in MinSizeRel mode"
+    },
+    {
+      "label": "Build Tests (CachyOS Clang - Debug)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "tests",
+        "default",
+        "cachyos-clang-debug",
+        "debug"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (CachyOS Clang - Debug)"
+      ],
+      "detail": "Build Tests target with CachyOS Clang compiler in Debug mode"
+    },
+    {
+      "label": "Build Tests (CachyOS Clang - Release)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "tests",
+        "default",
+        "cachyos-clang-release",
+        "release"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (CachyOS Clang - Release)"
+      ],
+      "detail": "Build Tests target with CachyOS Clang compiler in Release mode"
+    },
+    {
+      "label": "Build Tests (CachyOS Clang - RelWithDebInfo)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "tests",
+        "default",
+        "cachyos-clang-relwithdebinfo",
+        "relwithdebinfo"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (CachyOS Clang - RelWithDebInfo)"
+      ],
+      "detail": "Build Tests target with CachyOS Clang compiler in RelWithDebInfo mode"
+    },
+    {
+      "label": "Build Tests (CachyOS Clang - MinSizeRel)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "tests",
+        "default",
+        "cachyos-clang-minsizerel",
+        "minsizerel"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (CachyOS Clang - MinSizeRel)"
+      ],
+      "detail": "Build Tests target with CachyOS Clang compiler in MinSizeRel mode"
+    },
+    {
+      "label": "Build Tests (Nix GCC - Debug)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "tests",
+        "default",
+        "nix-gcc-debug",
+        "debug"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Nix GCC - Debug)"
+      ],
+      "detail": "Build Tests target with Nix GCC compiler in Debug mode"
+    },
+    {
+      "label": "Build Tests (Nix GCC - Release)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "tests",
+        "default",
+        "nix-gcc-release",
+        "release"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Nix GCC - Release)"
+      ],
+      "detail": "Build Tests target with Nix GCC compiler in Release mode"
+    },
+    {
+      "label": "Build Tests (Nix GCC - RelWithDebInfo)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "tests",
+        "default",
+        "nix-gcc-relwithdebinfo",
+        "relwithdebinfo"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Nix GCC - RelWithDebInfo)"
+      ],
+      "detail": "Build Tests target with Nix GCC compiler in RelWithDebInfo mode"
+    },
+    {
+      "label": "Build Tests (Nix GCC - MinSizeRel)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "tests",
+        "default",
+        "nix-gcc-minsizerel",
+        "minsizerel"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Nix GCC - MinSizeRel)"
+      ],
+      "detail": "Build Tests target with Nix GCC compiler in MinSizeRel mode"
+    },
+    {
+      "label": "Build Tests (Nix Clang - Debug)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "tests",
+        "default",
+        "nix-clang-debug",
+        "debug"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Nix Clang - Debug)"
+      ],
+      "detail": "Build Tests target with Nix Clang compiler in Debug mode"
+    },
+    {
+      "label": "Build Tests (Nix Clang - Release)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "tests",
+        "default",
+        "nix-clang-release",
+        "release"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Nix Clang - Release)"
+      ],
+      "detail": "Build Tests target with Nix Clang compiler in Release mode"
+    },
+    {
+      "label": "Build Tests (Nix Clang - RelWithDebInfo)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "tests",
+        "default",
+        "nix-clang-relwithdebinfo",
+        "relwithdebinfo"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Nix Clang - RelWithDebInfo)"
+      ],
+      "detail": "Build Tests target with Nix Clang compiler in RelWithDebInfo mode"
+    },
+    {
+      "label": "Build Tests (Nix Clang - MinSizeRel)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "tests",
+        "default",
+        "nix-clang-minsizerel",
+        "minsizerel"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Nix Clang - MinSizeRel)"
+      ],
+      "detail": "Build Tests target with Nix Clang compiler in MinSizeRel mode"
+    },
+    {
+      "label": "Build Tests (Nix CachyOS GCC - Debug)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "tests",
+        "default",
+        "nix-cachyos-gcc-debug",
+        "debug"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Nix CachyOS GCC - Debug)"
+      ],
+      "detail": "Build Tests target with Nix CachyOS GCC compiler in Debug mode"
+    },
+    {
+      "label": "Build Tests (Nix CachyOS GCC - Release)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "tests",
+        "default",
+        "nix-cachyos-gcc-release",
+        "release"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Nix CachyOS GCC - Release)"
+      ],
+      "detail": "Build Tests target with Nix CachyOS GCC compiler in Release mode"
+    },
+    {
+      "label": "Build Tests (Nix CachyOS GCC - RelWithDebInfo)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "tests",
+        "default",
+        "nix-cachyos-gcc-relwithdebinfo",
+        "relwithdebinfo"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Nix CachyOS GCC - RelWithDebInfo)"
+      ],
+      "detail": "Build Tests target with Nix CachyOS GCC compiler in RelWithDebInfo mode"
+    },
+    {
+      "label": "Build Tests (Nix CachyOS GCC - MinSizeRel)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "tests",
+        "default",
+        "nix-cachyos-gcc-minsizerel",
+        "minsizerel"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Nix CachyOS GCC - MinSizeRel)"
+      ],
+      "detail": "Build Tests target with Nix CachyOS GCC compiler in MinSizeRel mode"
+    },
+    {
+      "label": "Build Tests (Nix CachyOS Clang - Debug)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "tests",
+        "default",
+        "nix-cachyos-clang-debug",
+        "debug"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Nix CachyOS Clang - Debug)"
+      ],
+      "detail": "Build Tests target with Nix CachyOS Clang compiler in Debug mode"
+    },
+    {
+      "label": "Build Tests (Nix CachyOS Clang - Release)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "tests",
+        "default",
+        "nix-cachyos-clang-release",
+        "release"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Nix CachyOS Clang - Release)"
+      ],
+      "detail": "Build Tests target with Nix CachyOS Clang compiler in Release mode"
+    },
+    {
+      "label": "Build Tests (Nix CachyOS Clang - RelWithDebInfo)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "tests",
+        "default",
+        "nix-cachyos-clang-relwithdebinfo",
+        "relwithdebinfo"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Nix CachyOS Clang - RelWithDebInfo)"
+      ],
+      "detail": "Build Tests target with Nix CachyOS Clang compiler in RelWithDebInfo mode"
+    },
+    {
+      "label": "Build Tests (Nix CachyOS Clang - MinSizeRel)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "tests",
+        "default",
+        "nix-cachyos-clang-minsizerel",
+        "minsizerel"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Nix CachyOS Clang - MinSizeRel)"
+      ],
+      "detail": "Build Tests target with Nix CachyOS Clang compiler in MinSizeRel mode"
+    },
+    {
+      "label": "Build Tests (Nix Qt6 Vulkan - Debug)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "tests",
+        "default",
+        "nix-qt6-vulkan-debug",
+        "debug"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Nix Qt6 Vulkan - Debug)"
+      ],
+      "detail": "Build Tests target with Nix Qt6 and Vulkan libraries in Debug mode"
+    },
+    {
+      "label": "Build Tests (Nix Qt6 Vulkan - Release)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "OmniCppController.py",
+        "build",
+        "tests",
+        "default",
+        "nix-qt6-vulkan-release",
+        "release"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "dependsOn": [
+        "Configure Build (Nix Qt6 Vulkan - Release)"
+      ],
+      "detail": "Build Tests target with Nix Qt6 and Vulkan libraries in Release mode"
     },
     {
       "label": "Build WASM",
@@ -2023,6 +5023,135 @@
         "isDefault": false
       },
       "detail": "Validate development environment using OmniCppController"
+    },
+    {
+      "label": "Nix Shell (Default)",
+      "type": "shell",
+      "command": "nix",
+      "args": [
+        "develop"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "detail": "Activate default Nix development shell with GCC 13, Clang 19, Qt6, and Vulkan (ADR-033, REQ-007-003)"
+    },
+    {
+      "label": "Nix Shell (GCC)",
+      "type": "shell",
+      "command": "nix",
+      "args": [
+        "develop",
+        ".#gcc"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "detail": "Activate GCC 13 Nix development shell (ADR-033, REQ-007-003)"
+    },
+    {
+      "label": "Nix Shell (Clang)",
+      "type": "shell",
+      "command": "nix",
+      "args": [
+        "develop",
+        ".#clang"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "detail": "Activate Clang 19 Nix development shell (ADR-033, REQ-007-003)"
+    },
+    {
+      "label": "Nix Shell (CachyOS-GCC)",
+      "type": "shell",
+      "command": "nix",
+      "args": [
+        "develop",
+        ".#cachyos-gcc"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "detail": "Activate CachyOS-optimized GCC 13 Nix development shell (ADR-033, REQ-007-003)"
+    },
+    {
+      "label": "Nix Shell (CachyOS-Clang)",
+      "type": "shell",
+      "command": "nix",
+      "args": [
+        "develop",
+        ".#cachyos-clang"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "detail": "Activate CachyOS-optimized Clang 19 Nix development shell (ADR-033, REQ-007-003)"
+    },
+    {
+      "label": "Nix Shell (Qt6-Vulkan)",
+      "type": "shell",
+      "command": "nix",
+      "args": [
+        "develop"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "detail": "Activate Qt6 and Vulkan Nix development shell (ADR-033, REQ-007-003)"
+    },
+    {
+      "label": "Validate Environment (CachyOS)",
+      "type": "shell",
+      "command": "bash",
+      "args": [
+        "scripts/linux/validate_environment.sh"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "group": {
+        "kind": "test",
+        "isDefault": false
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "new",
+        "showReuseMessage": true,
+        "clear": false
+      },
+      "detail": "Validate CachyOS build environment (ADR-032, REQ-048)"
     }
   ]
 }

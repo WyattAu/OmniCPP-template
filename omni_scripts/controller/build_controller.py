@@ -84,9 +84,9 @@ class BuildController(BaseController):
             CMake target name.
         """
         target_map = {
-            "engine": "OmniCppEngine",
-            "game": "OmniCppGame",
-            "standalone": "OmniCppStandalone",
+            "engine": "omnicpp_engine",
+            "game": "omnicpp_pong",
+            "standalone": "omnicpp_standalone",
             "all": "all",
         }
         return target_map.get(self.target.lower(), "all")

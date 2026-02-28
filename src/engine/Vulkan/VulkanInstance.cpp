@@ -2,6 +2,8 @@
 #include <QLoggingCategory>
 #include <set>
 #include <algorithm>
+#include <cstring>
+#include <cstdlib>
 
 Q_LOGGING_CATEGORY(logVulkanInstance, "omnicpp.vulkaninstance")
 
@@ -134,18 +136,35 @@ std::vector<const char*> VulkanInstance::getRequiredExtensions()
 {
     std::vector<const char*> extensions;
 
-    // Get required extensions from Qt
-    uint32_t glfwExtensionCount = 0;
-    const char** glfwExtensions = nullptr;
-    // glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
+    // Detect Wayland platform for logging
+    const char* qt_platform = std::getenv("QT_QPA_PLATFORM");
+    bool is_wayland = (qt_platform && (std::strcmp(qt_platform, "wayland") == 0));
 
-    for (uint32_t i = 0; i < glfwExtensionCount; i++) {
-        extensions.push_back(glfwExtensions[i]);
+    if (is_wayland) {
+        qCDebug(logVulkanInstance) << "Wayland platform detected, adding Wayland surface extension";
+    }
+
+    // Get required extensions from Qt6
+    // Qt6 provides the necessary Vulkan surface extensions through QVulkanInstance
+    extensions.push_back(VK_KHR_SURFACE_EXTENSION_NAME);
+
+    // Add Wayland surface extension if running on Wayland
+    if (is_wayland) {
+        extensions.push_back(VK_KHR_WAYLAND_SURFACE_EXTENSION_NAME);
+    } else {
+        // Add X11 surface extension as fallback for non-Wayland platforms
+        extensions.push_back(VK_KHR_XLIB_SURFACE_EXTENSION_NAME);
     }
 
     // Add debug extension if validation layers are enabled
     if (m_enableValidationLayers) {
         extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+    }
+
+    // Log enabled extensions for debugging
+    qCDebug(logVulkanInstance) << "Enabled Vulkan extensions:";
+    for (const char* ext : extensions) {
+        qCDebug(logVulkanInstance) << "  -" << ext;
     }
 
     return extensions;

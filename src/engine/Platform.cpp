@@ -7,7 +7,7 @@
 #include "engine/IPlatform.hpp"
 #include <chrono>
 #include <thread>
-#include <spdlog/spdlog.h>
+#include "engine/logging/Log.hpp"
 
 namespace omnicpp {
 
@@ -17,22 +17,22 @@ public:
     ~PlatformStub() override = default;
 
     bool initialize() override {
-        spdlog::info("PlatformStub: Initialized");
+        omnicpp::log::info("PlatformStub: Initialized");
         return true;
     }
 
     void shutdown() override {
-        spdlog::info("PlatformStub: Shutdown");
+        omnicpp::log::info("PlatformStub: Shutdown");
     }
 
     void* create_window(const WindowConfig& config) override {
-        spdlog::debug("PlatformStub: Creating window with title: {}", config.title);
+        omnicpp::log::debug("PlatformStub: Creating window with title: {}", config.title);
         (void)config;
         return nullptr;
     }
 
     void destroy_window(void* window) override {
-        spdlog::debug("PlatformStub: Destroying window");
+        omnicpp::log::debug("PlatformStub: Destroying window");
         (void)window;
     }
 
@@ -70,7 +70,7 @@ public:
     }
 
     bool set_working_directory(const char* path) override {
-        spdlog::debug("PlatformStub: Setting working directory to {}", path);
+        omnicpp::log::debug("PlatformStub: Setting working directory to {}", path);
         (void)path;
         return true;
     }
