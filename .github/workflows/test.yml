@@ -66,7 +66,7 @@ jobs:
       
       - name: Upload sanitizer reports
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: sanitizer-reports-asan-ubsan
           path: |
@@ -116,7 +116,7 @@ jobs:
       
       - name: Upload sanitizer reports
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: sanitizer-reports-tsan
           path: |
@@ -168,7 +168,7 @@ jobs:
       
       - name: Upload sanitizer reports
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: sanitizer-reports-msan
           path: build/Testing/
@@ -212,7 +212,7 @@ jobs:
       
       - name: Upload test results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: test-results-msvc-${{ matrix.config }}
           path: |
@@ -261,7 +261,7 @@ jobs:
       
       - name: Upload test results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: test-results-gcc-release
           path: |
@@ -308,7 +308,7 @@ jobs:
       
       - name: Upload test results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: test-results-clang-release
           path: |
@@ -412,7 +412,7 @@ jobs:
           fail_ci_if_error: false
       
       - name: Upload coverage artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: coverage-report
           path: |
@@ -481,7 +481,7 @@ jobs:
       
       - name: Upload mutation reports
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: mutation-reports
           path: build/mutation-reports/
