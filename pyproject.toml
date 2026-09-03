@@ -9,8 +9,8 @@ description = "OmniCpp Build System"
 readme = "README.md"
 requires-python = ">=3.11"
 
-[tool.setuptools]
-packages = ["scripts.python"]
+[tool.setuptools.packages.find]
+include = ["omni_scripts*"]
 
 [tool.black]
 line-length = 100

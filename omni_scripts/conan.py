@@ -20,6 +20,7 @@ from typing import List, Optional
 
 from .utils import (
     CommandExecutionError,
+    run_command,
     NotADirectoryError,
     execute_command,
     log_error,
@@ -109,7 +110,7 @@ class ConanManager:
         conan_dir: The Conan configuration directory.
     """
 
-    def __init__(self, workspace_dir: Path) -> None:
+    def __init__(self, workspace_dir: Optional[Path] = None) -> None:
         """Initialize Conan manager.
 
         Args:
@@ -118,6 +119,7 @@ class ConanManager:
         Raises:
             NotADirectoryError: If workspace_dir is not a valid directory.
         """
+        workspace_dir = workspace_dir or Path.cwd()
         if not workspace_dir.is_dir():
             raise NotADirectoryError(
                 f"Workspace directory does not exist: {workspace_dir}",
@@ -129,12 +131,13 @@ class ConanManager:
 
     def install(
         self,
-        build_dir: Path,
-        profile: str,
-        build_type: str,
+        build_dir: Optional[Path] = None,
+        profile: str = "default",
+        build_type: str = "debug",
         is_cross_compilation: bool = False,
         terminal_env: Optional[TerminalEnvironment] = None,
         source_dir: Optional[Path] = None,
+        settings: Optional[dict] = None,
     ) -> None:
         """Install Conan dependencies for specified target.
 
@@ -155,6 +158,7 @@ class ConanManager:
             ConanInstallError: If dependency installation fails.
             CommandExecutionError: If Conan command execution fails.
         """
+        build_dir = build_dir or (self.workspace_dir / "build")
         log_info(f"Installing Conan dependencies for {build_type} build")
 
         # Determine profile path
@@ -269,6 +273,16 @@ class ConanManager:
                 build_dir=build_dir,
                 profile=profile,
             ) from e
+
+    def create_profile(self, name: str, settings: Optional[dict] = None) -> bool:
+        """Create a simple local profile for compatibility with legacy callers."""
+        profile_path = self.conan_dir / "profiles" / name
+        profile_path.parent.mkdir(parents=True, exist_ok=True)
+        lines = ["[settings]"]
+        for key, value in (settings or {}).items():
+            lines.append(f"{key}={value}")
+        profile_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+        return True
 
     def get_profile(
         self,

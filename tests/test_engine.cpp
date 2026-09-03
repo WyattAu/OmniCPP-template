@@ -14,6 +14,7 @@
 #include "engine/IPlatform.hpp"
 #include <iostream>
 #include <cassert>
+#include <string>
 
 namespace omnicpp {
 
@@ -24,9 +25,7 @@ void test_engine_version() {
     assert(version != nullptr);
     std::cout << "Engine version: " << version << std::endl;
     
-    assert(engine_get_version_major() == 1);
-    assert(engine_get_version_minor() == 0);
-    assert(engine_get_version_patch() == 0);
+    assert(std::string(version) == "1.0.0");
     
     std::cout << "Engine version test PASSED" << std::endl;
 }

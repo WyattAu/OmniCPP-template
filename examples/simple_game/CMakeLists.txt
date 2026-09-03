@@ -11,7 +11,8 @@ add_executable(simple_game
     main.cpp
 )
 
-# Link to the engine directly (same project)
+# Link to the engine directly (same project).
+# This consumer uses legacy IEngine symbols; migrate to omnicpp_runtime when updating.
 target_link_libraries(simple_game
     PRIVATE
         omnicpp_engine

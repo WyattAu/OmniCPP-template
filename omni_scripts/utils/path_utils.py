@@ -95,8 +95,8 @@ class PathUtils:
         for char in invalid_chars:
             filename = filename.replace(char, '_')
 
-        # Remove leading/trailing whitespace and dots
-        filename = filename.strip(' .')
+        # Normalize whitespace and remove leading/trailing whitespace and dots
+        filename = re.sub(r'\s+', '_', filename).strip(' .')
 
         # Ensure not empty
         if not filename:

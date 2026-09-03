@@ -1,340 +1,80 @@
-/**
- * @file engine.cpp
- * @brief Core engine implementation
- */
-
 #include "engine/core/engine.hpp"
-#include "engine/audio/AudioManager.hpp"
-#include "engine/events/event_manager.hpp"
-#include "engine/graphics/renderer.hpp"
-#include "engine/input/InputManager.hpp"
-#include "engine/logging/logger.hpp"
-#include "engine/memory/memory_manager.hpp"
-#include "engine/network/network_manager.hpp"
-#include "engine/physics/PhysicsEngine.hpp"
-#include "engine/platform/platform.hpp"
-#include "engine/resources/ResourceManager.hpp"
-#include "engine/scene/SceneManager.hpp"
-#include "engine/scripting/ScriptManager.hpp"
-#include "engine/window/window_manager.hpp"
-#include <chrono>
-#include <thread>
-#include "engine/logging/Log.hpp"
 
-namespace omnicpp {
-namespace core {
+namespace OmniCpp::Engine::Core {
 
-  /**
-   * @brief Private implementation structure (Pimpl idiom)
-   */
-  struct Engine::Impl {
-    EngineConfig config;
-    bool running{ false };
-    std::unique_ptr<logging::Logger> logger;
-    std::unique_ptr<memory::MemoryManager> memory_manager;
-    std::unique_ptr<events::EventManager> event_manager;
-    std::unique_ptr<input::InputManager> input_manager;
-    std::unique_ptr<window::WindowManager> window_manager;
-    std::unique_ptr<graphics::Renderer> renderer;
-    std::unique_ptr<audio::AudioManager> audio_manager;
-    std::unique_ptr<resources::ResourceManager> resource_manager;
-    std::unique_ptr<physics::PhysicsEngine> physics_engine;
-    std::unique_ptr<scene::SceneManager> scene_manager;
-    std::unique_ptr<scripting::ScriptManager> script_manager;
-    std::unique_ptr<network::NetworkManager> network_manager;
-    std::unique_ptr<platform::Platform> platform;
+struct Engine::Impl {
+  EngineConfig config{};
+  bool running{false};
+  std::unique_ptr<omnicpp::core::DeterministicRuntime> runtime;
+};
 
-    std::chrono::steady_clock::time_point last_frame_time;
-    float accumulated_time{ 0.0f };
-    uint64_t frame_count{ 0 };
-  };
+Engine::Engine() : m_impl(std::make_unique<Impl>()) {}
+Engine::~Engine() { shutdown(); }
+Engine::Engine(Engine&& other) noexcept = default;
+Engine& Engine::operator=(Engine&& other) noexcept = default;
 
-  Engine::Engine () : m_impl (std::make_unique<Impl> ()) {
-    // Constructor implementation
+omnicpp::core::Result<void> Engine::initialize(const EngineConfig& config) {
+  if (config.fixed_timestep <= 0.0F) {
+    return omnicpp::core::Result<void>::error(omnicpp::core::RuntimeError::invalid_config);
   }
-
-  Engine::~Engine () {
-    shutdown ();
+  if (m_impl->running) {
+    return omnicpp::core::Result<void>::error(omnicpp::core::RuntimeError::not_running);
   }
+  m_impl->config = config;
+  m_impl->runtime = std::make_unique<omnicpp::core::DeterministicRuntime>(
+      static_cast<double>(config.fixed_timestep));
+  m_impl->runtime->set_catch_up_policy(
+      config.catch_up_policy,
+      static_cast<std::size_t>(config.max_catch_up_ticks));
+  m_impl->runtime->set_time_mode(config.time_mode);
+  m_impl->runtime->set_event_transport(config.event_transport);
+  auto result = m_impl->runtime->start();
+  m_impl->running = result.is_ok();
+  return result;
+}
 
-  Engine::Engine (Engine&& other) noexcept : m_impl (std::move (other.m_impl)) {
-    // Move constructor
+void Engine::run() {
+  if (!m_impl->running || !m_impl->runtime) return;
+  m_impl->runtime->advance(0.0, [](std::uint64_t) {},
+                          [](std::uint64_t) {});
+}
+
+void Engine::shutdown() {
+  if (!m_impl || !m_impl->running) return;
+  if (m_impl->runtime) {
+    static_cast<void>(m_impl->runtime->stop());
   }
+  m_impl->running = false;
+}
 
-  Engine& Engine::operator= (Engine&& other) noexcept {
-    if (this != &other) {
-      m_impl = std::move (other.m_impl);
-    }
-    return *this;
-  }
+void Engine::update(float delta_time) {
+  if (!m_impl->running || !m_impl->runtime) return;
+  m_impl->runtime->advance(static_cast<double>(delta_time),
+                          [](std::uint64_t) {},
+                          [](std::uint64_t) {});
+}
 
-  bool Engine::initialize (const EngineConfig& config) {
-    m_impl->config = config;
+void Engine::render() {}
 
-    // Initialize logger first
-    m_impl->logger = std::make_unique<Logging::Logger> ("Engine");
-    m_impl->logger->info ("Initializing OmniCpp Engine...");
+bool Engine::is_running() const noexcept {
+  return m_impl != nullptr && m_impl->running;
+}
 
-    // Initialize platform
-    m_impl->platform = std::make_unique<Platform::Platform> ();
-    m_impl->platform->initialize ();
-    m_impl->logger->info ("Platform: " + m_impl->platform->get_name ());
+const EngineConfig& Engine::get_config() const noexcept {
+  return m_impl->config;
+}
 
-    // Initialize memory manager
-    m_impl->memory_manager = std::make_unique<Memory::MemoryManager> ();
-    m_impl->logger->info ("Memory manager initialized");
+bool Engine::post_event(std::uint64_t event) noexcept {
+  return m_impl != nullptr && m_impl->running && m_impl->runtime &&
+         m_impl->runtime->post_event(event);
+}
 
-    // Initialize event manager
-    m_impl->event_manager = std::make_unique<Events::EventManager> ();
-    m_impl->logger->info ("Event manager initialized");
+std::uint64_t Engine::overrun_count() const noexcept {
+  return (m_impl && m_impl->runtime) ? m_impl->runtime->overrun_count() : 0;
+}
 
-    // Initialize input manager
-    m_impl->input_manager = std::make_unique<Input::InputManager> ();
-    if (!m_impl->input_manager->initialize ()) {
-      m_impl->logger->error ("Failed to initialize input manager");
-      return false;
-    }
-    m_impl->logger->info ("Input manager initialized");
+double Engine::dropped_time_seconds() const noexcept {
+  return (m_impl && m_impl->runtime) ? m_impl->runtime->dropped_time_seconds() : 0.0;
+}
 
-    // Initialize window manager
-    m_impl->window_manager = std::make_unique<Window::WindowManager> ();
-    if (!m_impl->window_manager->initialize ()) {
-      m_impl->logger->error ("Failed to initialize window manager");
-      return false;
-    }
-    m_impl->logger->info ("Window manager initialized");
-
-    // Initialize renderer
-    m_impl->renderer = std::make_unique<Graphics::Renderer> ();
-    if (!m_impl->renderer->initialize ({})) {
-      m_impl->logger->error ("Failed to initialize renderer");
-      return false;
-    }
-    m_impl->logger->info ("Renderer initialized");
-
-    // Initialize audio manager
-    m_impl->audio_manager = std::make_unique<Audio::AudioManager> ();
-    if (!m_impl->audio_manager->initialize ()) {
-      m_impl->logger->error ("Failed to initialize audio manager");
-      return false;
-    }
-    m_impl->logger->info ("Audio manager initialized");
-
-    // Initialize resource manager
-    m_impl->resource_manager = std::make_unique<Resources::ResourceManager> ();
-    if (!m_impl->resource_manager->initialize ()) {
-      m_impl->logger->error ("Failed to initialize resource manager");
-      return false;
-    }
-    m_impl->logger->info ("Resource manager initialized");
-
-    // Initialize physics engine
-    m_impl->physics_engine = std::make_unique<Physics::PhysicsEngine> ();
-    if (!m_impl->physics_engine->initialize ()) {
-      m_impl->logger->error ("Failed to initialize physics engine");
-      return false;
-    }
-    m_impl->logger->info ("Physics engine initialized");
-
-    // Initialize scene manager
-    m_impl->scene_manager = std::make_unique<Scene::SceneManager> ();
-    if (!m_impl->scene_manager->initialize ()) {
-      m_impl->logger->error ("Failed to initialize scene manager");
-      return false;
-    }
-    m_impl->logger->info ("Scene manager initialized");
-
-    // Initialize script manager
-    m_impl->script_manager = std::make_unique<Scripting::ScriptManager> ();
-    if (!m_impl->script_manager->initialize ()) {
-      m_impl->logger->error ("Failed to initialize script manager");
-      return false;
-    }
-    m_impl->logger->info ("Script manager initialized");
-
-    // Initialize network manager
-    m_impl->network_manager = std::make_unique<Network::NetworkManager> ();
-    if (!m_impl->network_manager->initialize ()) {
-      m_impl->logger->error ("Failed to initialize network manager");
-      return false;
-    }
-    m_impl->logger->info ("Network manager initialized");
-
-    m_impl->running = true;
-    m_impl->last_frame_time = std::chrono::steady_clock::now ();
-    m_impl->logger->info ("Engine initialized successfully");
-
-    return true;
-  }
-
-  void Engine::run () {
-    if (!m_impl->running) {
-      m_impl->logger->error ("Engine not initialized, cannot run");
-      return;
-    }
-
-    m_impl->logger->info ("Starting engine main loop...");
-
-    while (m_impl->running) {
-      auto current_time = std::chrono::steady_clock::now ();
-      std::chrono::duration<float> elapsed = current_time - m_impl->last_frame_time;
-      float deltaTime = elapsed.count ();
-
-      // Fixed timestep update
-      m_impl->accumulated_time += deltaTime;
-      while (m_impl->accumulated_time >= m_impl->config.fixed_timestep) {
-        update (m_impl->config.fixed_timestep);
-        m_impl->accumulated_time -= m_impl->config.fixed_timestep;
-      }
-
-      // Render every frame
-      render ();
-
-      // Update input
-      if (m_impl->input_manager) {
-        m_impl->input_manager->update ();
-      }
-
-      // Update window
-      if (m_impl->window_manager) {
-        m_impl->window_manager->update ();
-      }
-
-      // Update audio
-      if (m_impl->audio_manager) {
-        m_impl->audio_manager->update ();
-      }
-
-      // Update network
-      if (m_impl->network_manager) {
-        m_impl->network_manager->update ();
-      }
-
-      m_impl->last_frame_time = current_time;
-      m_impl->frame_count++;
-
-      // Cap FPS
-      if (m_impl->config.max_fps > 0) {
-        float frame_time = 1.0f / static_cast<float> (m_impl->config.max_fps);
-        if (deltaTime < frame_time) {
-          std::this_thread::sleep_for (std::chrono::duration<float> (frame_time - deltaTime));
-        }
-      }
-    }
-
-    m_impl->logger->info ("Engine main loop stopped");
-  }
-
-  void Engine::shutdown () {
-    if (!m_impl->running) {
-      return;
-    }
-
-    m_impl->logger->info ("Shutting down engine...");
-
-    // Shutdown in reverse order of initialization
-    if (m_impl->network_manager) {
-      m_impl->network_manager->shutdown ();
-      m_impl->logger->info ("Network manager shut down");
-    }
-
-    if (m_impl->script_manager) {
-      m_impl->script_manager->shutdown ();
-      m_impl->logger->info ("Script manager shut down");
-    }
-
-    if (m_impl->scene_manager) {
-      m_impl->scene_manager->shutdown ();
-      m_impl->logger->info ("Scene manager shut down");
-    }
-
-    if (m_impl->physics_engine) {
-      m_impl->physics_engine->shutdown ();
-      m_impl->logger->info ("Physics engine shut down");
-    }
-
-    if (m_impl->resource_manager) {
-      m_impl->resource_manager->shutdown ();
-      m_impl->logger->info ("Resource manager shut down");
-    }
-
-    if (m_impl->audio_manager) {
-      m_impl->audio_manager->shutdown ();
-      m_impl->logger->info ("Audio manager shut down");
-    }
-
-    if (m_impl->renderer) {
-      m_impl->renderer->shutdown ();
-      m_impl->logger->info ("Renderer shut down");
-    }
-
-    if (m_impl->window_manager) {
-      m_impl->window_manager->shutdown ();
-      m_impl->logger->info ("Window manager shut down");
-    }
-
-    if (m_impl->input_manager) {
-      m_impl->input_manager->shutdown ();
-      m_impl->logger->info ("Input manager shut down");
-    }
-
-    if (m_impl->event_manager) {
-      m_impl->event_manager->shutdown ();
-      m_impl->logger->info ("Event manager shut down");
-    }
-
-    if (m_impl->memory_manager) {
-      m_impl->memory_manager->shutdown ();
-      m_impl->logger->info ("Memory manager shut down");
-    }
-
-    if (m_impl->platform) {
-      m_impl->platform->shutdown ();
-      m_impl->logger->info ("Platform shut down");
-    }
-
-    m_impl->running = false;
-    m_impl->logger->info ("Engine shut down successfully");
-  }
-
-  void Engine::update (float deltaTime) {
-    // Update physics
-    if (m_impl->physics_engine) {
-      m_impl->physics_engine->update (deltaTime);
-    }
-
-    // Update scene
-    if (m_impl->scene_manager) {
-      m_impl->scene_manager->update (deltaTime);
-    }
-
-    // Update scripts
-    if (m_impl->script_manager) {
-      m_impl->script_manager->update (deltaTime);
-    }
-  }
-
-  void Engine::render () {
-    if (m_impl->renderer) {
-      m_impl->renderer->begin_frame ();
-      m_impl->renderer->clear ();
-
-      // Render scene
-      if (m_impl->scene_manager) {
-        m_impl->scene_manager->render ();
-      }
-
-      m_impl->renderer->end_frame ();
-    }
-  }
-
-  bool Engine::is_running () const noexcept {
-    return m_impl->running;
-  }
-
-  const EngineConfig& Engine::get_config () const noexcept {
-    return m_impl->config;
-  }
-
-} // namespace core
-} // namespace omnicpp
+} // namespace OmniCpp::Engine::Core

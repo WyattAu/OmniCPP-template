@@ -19,6 +19,7 @@ pip-delete-this-directory.txt
 
 # Build files
 /build/
+/build-*/
 CMakeCache.txt
 CMakeFiles/
 cmake_install.cmake

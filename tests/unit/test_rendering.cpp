@@ -1,0 +1,1634 @@
+#include <gtest/gtest.h>
+#include <cstdlib>
+#include <fstream>
+#include <iostream>
+#include "engine/render/vulkan_context.hpp"
+#include "engine/render/vulkan_surface.hpp"
+#include "engine/render/vulkan_swapchain.hpp"
+#include "engine/render/vulkan_render_pass.hpp"
+#include "engine/render/vulkan_pipeline.hpp"
+#include "engine/render/vulkan_renderer.hpp"
+#include "engine/render/vulkan_offscreen.hpp"
+#include "engine/render/vulkan_memory_allocator.hpp"
+#include "engine/render/vulkan_descriptors.hpp"
+#include "engine/render/vulkan_render_graph.hpp"
+#include "engine/render/vulkan_parallel_recorder.hpp"
+#include "engine/render/software_rasterizer.hpp"
+#if OMNICPP_VULKAN_TYPES_AVAILABLE && defined(VK_USE_PLATFORM_XCB_KHR)
+#include <xcb/xcb.h>
+#endif
+
+#if OMNICPP_VULKAN_TYPES_AVAILABLE
+namespace {
+
+bool find_host_memory_type(VkPhysicalDevice physical_device, std::uint32_t type_bits,
+                           VkMemoryPropertyFlags required, std::uint32_t& index) {
+  VkPhysicalDeviceMemoryProperties properties{};
+  vkGetPhysicalDeviceMemoryProperties(physical_device, &properties);
+  for (std::uint32_t i = 0; i < properties.memoryTypeCount; ++i) {
+    if ((type_bits & (1U << i)) != 0U &&
+        (properties.memoryTypes[i].propertyFlags & required) == required) {
+      index = i;
+      return true;
+    }
+  }
+  return false;
+}
+
+struct ReadbackResult {
+  bool submitted{false};
+  std::size_t non_clear_pixels{0};
+  std::size_t red_dominant_pixels{0};
+  std::size_t green_dominant_pixels{0};
+  std::size_t blue_dominant_pixels{0};
+  std::uint32_t center_pixel{0};
+  std::uint32_t upper_triangle_pixel{0};
+  std::uint32_t lower_triangle_pixel{0};
+  std::uint32_t corner_pixel{0};
+  std::uint64_t hash{0};
+  std::uint64_t canonical_hash{0};
+};
+
+ReadbackResult readback_swapchain_image(VkPhysicalDevice physical_device, VkDevice device,
+                                        VkQueue queue, std::uint32_t queue_family,
+                                        VkImage image, VkFormat image_format,
+                                        std::uint32_t width, std::uint32_t height,
+                                        VkImageLayout initial_layout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+                                        VkImageLayout final_layout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR) {
+  ReadbackResult output;
+  const VkDeviceSize byte_size = static_cast<VkDeviceSize>(width) * height * 4;
+
+  VkBufferCreateInfo buffer_info{};
+  buffer_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+  buffer_info.size = byte_size;
+  buffer_info.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+  buffer_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+  VkBuffer buffer = VK_NULL_HANDLE;
+  if (vkCreateBuffer(device, &buffer_info, nullptr, &buffer) != VK_SUCCESS) return output;
+
+  VkMemoryRequirements requirements{};
+  vkGetBufferMemoryRequirements(device, buffer, &requirements);
+  std::uint32_t memory_type = 0;
+  if (!find_host_memory_type(physical_device, requirements.memoryTypeBits,
+                             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+                             memory_type)) {
+    vkDestroyBuffer(device, buffer, nullptr);
+    return output;
+  }
+
+  VkMemoryAllocateInfo allocation{};
+  allocation.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+  allocation.allocationSize = requirements.size;
+  allocation.memoryTypeIndex = memory_type;
+  VkDeviceMemory memory = VK_NULL_HANDLE;
+  if (vkAllocateMemory(device, &allocation, nullptr, &memory) != VK_SUCCESS) {
+    vkDestroyBuffer(device, buffer, nullptr);
+    return output;
+  }
+  if (vkBindBufferMemory(device, buffer, memory, 0) != VK_SUCCESS) {
+    vkFreeMemory(device, memory, nullptr);
+    vkDestroyBuffer(device, buffer, nullptr);
+    return output;
+  }
+
+  VkCommandPoolCreateInfo pool_info{};
+  pool_info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+  pool_info.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
+  pool_info.queueFamilyIndex = queue_family;
+  VkCommandPool pool = VK_NULL_HANDLE;
+  if (vkCreateCommandPool(device, &pool_info, nullptr, &pool) != VK_SUCCESS) {
+    vkFreeMemory(device, memory, nullptr);
+    vkDestroyBuffer(device, buffer, nullptr);
+    return output;
+  }
+
+  VkCommandBufferAllocateInfo command_allocation{};
+  command_allocation.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+  command_allocation.commandPool = pool;
+  command_allocation.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+  command_allocation.commandBufferCount = 1;
+  VkCommandBuffer command_buffer = VK_NULL_HANDLE;
+  if (vkAllocateCommandBuffers(device, &command_allocation, &command_buffer) != VK_SUCCESS) {
+    vkDestroyCommandPool(device, pool, nullptr);
+    vkFreeMemory(device, memory, nullptr);
+    vkDestroyBuffer(device, buffer, nullptr);
+    return output;
+  }
+
+  VkCommandBufferBeginInfo begin{};
+  begin.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+  begin.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+  bool valid = vkBeginCommandBuffer(command_buffer, &begin) == VK_SUCCESS;
+
+  if (valid) {
+    VkImageMemoryBarrier to_transfer{};
+    to_transfer.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+    to_transfer.srcAccessMask = 0;
+    to_transfer.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+    to_transfer.oldLayout = initial_layout;
+    to_transfer.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+    to_transfer.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    to_transfer.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    to_transfer.image = image;
+    to_transfer.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    to_transfer.subresourceRange.levelCount = 1;
+    to_transfer.subresourceRange.layerCount = 1;
+    if (initial_layout != VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL) {
+      vkCmdPipelineBarrier(command_buffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+                           VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr,
+                           1, &to_transfer);
+    }
+
+    VkBufferImageCopy copy{};
+    copy.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    copy.imageSubresource.layerCount = 1;
+    copy.imageExtent = {width, height, 1};
+    vkCmdCopyImageToBuffer(command_buffer, image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                           buffer, 1, &copy);
+
+    if (final_layout != VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL) {
+      VkImageMemoryBarrier restore_layout = to_transfer;
+      restore_layout.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+      restore_layout.dstAccessMask = 0;
+      restore_layout.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+      restore_layout.newLayout = final_layout;
+      vkCmdPipelineBarrier(command_buffer, VK_PIPELINE_STAGE_TRANSFER_BIT,
+                           VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, 0, 0, nullptr, 0, nullptr,
+                           1, &restore_layout);
+    }
+    valid = vkEndCommandBuffer(command_buffer) == VK_SUCCESS;
+  }
+
+  VkFenceCreateInfo fence_info{};
+  fence_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+  VkFence fence = VK_NULL_HANDLE;
+  if (valid && vkCreateFence(device, &fence_info, nullptr, &fence) == VK_SUCCESS) {
+    VkSubmitInfo submit{};
+    submit.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    submit.commandBufferCount = 1;
+    submit.pCommandBuffers = &command_buffer;
+    valid = vkQueueSubmit(queue, 1, &submit, fence) == VK_SUCCESS &&
+            vkWaitForFences(device, 1, &fence, VK_TRUE, UINT64_MAX) == VK_SUCCESS;
+  }
+
+  if (valid) {
+    void* mapped = nullptr;
+    valid = vkMapMemory(device, memory, 0, byte_size, 0, &mapped) == VK_SUCCESS;
+    if (valid) {
+      const auto* bytes = static_cast<const std::uint8_t*>(mapped);
+      const bool rgba = image_format == VK_FORMAT_R8G8B8A8_UNORM ||
+                        image_format == VK_FORMAT_R8G8B8A8_SRGB;
+      const auto pixel_at = [&](std::uint32_t x, std::uint32_t y) {
+        const std::size_t offset =
+            (static_cast<std::size_t>(y) * width + x) * 4U;
+        const auto first = bytes[offset];
+        const auto second = bytes[offset + 1];
+        const auto third = bytes[offset + 2];
+        const auto alpha = bytes[offset + 3];
+        const auto r = rgba ? first : third;
+        const auto g = second;
+        const auto b = rgba ? third : first;
+        return static_cast<std::uint32_t>(r) |
+               (static_cast<std::uint32_t>(g) << 8U) |
+               (static_cast<std::uint32_t>(b) << 16U) |
+               (static_cast<std::uint32_t>(alpha) << 24U);
+      };
+
+      std::uint64_t hash = 1469598103934665603ULL;
+      for (std::size_t i = 0; i < static_cast<std::size_t>(byte_size); i += 4) {
+        const auto first = bytes[i];
+        const auto g = bytes[i + 1];
+        const auto third = bytes[i + 2];
+        const auto r = rgba ? first : third;
+        const auto b = rgba ? third : first;
+        if (r != 0 || g != 0 || b != 0) ++output.non_clear_pixels;
+        if (r > g && r > b) ++output.red_dominant_pixels;
+        if (g > r && g > b) ++output.green_dominant_pixels;
+        if (b > r && b > g) ++output.blue_dominant_pixels;
+        const std::uint32_t pixel = static_cast<std::uint32_t>(r) |
+                                     (static_cast<std::uint32_t>(g) << 8U) |
+                                     (static_cast<std::uint32_t>(b) << 16U) |
+                                     (static_cast<std::uint32_t>(bytes[i + 3]) << 24U);
+        hash ^= pixel;
+        hash *= 1099511628211ULL;
+      }
+      output.center_pixel = pixel_at(width / 2U, height / 2U);
+      // Both samples lie on the triangle's vertical centerline, away from its
+      // edges. Vulkan's framebuffer row orientation does not affect this test.
+      output.upper_triangle_pixel = pixel_at(width / 2U, height / 4U);
+      output.lower_triangle_pixel = pixel_at(width / 2U, (height * 13U) / 16U);
+      output.corner_pixel = pixel_at(0, 0);
+      output.hash = hash;
+
+      // Canonicalize a coarse spatial classification rather than raw bytes.
+      // This remains stable across BGRA/RGBA and UNORM/SRGB swapchain formats.
+      constexpr std::uint32_t grid_width = 16;
+      constexpr std::uint32_t grid_height = 12;
+      std::uint64_t canonical_hash = 1469598103934665603ULL;
+      for (std::uint32_t gy = 0; gy < grid_height; ++gy) {
+        for (std::uint32_t gx = 0; gx < grid_width; ++gx) {
+          const auto pixel = pixel_at(
+              ((2U * gx + 1U) * width) / (2U * grid_width),
+              ((2U * gy + 1U) * height) / (2U * grid_height));
+          const auto r = pixel & 0xFFU;
+          const auto g = (pixel >> 8U) & 0xFFU;
+          const auto b = (pixel >> 16U) & 0xFFU;
+          const std::uint8_t category =
+              (r == 0U && g == 0U && b == 0U) ? 0U :
+              (r > g && r > b) ? 1U :
+              (g > r && g > b) ? 2U :
+              (b > r && b > g) ? 3U : 4U;
+          canonical_hash ^= category;
+          canonical_hash *= 1099511628211ULL;
+        }
+      }
+      output.canonical_hash = canonical_hash;
+      output.submitted = true;
+      vkUnmapMemory(device, memory);
+    }
+  }
+
+  if (fence) vkDestroyFence(device, fence, nullptr);
+  vkDestroyCommandPool(device, pool, nullptr);
+  vkFreeMemory(device, memory, nullptr);
+  vkDestroyBuffer(device, buffer, nullptr);
+  return output;
+}
+
+} // namespace
+#endif
+
+// ============================================================================
+// VulkanContext Tests
+// ============================================================================
+
+TEST(VulkanContext, AvailabilityCheck) {
+  bool available = omnicpp::render::VulkanContext::is_available();
+  (void)available;
+}
+
+TEST(VulkanContext, RuntimeErrorCodesExist) {
+  EXPECT_NE(omnicpp::core::RuntimeError::ok, omnicpp::core::RuntimeError::vulkan_not_available);
+}
+
+TEST(VulkanContext, InitializeWithoutVulkan) {
+  omnicpp::render::VulkanContext ctx;
+  auto result = ctx.initialize("TestApp", false);
+  if (!omnicpp::render::VulkanContext::is_available()) {
+    EXPECT_FALSE(result.is_ok());
+    EXPECT_FALSE(ctx.is_initialized());
+  } else {
+    EXPECT_TRUE(result.is_ok());
+    EXPECT_TRUE(ctx.is_initialized());
+  }
+}
+
+TEST(VulkanContext, DoubleInitializeIsIdempotent) {
+  omnicpp::render::VulkanContext ctx;
+  auto r1 = ctx.initialize("TestApp", false);
+  auto r2 = ctx.initialize("TestApp", false);
+  EXPECT_EQ(r1.is_ok(), r2.is_ok());
+}
+
+TEST(VulkanContext, CleanupIsIdempotent) {
+  omnicpp::render::VulkanContext ctx;
+  (void)ctx.initialize("TestApp", false);
+  ctx.cleanup();
+  ctx.cleanup();
+  EXPECT_FALSE(ctx.is_initialized());
+}
+
+TEST(VulkanContext, DevicePropertiesAreEmptyBeforeInit) {
+  omnicpp::render::VulkanContext ctx;
+  const auto& props = ctx.device_properties();
+  EXPECT_TRUE(props.name.empty());
+  EXPECT_EQ(props.api_version, 0u);
+}
+
+// ============================================================================
+// QueueFamilyIndices Tests
+// ============================================================================
+
+TEST(QueueFamilyIndices, DefaultIsIncomplete) {
+  omnicpp::render::QueueFamilyIndices indices;
+  EXPECT_FALSE(indices.is_complete());
+}
+
+TEST(QueueFamilyIndices, CompleteWhenBothSet) {
+  omnicpp::render::QueueFamilyIndices indices;
+  indices.graphics_family = 0;
+  indices.present_family = 1;
+  EXPECT_TRUE(indices.is_complete());
+}
+
+// ============================================================================
+// VulkanSwapchain Tests
+// ============================================================================
+
+TEST(VulkanSwapchain, QuerySupportReturnsEmptyWithoutVulkan) {
+  auto details = omnicpp::render::VulkanSwapchain::query_swapchain_support(nullptr, nullptr);
+  EXPECT_FALSE(details.is_valid());
+}
+
+TEST(VulkanHardware, HeadlessSwapchainAndRenderSubmission) {
+#if OMNICPP_VULKAN_TYPES_AVAILABLE && defined(VK_USE_PLATFORM_XCB_KHR)
+  if (!omnicpp::render::VulkanContext::is_available()) GTEST_SKIP() << "Vulkan loader unavailable";
+  const char* display_name = std::getenv("DISPLAY");
+  if (!display_name) GTEST_SKIP() << "DISPLAY is unavailable";
+
+  xcb_connection_t* connection = xcb_connect(display_name, nullptr);
+  if (!connection || xcb_connection_has_error(connection)) {
+    if (connection) xcb_disconnect(connection);
+    GTEST_SKIP() << "XCB display is unavailable";
+  }
+  const auto setup = xcb_get_setup(connection);
+  const auto* screen = xcb_setup_roots_iterator(setup).data;
+  if (!screen) {
+    xcb_disconnect(connection);
+    GTEST_SKIP() << "XCB screen is unavailable";
+  }
+  const xcb_window_t window = xcb_generate_id(connection);
+  const std::uint32_t event_mask = XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_STRUCTURE_NOTIFY;
+  xcb_create_window(connection, XCB_COPY_FROM_PARENT, window, screen->root,
+                    0, 0, 640, 480, 0, XCB_WINDOW_CLASS_INPUT_OUTPUT,
+                    screen->root_visual, XCB_CW_EVENT_MASK, &event_mask);
+  xcb_map_window(connection, window);
+  xcb_flush(connection);
+
+  omnicpp::render::VulkanContext context;
+  ASSERT_TRUE(context.initialize("OmniCppHardwareTest", true).is_ok());
+  ASSERT_TRUE(context.has_validation());
+  EXPECT_TRUE(context.device_properties().is_discrete_gpu);
+
+  VkSurfaceKHR surface = VK_NULL_HANDLE;
+  omnicpp::render::SurfaceCreateInfo surface_info;
+  surface_info.display = connection;
+  surface_info.window = reinterpret_cast<void*>(static_cast<std::uintptr_t>(window));
+  auto surface_result = omnicpp::render::create_platform_surface(context.instance(), surface_info, surface);
+  if (!surface_result.is_ok()) {
+    context.cleanup();
+    xcb_destroy_window(connection, window);
+    xcb_disconnect(connection);
+    GTEST_SKIP() << "XCB Vulkan surface unavailable";
+  }
+  ASSERT_NE(surface, VK_NULL_HANDLE);
+
+  omnicpp::render::VulkanSwapchain swapchain;
+  ASSERT_TRUE(swapchain.create(context.device(), context.physical_device(), surface, {}).is_ok());
+  ASSERT_TRUE(swapchain.create_image_views(context.device()).is_ok());
+
+  const VkFormat depth_format = omnicpp::render::VulkanRenderPass::find_supported_depth_format(context.physical_device());
+  ASSERT_NE(depth_format, VK_FORMAT_UNDEFINED);
+  omnicpp::render::VulkanRenderPass render_pass;
+  ASSERT_TRUE(render_pass.create(context.device(), swapchain.image_format(), depth_format).is_ok());
+  ASSERT_TRUE(render_pass.create_depth_resources(context.device(), context.physical_device(), depth_format,
+                                                 swapchain.extent_width(), swapchain.extent_height()).is_ok());
+  ASSERT_TRUE(render_pass.create_framebuffers(context.device(), swapchain.image_views(),
+                                              swapchain.extent_width(), swapchain.extent_height()).is_ok());
+
+  omnicpp::render::VulkanPipeline pipeline;
+#ifdef OMNICPP_TEST_SHADER_DIR
+  const std::string shader_dir = OMNICPP_TEST_SHADER_DIR;
+  ASSERT_TRUE(pipeline.load_shader_file(context.device(), shader_dir + "/triangle.vert.spv").is_ok());
+  ASSERT_TRUE(pipeline.load_shader_file(context.device(), shader_dir + "/triangle.frag.spv").is_ok());
+  ASSERT_TRUE(pipeline.create_graphics_pipeline(context.device(), render_pass.render_pass(),
+                                                swapchain.image_format(), VK_NULL_HANDLE,
+                                                true, true, false).is_ok());
+#else
+  GTEST_SKIP() << "Test shaders were not compiled";
+#endif
+
+  omnicpp::render::VulkanRenderer renderer;
+  renderer.set_timeline_pacing(context.has_timeline_semaphores());
+  ASSERT_TRUE(renderer.initialize(context, swapchain, render_pass).is_ok());
+  renderer.set_synchronization2(context.has_synchronization2());
+  renderer.set_pipeline(pipeline.pipeline());
+  if (context.has_timeline_semaphores()) {
+    EXPECT_TRUE(renderer.uses_timeline_pacing());
+  }
+  auto image = renderer.begin_frame();
+  ASSERT_TRUE(image.is_ok());
+  ASSERT_TRUE(renderer.record_commands(image.value(), render_pass.framebuffer(image.value()),
+                                       swapchain.extent_width(), swapchain.extent_height()).is_ok());
+  ASSERT_TRUE(renderer.submit_frame().is_ok());
+
+  const auto readback = readback_swapchain_image(
+      context.physical_device(), context.device(), context.graphics_queue(),
+      static_cast<std::uint32_t>(context.queue_families().graphics_family),
+      swapchain.images()[image.value()], swapchain.image_format(),
+      swapchain.extent_width(), swapchain.extent_height());
+  ASSERT_TRUE(readback.submitted);
+  ASSERT_GT(readback.non_clear_pixels, 1000U);
+  EXPECT_GT(readback.red_dominant_pixels, 100U);
+  EXPECT_GT(readback.green_dominant_pixels, 100U);
+  EXPECT_GT(readback.blue_dominant_pixels, 100U);
+  EXPECT_NE(readback.center_pixel & 0x00FFFFFFU, 0U);
+  EXPECT_NE(readback.upper_triangle_pixel & 0x00FFFFFFU, 0U);
+  EXPECT_NE(readback.lower_triangle_pixel & 0x00FFFFFFU, 0U);
+  EXPECT_EQ(readback.corner_pixel & 0x00FFFFFFU, 0U);
+  std::cout << "Vulkan readback: format=" << static_cast<int>(swapchain.image_format())
+            << " hash=" << readback.hash
+            << " canonical_hash=" << readback.canonical_hash
+            << " non_clear=" << readback.non_clear_pixels
+            << " RGB-dominant=" << readback.red_dominant_pixels << "/"
+            << readback.green_dominant_pixels << "/" << readback.blue_dominant_pixels
+            << std::endl;
+  // Golden fingerprint for the bundled triangle's coarse spatial content.
+  // Unlike the raw byte hash, this is independent of BGRA/RGBA and sRGB choice.
+  EXPECT_EQ(readback.canonical_hash, 9189736358881991061ULL);
+  ASSERT_TRUE(renderer.present_frame().is_ok());
+
+  // Exercise both frame slots and the complete swapchain image set. A single
+  // successful frame cannot detect stale image-fence ownership.
+  for (std::uint32_t frame = 0; frame < 8; ++frame) {
+    auto next_image = renderer.begin_frame();
+    ASSERT_TRUE(next_image.is_ok());
+    ASSERT_TRUE(renderer.record_commands(
+        next_image.value(), render_pass.framebuffer(next_image.value()),
+        swapchain.extent_width(), swapchain.extent_height()).is_ok());
+    ASSERT_TRUE(renderer.submit_frame().is_ok());
+    ASSERT_TRUE(renderer.present_frame().is_ok());
+  }
+  renderer.wait_idle();
+  EXPECT_EQ(renderer.frame_count(), 9U);
+  EXPECT_EQ(context.validation_error_count(), 0U);
+  EXPECT_EQ(context.validation_warning_count(), 0U);
+
+  renderer.cleanup(context.device());
+  pipeline.cleanup(context.device());
+  render_pass.cleanup(context.device());
+  swapchain.cleanup(context.device());
+  context.destroy_surface(surface);
+  context.cleanup();
+  xcb_destroy_window(connection, window);
+  xcb_disconnect(connection);
+#else
+  GTEST_SKIP() << "Vulkan XCB support was not enabled for this build";
+#endif
+}
+
+// ============================================================================
+// VulkanMemoryAllocator / VulkanUploadRing Tests
+// ============================================================================
+
+TEST(VulkanMemoryAllocator, UninitializedCreateBufferFails) {
+  omnicpp::render::VulkanMemoryAllocator allocator;
+  auto result = allocator.create_buffer(1024, VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+                                        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+  EXPECT_FALSE(result.is_ok());
+  const auto stats = allocator.stats();
+  EXPECT_EQ(stats.block_count, 0U);
+}
+
+TEST(VulkanHardware, AllocatorSubAllocationAndUploadRing) {
+#if OMNICPP_VULKAN_TYPES_AVAILABLE
+  if (!omnicpp::render::VulkanContext::is_available()) GTEST_SKIP() << "Vulkan loader unavailable";
+
+  omnicpp::render::VulkanContext context;
+  ASSERT_TRUE(context.initialize("OmniCppAllocatorTest", true).is_ok());
+
+  omnicpp::render::VulkanMemoryAllocator allocator;
+  ASSERT_TRUE(allocator.initialize(context.device(), context.physical_device()).is_ok());
+
+  // --- Sub-allocation: many buffers land inside one host-visible block. ---
+  constexpr std::size_t kBufferCount = 8;
+  constexpr VkDeviceSize kBufferSize = 4096;
+  std::vector<omnicpp::render::Allocation> allocations;
+  for (std::size_t i = 0; i < kBufferCount; ++i) {
+    auto result = allocator.create_buffer(
+        kBufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+    ASSERT_TRUE(result.is_ok());
+    allocations.push_back(result.value());
+    EXPECT_NE(allocations.back().mapped, nullptr);
+    EXPECT_TRUE(allocations.back().is_valid());
+  }
+  auto stats = allocator.stats();
+  EXPECT_EQ(stats.allocation_count, kBufferCount);
+  EXPECT_GT(stats.used_bytes, 0ULL);
+  EXPECT_GE(stats.block_count, 1U);
+
+  // Persistent mapping: write distinct patterns via the mapped pointers.
+  for (std::size_t i = 0; i < allocations.size(); ++i) {
+    auto* bytes = static_cast<std::uint8_t*>(allocations[i].mapped);
+    std::memset(bytes, static_cast<int>(0xA0 + i), kBufferSize);
+  }
+
+  // --- Sub-allocation: device-local buffer for the upload destination. ---
+  // Also TRANSFER_SRC: the verify step copies it back to a host-visible buffer.
+  auto dst_result = allocator.create_buffer(
+      kBufferSize * kBufferCount,
+      VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+      VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+  ASSERT_TRUE(dst_result.is_ok());
+
+  // --- Upload ring: staged copy of every pattern to the device buffer. ---
+  omnicpp::render::VulkanUploadRing ring;
+  ASSERT_TRUE(ring.initialize(context.device(), context.physical_device(),
+                              static_cast<std::uint32_t>(context.queue_families().graphics_family),
+                              1u << 20u).is_ok());
+  const auto pool_result = omnicpp::render::VulkanRenderer::create_command_pool(
+      context.device(), static_cast<std::uint32_t>(context.queue_families().graphics_family));
+  ASSERT_TRUE(pool_result.is_ok());
+  const VkCommandPool command_pool = pool_result.value();
+  const auto cb_result = omnicpp::render::VulkanRenderer::allocate_command_buffer(
+      context.device(), command_pool);
+  ASSERT_TRUE(cb_result.is_ok());
+  const VkCommandBuffer command_buffer = cb_result.value();
+
+  VkCommandBufferBeginInfo begin{};
+  begin.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+  begin.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+  ASSERT_EQ(vkBeginCommandBuffer(command_buffer, &begin), VK_SUCCESS);
+  for (std::size_t i = 0; i < allocations.size(); ++i) {
+    auto span = ring.acquire(kBufferSize);
+    ASSERT_TRUE(span.is_ok());
+    std::memcpy(span.value().host_data, allocations[i].mapped, kBufferSize);
+    ring.record_copy(command_buffer, span.value(), dst_result.value().buffer,
+                     static_cast<VkDeviceSize>(i) * kBufferSize);
+  }
+  ASSERT_EQ(vkEndCommandBuffer(command_buffer), VK_SUCCESS);
+
+  VkFenceCreateInfo fence_info{};
+  fence_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+  VkFence fence = VK_NULL_HANDLE;
+  ASSERT_EQ(vkCreateFence(context.device(), &fence_info, nullptr, &fence), VK_SUCCESS);
+  VkSubmitInfo submit{};
+  submit.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+  submit.commandBufferCount = 1;
+  submit.pCommandBuffers = &command_buffer;
+  ASSERT_EQ(vkQueueSubmit(context.graphics_queue(), 1, &submit, fence), VK_SUCCESS);
+  ASSERT_EQ(vkWaitForFences(context.device(), 1, &fence, VK_TRUE, UINT64_MAX), VK_SUCCESS);
+
+  // --- Verify the GPU wrote every pattern back into a host-visible check buffer. ---
+  auto check_result = allocator.create_buffer(
+      kBufferSize * kBufferCount, VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+      VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+  ASSERT_TRUE(check_result.is_ok());
+  VkCommandBufferBeginInfo begin2{};
+  begin2.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+  begin2.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+  ASSERT_EQ(vkBeginCommandBuffer(command_buffer, &begin2), VK_SUCCESS);
+  VkBufferCopy copy{};
+  copy.size = kBufferSize * kBufferCount;
+  vkCmdCopyBuffer(command_buffer, dst_result.value().buffer,
+                  check_result.value().buffer, 1, &copy);
+  ASSERT_EQ(vkEndCommandBuffer(command_buffer), VK_SUCCESS);
+  VkFence fence2 = VK_NULL_HANDLE;
+  ASSERT_EQ(vkCreateFence(context.device(), &fence_info, nullptr, &fence2), VK_SUCCESS);
+  VkSubmitInfo submit2{};
+  submit2.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+  submit2.commandBufferCount = 1;
+  submit2.pCommandBuffers = &command_buffer;
+  ASSERT_EQ(vkQueueSubmit(context.graphics_queue(), 1, &submit2, fence2), VK_SUCCESS);
+  ASSERT_EQ(vkWaitForFences(context.device(), 1, &fence2, VK_TRUE, UINT64_MAX), VK_SUCCESS);
+
+  const auto* checked = static_cast<const std::uint8_t*>(check_result.value().mapped);
+  for (std::size_t i = 0; i < kBufferCount; ++i) {
+    for (std::size_t b = 0; b < kBufferSize; b += 251) { // stride sampling
+      EXPECT_EQ(checked[i * kBufferSize + b], static_cast<std::uint8_t>(0xA0 + i))
+          << "buffer " << i << " byte " << b;
+    }
+  }
+
+  // --- Free-list coalescing: free all, stats return to zero used. ---
+  for (auto& allocation : allocations) allocator.destroy_allocation(allocation);
+  omnicpp::render::Allocation dst_allocation = dst_result.value();
+  omnicpp::render::Allocation check_allocation = check_result.value();
+  allocator.destroy_allocation(dst_allocation);
+  allocator.destroy_allocation(check_allocation);
+  stats = allocator.stats();
+  EXPECT_EQ(stats.used_bytes, 0ULL);
+
+  vkDestroyFence(context.device(), fence, nullptr);
+  vkDestroyFence(context.device(), fence2, nullptr);
+  vkDestroyCommandPool(context.device(), command_pool, nullptr);
+  ring.cleanup();
+  allocator.cleanup();
+  context.cleanup();
+#else
+  GTEST_SKIP() << "Vulkan support was not enabled for this build";
+#endif
+}
+
+// ============================================================================
+// SPIR-V Reflection + Descriptor Manager Tests
+// ============================================================================
+
+TEST(SpirvReflection, RejectsInvalidCode) {
+  const std::uint32_t bad_magic[] = {0xDEADBEEF, 0, 0, 0, 0};
+  EXPECT_TRUE(omnicpp::render::reflect_spirv_resources(bad_magic, 5).empty());
+  EXPECT_TRUE(omnicpp::render::reflect_spirv_resources(
+      static_cast<const std::uint32_t*>(nullptr), 0).empty());
+  const std::uint8_t odd_bytes[] = {0x03, 0x02, 0x23, 0x07, 0x00};
+  EXPECT_TRUE(omnicpp::render::reflect_spirv_resources(odd_bytes, 5).empty());
+}
+
+TEST(VulkanHardware, DescriptorReflectionAndUboRender) {
+#if OMNICPP_VULKAN_TYPES_AVAILABLE && defined(OMNICPP_TEST_SHADER_DIR)
+  if (!omnicpp::render::VulkanContext::is_available()) GTEST_SKIP() << "Vulkan loader unavailable";
+
+  omnicpp::render::VulkanContext context;
+  ASSERT_TRUE(context.initialize("OmniCppDescriptorTest", true).is_ok());
+
+  // --- Load the UBO fragment shader and reflect it. ---
+  std::ifstream frag_file(std::string(OMNICPP_TEST_SHADER_DIR) + "/ubo_triangle.frag.spv",
+                          std::ios::binary);
+  ASSERT_TRUE(frag_file.good());
+  const std::vector<std::uint8_t> frag_spirv(
+      (std::istreambuf_iterator<char>(frag_file)), std::istreambuf_iterator<char>());
+  ASSERT_GE(frag_spirv.size(), 20U);
+
+  const auto bindings = omnicpp::render::reflect_spirv_resources(
+      frag_spirv.data(), frag_spirv.size());
+  ASSERT_EQ(bindings.size(), 1U);
+  EXPECT_EQ(bindings[0].set, 0U);
+  EXPECT_EQ(bindings[0].binding, 0U);
+  EXPECT_EQ(bindings[0].type, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+  EXPECT_EQ(bindings[0].stage_flags,
+            static_cast<VkShaderStageFlags>(VK_SHADER_STAGE_FRAGMENT_BIT));
+
+  // --- Create layout + set through the manager, bind a real UBO. ---
+  omnicpp::render::VulkanMemoryAllocator allocator;
+  ASSERT_TRUE(allocator.initialize(context.device(), context.physical_device()).is_ok());
+  omnicpp::render::VulkanDescriptorManager manager;
+  ASSERT_TRUE(manager.initialize(context.device()).is_ok());
+
+  auto layout_result = manager.create_layout(bindings, 1);
+  ASSERT_TRUE(layout_result.is_ok());
+  auto set_result = manager.allocate_set(layout_result.value());
+  ASSERT_TRUE(set_result.is_ok());
+
+  auto ubo_result = allocator.create_buffer(
+      256, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+      VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+  ASSERT_TRUE(ubo_result.is_ok());
+  float tint = 1.0f; // Fully tinted: distinct, assertable output color.
+  std::memcpy(ubo_result.value().mapped, &tint, sizeof(tint));
+  ASSERT_TRUE(manager.write_buffer(set_result.value(), 0,
+                                   VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+                                   ubo_result.value().buffer, 0, 256).is_ok());
+
+  // --- Pipeline with the reflected layout. ---
+  omnicpp::render::VulkanOffscreenTarget target;
+  ASSERT_TRUE(target.create(context.device(), context.physical_device(),
+                            VK_FORMAT_B8G8R8A8_UNORM, 320, 240, &allocator).is_ok());
+  ASSERT_TRUE(target.create_render_pass(context.device()).is_ok());
+  ASSERT_TRUE(target.create_framebuffer(context.device()).is_ok());
+
+  omnicpp::render::VulkanPipeline pipeline;
+  const std::string shader_dir = OMNICPP_TEST_SHADER_DIR;
+  ASSERT_TRUE(pipeline.load_shader_stage_file(context.device(),
+                                              shader_dir + "/triangle.vert.spv", "vertex").is_ok());
+  ASSERT_TRUE(pipeline.load_shader_stage_file(context.device(),
+                                              shader_dir + "/ubo_triangle.frag.spv", "fragment").is_ok());
+  const VkDescriptorSetLayout set_layout = layout_result.value();
+  ASSERT_TRUE(pipeline.create_pipeline_layout(
+      context.device(), &set_layout, 1).is_ok());
+  ASSERT_TRUE(pipeline.create_graphics_pipeline(
+      context.device(), target.render_pass(), target.format(),
+      pipeline.pipeline_layout(), false, false, false).is_ok());
+
+  // --- Render one frame offscreen. ---
+  const auto pool_result = omnicpp::render::VulkanRenderer::create_command_pool(
+      context.device(), static_cast<std::uint32_t>(context.queue_families().graphics_family));
+  ASSERT_TRUE(pool_result.is_ok());
+  const VkCommandPool command_pool = pool_result.value();
+  const auto cb_result = omnicpp::render::VulkanRenderer::allocate_command_buffer(
+      context.device(), command_pool);
+  ASSERT_TRUE(cb_result.is_ok());
+  const VkCommandBuffer command_buffer = cb_result.value();
+
+  VkCommandBufferBeginInfo begin{};
+  begin.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+  begin.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+  ASSERT_EQ(vkBeginCommandBuffer(command_buffer, &begin), VK_SUCCESS);
+  VkRenderPassBeginInfo render_begin{};
+  render_begin.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+  render_begin.renderPass = target.render_pass();
+  render_begin.framebuffer = target.framebuffer();
+  render_begin.renderArea.extent = {320, 240};
+  VkClearValue clear{};
+  clear.color = {{0.0f, 0.0f, 0.0f, 1.0f}};
+  render_begin.clearValueCount = 1;
+  render_begin.pClearValues = &clear;
+  vkCmdBeginRenderPass(command_buffer, &render_begin, VK_SUBPASS_CONTENTS_INLINE);
+  VkViewport viewport{};
+  viewport.width = 320.0f;
+  viewport.height = 240.0f;
+  viewport.maxDepth = 1.0f;
+  vkCmdSetViewport(command_buffer, 0, 1, &viewport);
+  VkRect2D scissor{};
+  scissor.extent = {320, 240};
+  vkCmdSetScissor(command_buffer, 0, 1, &scissor);
+  vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.pipeline());
+  const VkDescriptorSet descriptor_set = set_result.value();
+  vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                          pipeline.pipeline_layout(), 0, 1, &descriptor_set, 0, nullptr);
+  vkCmdDraw(command_buffer, 3, 1, 0, 0);
+  vkCmdEndRenderPass(command_buffer);
+  ASSERT_EQ(vkEndCommandBuffer(command_buffer), VK_SUCCESS);
+
+  VkFenceCreateInfo fence_info{};
+  fence_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+  VkFence fence = VK_NULL_HANDLE;
+  ASSERT_EQ(vkCreateFence(context.device(), &fence_info, nullptr, &fence), VK_SUCCESS);
+  VkSubmitInfo submit{};
+  submit.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+  submit.commandBufferCount = 1;
+  submit.pCommandBuffers = &command_buffer;
+  ASSERT_EQ(vkQueueSubmit(context.graphics_queue(), 1, &submit, fence), VK_SUCCESS);
+  ASSERT_EQ(vkWaitForFences(context.device(), 1, &fence, VK_TRUE, UINT64_MAX), VK_SUCCESS);
+
+  // --- Content check: interior pixels must be the tint color, not canonical. ---
+  const auto readback = readback_swapchain_image(
+      context.physical_device(), context.device(), context.graphics_queue(),
+      static_cast<std::uint32_t>(context.queue_families().graphics_family),
+      target.image(), target.format(), 320, 240,
+      VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+  ASSERT_TRUE(readback.submitted);
+  EXPECT_GT(readback.non_clear_pixels, 100U);
+  // tint=1: fragment color is exactly (0.2, 0.15, 0.9) — uniform reached the GPU.
+  EXPECT_GT(readback.blue_dominant_pixels, readback.red_dominant_pixels);
+  EXPECT_GT(readback.center_pixel & 0x00FFFFFFU, 0U);
+  EXPECT_EQ(context.validation_error_count(), 0U);
+  EXPECT_EQ(context.validation_warning_count(), 0U);
+
+  vkDestroyFence(context.device(), fence, nullptr);
+  vkDestroyCommandPool(context.device(), command_pool, nullptr);
+  pipeline.cleanup(context.device());
+  target.cleanup(context.device());
+  omnicpp::render::Allocation ubo_allocation = ubo_result.value();
+  allocator.destroy_allocation(ubo_allocation);
+  manager.cleanup();
+  allocator.cleanup();
+  context.cleanup();
+#else
+  GTEST_SKIP() << "Vulkan support or test shaders were not enabled";
+#endif
+}
+
+// ============================================================================
+// Render Graph Tests
+// ============================================================================
+
+TEST(VulkanHardware, RenderGraphTwoPassBarriersAndRender) {
+#if OMNICPP_VULKAN_TYPES_AVAILABLE && defined(OMNICPP_TEST_SHADER_DIR)
+  if (!omnicpp::render::VulkanContext::is_available()) GTEST_SKIP() << "Vulkan loader unavailable";
+
+  omnicpp::render::VulkanContext context;
+  ASSERT_TRUE(context.initialize("OmniCppRenderGraphTest", true).is_ok());
+
+  omnicpp::render::VulkanMemoryAllocator allocator;
+  ASSERT_TRUE(allocator.initialize(context.device(), context.physical_device()).is_ok());
+
+  // Two independent offscreen targets: pass 0 renders the triangle into A,
+  // pass 1 re-renders a different aspect into B (same shader, clear-only
+  // difference). The graph must barrier A between the passes and initialize B.
+  constexpr std::uint32_t kWidth = 320;
+  constexpr std::uint32_t kHeight = 240;
+  omnicpp::render::VulkanOffscreenTarget target_a;
+  ASSERT_TRUE(target_a.create(context.device(), context.physical_device(),
+                              VK_FORMAT_B8G8R8A8_UNORM, kWidth, kHeight, &allocator).is_ok());
+  ASSERT_TRUE(target_a.create_render_pass(context.device()).is_ok());
+  ASSERT_TRUE(target_a.create_framebuffer(context.device()).is_ok());
+  omnicpp::render::VulkanOffscreenTarget target_b;
+  ASSERT_TRUE(target_b.create(context.device(), context.physical_device(),
+                              VK_FORMAT_B8G8R8A8_UNORM, kWidth, kHeight, &allocator).is_ok());
+  ASSERT_TRUE(target_b.create_render_pass(context.device()).is_ok());
+  ASSERT_TRUE(target_b.create_framebuffer(context.device()).is_ok());
+
+#ifdef OMNICPP_TEST_SHADER_DIR
+  const std::string shader_dir = OMNICPP_TEST_SHADER_DIR;
+  omnicpp::render::VulkanPipeline pipeline;
+  ASSERT_TRUE(pipeline.load_shader_stage_file(context.device(),
+                                              shader_dir + "/triangle.vert.spv", "vertex").is_ok());
+  ASSERT_TRUE(pipeline.load_shader_stage_file(context.device(),
+                                              shader_dir + "/triangle.frag.spv", "fragment").is_ok());
+  ASSERT_TRUE(pipeline.create_pipeline_layout(context.device()).is_ok());
+  ASSERT_TRUE(pipeline.create_graphics_pipeline(
+      context.device(), target_a.render_pass(), target_a.format(),
+      pipeline.pipeline_layout(), false, false, false).is_ok());
+  ASSERT_NE(pipeline.pipeline(), VK_NULL_HANDLE);
+#else
+  GTEST_SKIP() << "Test shaders were not compiled";
+#endif
+
+  // Declare passes: A keeps TRANSFER_SRC (readback later), B keeps TRANSFER_SRC.
+  std::vector<omnicpp::render::GraphPass> passes(2);
+  passes[0].name = "scene_a";
+  passes[0].render_pass = target_a.render_pass();
+  passes[0].framebuffer = target_a.framebuffer();
+  passes[0].width = kWidth;
+  passes[0].height = kHeight;
+  passes[0].user_data = &target_a;
+  passes[0].attachments.push_back(omnicpp::render::color_attachment(
+      target_a.image(), target_a.image_view(), target_a.format(),
+      VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL));
+
+  passes[1].name = "scene_b";
+  passes[1].render_pass = target_b.render_pass();
+  passes[1].framebuffer = target_b.framebuffer();
+  passes[1].width = kWidth;
+  passes[1].height = kHeight;
+  passes[1].user_data = &target_b;
+  passes[1].attachments.push_back(omnicpp::render::color_attachment(
+      target_b.image(), target_b.image_view(), target_b.format(),
+      VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL));
+
+  // Compile and verify the compiler computed initialization barriers.
+  const auto compiled = omnicpp::render::compile_render_graph(passes);
+  ASSERT_EQ(compiled.barriers_per_pass.size(), 2U);
+  ASSERT_EQ(compiled.barriers_per_pass[0].size(), 1U); // A: UNDEFINED -> COLOR
+  EXPECT_EQ(compiled.barriers_per_pass[0][0].image, target_a.image());
+  ASSERT_EQ(compiled.barriers_per_pass[1].size(), 1U); // B: UNDEFINED -> COLOR
+  EXPECT_EQ(compiled.barriers_per_pass[1][0].image, target_b.image());
+
+  // Execute: two draws, one per pass, through the graph executor.
+  const auto pool_result = omnicpp::render::VulkanRenderer::create_command_pool(
+      context.device(), static_cast<std::uint32_t>(context.queue_families().graphics_family));
+  ASSERT_TRUE(pool_result.is_ok());
+  const VkCommandPool command_pool = pool_result.value();
+  const auto cb_result = omnicpp::render::VulkanRenderer::allocate_command_buffer(
+      context.device(), command_pool);
+  ASSERT_TRUE(cb_result.is_ok());
+  const VkCommandBuffer command_buffer = cb_result.value();
+
+  std::vector<VkClearValue> clear_a(1);
+  clear_a[0].color = {{0.0f, 0.0f, 0.0f, 1.0f}};
+  std::vector<VkClearValue> clear_b(1);
+  clear_b[0].color = {{0.0f, 0.0f, 0.0f, 1.0f}};
+  passes[0].clear_values = clear_a.data();
+  passes[0].clear_value_count = 1;
+  passes[1].clear_values = clear_b.data();
+  passes[1].clear_value_count = 1;
+
+  auto record = [](VkCommandBuffer cmd, const omnicpp::render::GraphPass& pass,
+                   void* user_data) {
+    auto* pipe = static_cast<omnicpp::render::VulkanPipeline*>(user_data);
+    VkViewport viewport{};
+    viewport.width = static_cast<float>(pass.width);
+    viewport.height = static_cast<float>(pass.height);
+    viewport.maxDepth = 1.0f;
+    vkCmdSetViewport(cmd, 0, 1, &viewport);
+    VkRect2D scissor{};
+    scissor.extent = {pass.width, pass.height};
+    vkCmdSetScissor(cmd, 0, 1, &scissor);
+    vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipe->pipeline());
+    vkCmdDraw(cmd, 3, 1, 0, 0);
+  };
+  // user_data carries the pipeline (both passes draw with it).
+  passes[0].user_data = &pipeline;
+  passes[1].user_data = &pipeline;
+
+  VkCommandBufferBeginInfo begin{};
+  begin.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+  begin.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+  ASSERT_EQ(vkBeginCommandBuffer(command_buffer, &begin), VK_SUCCESS);
+  omnicpp::render::execute_render_graph(command_buffer, passes, compiled, record);
+  ASSERT_EQ(vkEndCommandBuffer(command_buffer), VK_SUCCESS);
+
+  VkFenceCreateInfo fence_info{};
+  fence_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+  VkFence fence = VK_NULL_HANDLE;
+  ASSERT_EQ(vkCreateFence(context.device(), &fence_info, nullptr, &fence), VK_SUCCESS);
+  VkSubmitInfo submit{};
+  submit.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+  submit.commandBufferCount = 1;
+  submit.pCommandBuffers = &command_buffer;
+  ASSERT_EQ(vkQueueSubmit(context.graphics_queue(), 1, &submit, fence), VK_SUCCESS);
+  ASSERT_EQ(vkWaitForFences(context.device(), 1, &fence, VK_TRUE, UINT64_MAX), VK_SUCCESS);
+
+  // Both targets must hold rendered triangle content.
+  for (const omnicpp::render::VulkanOffscreenTarget* target : {&target_a, &target_b}) {
+    const auto readback = readback_swapchain_image(
+        context.physical_device(), context.device(), context.graphics_queue(),
+        static_cast<std::uint32_t>(context.queue_families().graphics_family),
+        target->image(), target->format(), kWidth, kHeight,
+        VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+    ASSERT_TRUE(readback.submitted);
+    EXPECT_GT(readback.non_clear_pixels, 100U);
+  }
+  EXPECT_EQ(context.validation_error_count(), 0U);
+  EXPECT_EQ(context.validation_warning_count(), 0U);
+
+  vkDestroyFence(context.device(), fence, nullptr);
+  vkDestroyCommandPool(context.device(), command_pool, nullptr);
+  pipeline.cleanup(context.device());
+  target_a.cleanup(context.device());
+  target_b.cleanup(context.device());
+  allocator.cleanup();
+  context.cleanup();
+#else
+  GTEST_SKIP() << "Vulkan support was not enabled for this build";
+#endif
+}
+
+TEST(VulkanHardware, ParallelRecorderMultithreadedBands) {
+#if OMNICPP_VULKAN_TYPES_AVAILABLE && defined(OMNICPP_TEST_SHADER_DIR)
+  if (!omnicpp::render::VulkanContext::is_available()) GTEST_SKIP() << "Vulkan loader unavailable";
+
+  omnicpp::render::VulkanContext context;
+  ASSERT_TRUE(context.initialize("OmniCppParallelRecorderTest", true).is_ok());
+
+  omnicpp::render::VulkanMemoryAllocator allocator;
+  ASSERT_TRUE(allocator.initialize(context.device(), context.physical_device()).is_ok());
+
+  constexpr std::uint32_t kWidth = 320;
+  constexpr std::uint32_t kHeight = 256; // divisible by band count
+  constexpr std::uint32_t kBandCount = 4;
+  omnicpp::render::VulkanOffscreenTarget target;
+  ASSERT_TRUE(target.create(context.device(), context.physical_device(),
+                            VK_FORMAT_B8G8R8A8_UNORM, kWidth, kHeight, &allocator).is_ok());
+  ASSERT_TRUE(target.create_render_pass(context.device()).is_ok());
+  ASSERT_TRUE(target.create_framebuffer(context.device()).is_ok());
+
+  const std::string shader_dir = OMNICPP_TEST_SHADER_DIR;
+  omnicpp::render::VulkanPipeline pipeline;
+  ASSERT_TRUE(pipeline.load_shader_stage_file(context.device(),
+                                              shader_dir + "/triangle.vert.spv", "vertex").is_ok());
+  ASSERT_TRUE(pipeline.load_shader_stage_file(context.device(),
+                                              shader_dir + "/triangle.frag.spv", "fragment").is_ok());
+  ASSERT_TRUE(pipeline.create_pipeline_layout(context.device()).is_ok());
+  ASSERT_TRUE(pipeline.create_graphics_pipeline(
+      context.device(), target.render_pass(), target.format(),
+      pipeline.pipeline_layout(), false, false, false).is_ok());
+
+  // Record 4 bands on 4 threads; each band draws the full-width triangle
+  // clipped to its scissor (the geometry spans the whole viewport vertically).
+  omnicpp::render::VulkanParallelRecorder recorder;
+  ASSERT_TRUE(recorder.initialize(
+      context.device(),
+      static_cast<std::uint32_t>(context.queue_families().graphics_family),
+      kBandCount).is_ok());
+
+  auto secondaries = recorder.record_parallel(
+      kWidth, kHeight,
+      [&pipeline](VkCommandBuffer cmd, VkRect2D band_scissor) {
+        VkViewport viewport{};
+        viewport.width = static_cast<float>(band_scissor.extent.width);
+        viewport.height = static_cast<float>(band_scissor.extent.height);
+        viewport.x = 0.0f;
+        viewport.y = static_cast<float>(band_scissor.offset.y);
+        viewport.maxDepth = 1.0f;
+        vkCmdSetViewport(cmd, 0, 1, &viewport);
+        vkCmdSetScissor(cmd, 0, 1, &band_scissor);
+        vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.pipeline());
+        vkCmdDraw(cmd, 3, 1, 0, 0);
+      },
+      target.render_pass(), target.framebuffer());
+  ASSERT_TRUE(secondaries.is_ok());
+  EXPECT_EQ(secondaries.value().size(), kBandCount);
+
+  // Execute secondaries inside one primary buffer and render pass.
+  const auto pool_result = omnicpp::render::VulkanRenderer::create_command_pool(
+      context.device(), static_cast<std::uint32_t>(context.queue_families().graphics_family));
+  ASSERT_TRUE(pool_result.is_ok());
+  const VkCommandPool command_pool = pool_result.value();
+  const auto cb_result = omnicpp::render::VulkanRenderer::allocate_command_buffer(
+      context.device(), command_pool);
+  ASSERT_TRUE(cb_result.is_ok());
+  const VkCommandBuffer command_buffer = cb_result.value();
+
+  VkCommandBufferBeginInfo begin{};
+  begin.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+  begin.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+  ASSERT_EQ(vkBeginCommandBuffer(command_buffer, &begin), VK_SUCCESS);
+
+  VkRenderPassBeginInfo render_begin{};
+  render_begin.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+  render_begin.renderPass = target.render_pass();
+  render_begin.framebuffer = target.framebuffer();
+  render_begin.renderArea.extent = {kWidth, kHeight};
+  VkClearValue clear{};
+  clear.color = {{0.0f, 0.0f, 0.0f, 1.0f}};
+  render_begin.clearValueCount = 1;
+  render_begin.pClearValues = &clear;
+  vkCmdBeginRenderPass(command_buffer, &render_begin,
+                       VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
+  vkCmdExecuteCommands(command_buffer,
+                       static_cast<std::uint32_t>(secondaries.value().size()),
+                       secondaries.value().data());
+  vkCmdEndRenderPass(command_buffer);
+  ASSERT_EQ(vkEndCommandBuffer(command_buffer), VK_SUCCESS);
+
+  VkFenceCreateInfo fence_info{};
+  fence_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+  VkFence fence = VK_NULL_HANDLE;
+  ASSERT_EQ(vkCreateFence(context.device(), &fence_info, nullptr, &fence), VK_SUCCESS);
+  VkSubmitInfo submit{};
+  submit.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+  submit.commandBufferCount = 1;
+  submit.pCommandBuffers = &command_buffer;
+  ASSERT_EQ(vkQueueSubmit(context.graphics_queue(), 1, &submit, fence), VK_SUCCESS);
+  ASSERT_EQ(vkWaitForFences(context.device(), 1, &fence, VK_TRUE, UINT64_MAX), VK_SUCCESS);
+
+  // Every band must show triangle content (each band drew its clipped slice).
+  const auto readback = readback_swapchain_image(
+      context.physical_device(), context.device(), context.graphics_queue(),
+      static_cast<std::uint32_t>(context.queue_families().graphics_family),
+      target.image(), target.format(), kWidth, kHeight,
+      VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+  ASSERT_TRUE(readback.submitted);
+  EXPECT_GT(readback.non_clear_pixels, 100U);
+  EXPECT_EQ(context.validation_error_count(), 0U);
+  EXPECT_EQ(context.validation_warning_count(), 0U);
+
+  vkDestroyFence(context.device(), fence, nullptr);
+  vkDestroyCommandPool(context.device(), command_pool, nullptr);
+  pipeline.cleanup(context.device());
+  target.cleanup(context.device());
+  recorder.cleanup();
+  allocator.cleanup();
+  context.cleanup();
+#else
+  GTEST_SKIP() << "Vulkan support or test shaders were not enabled";
+#endif
+}
+
+TEST(VulkanHardware, OffscreenTriangleReadback) {
+#if OMNICPP_VULKAN_TYPES_AVAILABLE
+  if (!omnicpp::render::VulkanContext::is_available()) GTEST_SKIP() << "Vulkan loader unavailable";
+
+  omnicpp::render::VulkanContext context;
+  ASSERT_TRUE(context.initialize("OmniCppOffscreenTest", true).is_ok());
+
+  // Feature negotiation smoke assertions for this driver stack.
+  EXPECT_TRUE(context.has_synchronization2());
+  EXPECT_TRUE(context.has_timeline_semaphores());
+  EXPECT_GT(context.device_properties().timestamp_period_ns, 0.0f);
+
+  // The offscreen target now allocates through the block sub-allocator.
+  omnicpp::render::VulkanMemoryAllocator allocator;
+  ASSERT_TRUE(allocator.initialize(context.device(), context.physical_device()).is_ok());
+
+  constexpr std::uint32_t width = 640;
+  constexpr std::uint32_t height = 480;
+  omnicpp::render::VulkanOffscreenTarget target;
+  ASSERT_TRUE(target.create(context.device(), context.physical_device(),
+                            VK_FORMAT_B8G8R8A8_UNORM, width, height,
+                            &allocator).is_ok());
+  ASSERT_TRUE(target.create_render_pass(context.device()).is_ok());
+  ASSERT_TRUE(target.create_framebuffer(context.device()).is_ok());
+
+  omnicpp::render::VulkanPipeline pipeline;
+#ifdef OMNICPP_TEST_SHADER_DIR
+  const std::string shader_dir = OMNICPP_TEST_SHADER_DIR;
+  ASSERT_TRUE(pipeline.load_shader_file(context.device(), shader_dir + "/triangle.vert.spv").is_ok());
+  ASSERT_TRUE(pipeline.load_shader_file(context.device(), shader_dir + "/triangle.frag.spv").is_ok());
+  ASSERT_TRUE(pipeline.create_graphics_pipeline(
+      context.device(), target.render_pass(), target.format(), VK_NULL_HANDLE,
+      false, false, false).is_ok());
+#else
+  GTEST_SKIP() << "Test shaders were not compiled";
+#endif
+
+  const auto pool_result = omnicpp::render::VulkanRenderer::create_command_pool(
+      context.device(), static_cast<std::uint32_t>(context.queue_families().graphics_family));
+  ASSERT_TRUE(pool_result.is_ok());
+  const VkCommandPool command_pool = pool_result.value();
+  const auto command_result = omnicpp::render::VulkanRenderer::allocate_command_buffer(
+      context.device(), command_pool);
+  ASSERT_TRUE(command_result.is_ok());
+  const VkCommandBuffer command_buffer = command_result.value();
+
+  // GPU timestamp telemetry around the render pass.
+  VkQueryPoolCreateInfo query_info{};
+  query_info.sType = VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO;
+  query_info.queryType = VK_QUERY_TYPE_TIMESTAMP;
+  query_info.queryCount = 2;
+  VkQueryPool query_pool = VK_NULL_HANDLE;
+  ASSERT_EQ(vkCreateQueryPool(context.device(), &query_info, nullptr, &query_pool), VK_SUCCESS);
+
+  VkCommandBufferBeginInfo begin{};
+  begin.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+  begin.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+  ASSERT_EQ(vkBeginCommandBuffer(command_buffer, &begin), VK_SUCCESS);
+
+  VkRenderPassBeginInfo render_begin{};
+  render_begin.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+  render_begin.renderPass = target.render_pass();
+  render_begin.framebuffer = target.framebuffer();
+  render_begin.renderArea.extent = {width, height};
+  VkClearValue clear{};
+  clear.color = {{0.0f, 0.0f, 0.0f, 1.0f}};
+  render_begin.clearValueCount = 1;
+  render_begin.pClearValues = &clear;
+  // Query reset must be outside the render pass (VUID-vkCmdResetQueryPool-renderpass).
+  vkCmdResetQueryPool(command_buffer, query_pool, 0, 2);
+  vkCmdBeginRenderPass(command_buffer, &render_begin, VK_SUBPASS_CONTENTS_INLINE);
+  VkViewport viewport{};
+  viewport.width = static_cast<float>(width);
+  viewport.height = static_cast<float>(height);
+  viewport.maxDepth = 1.0f;
+  vkCmdSetViewport(command_buffer, 0, 1, &viewport);
+  VkRect2D scissor{};
+  scissor.extent = {width, height};
+  vkCmdSetScissor(command_buffer, 0, 1, &scissor);
+  vkCmdWriteTimestamp(command_buffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, query_pool, 0);
+  vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.pipeline());
+  vkCmdDraw(command_buffer, 3, 1, 0, 0);
+  vkCmdEndRenderPass(command_buffer);
+  vkCmdWriteTimestamp(command_buffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, query_pool, 1);
+  ASSERT_EQ(vkEndCommandBuffer(command_buffer), VK_SUCCESS);
+
+  VkFenceCreateInfo fence_info{};
+  fence_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+  VkFence fence = VK_NULL_HANDLE;
+  ASSERT_EQ(vkCreateFence(context.device(), &fence_info, nullptr, &fence), VK_SUCCESS);
+  VkSubmitInfo submit{};
+  submit.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+  submit.commandBufferCount = 1;
+  submit.pCommandBuffers = &command_buffer;
+  ASSERT_EQ(vkQueueSubmit(context.graphics_queue(), 1, &submit, fence), VK_SUCCESS);
+  ASSERT_EQ(vkWaitForFences(context.device(), 1, &fence, VK_TRUE, UINT64_MAX), VK_SUCCESS);
+
+  std::uint64_t timestamps[2] = {0, 0};
+  ASSERT_EQ(vkGetQueryPoolResults(context.device(), query_pool, 0, 2, sizeof(timestamps),
+                                  timestamps, sizeof(std::uint64_t), VK_QUERY_RESULT_64_BIT),
+            VK_SUCCESS);
+  const auto render_pass_ns = static_cast<std::uint64_t>(
+      static_cast<double>(timestamps[1] - timestamps[0]) *
+      context.device_properties().timestamp_period_ns);
+  EXPECT_GT(render_pass_ns, 0ULL);
+  std::cout << "GPU render-pass time: " << render_pass_ns << " ns" << std::endl;
+
+  const auto readback = readback_swapchain_image(
+      context.physical_device(), context.device(), context.graphics_queue(),
+      static_cast<std::uint32_t>(context.queue_families().graphics_family),
+      target.image(), target.format(), width, height,
+      VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+  ASSERT_TRUE(readback.submitted);
+  EXPECT_GT(readback.non_clear_pixels, 1000U);
+  EXPECT_GT(readback.red_dominant_pixels, 100U);
+  EXPECT_GT(readback.green_dominant_pixels, 100U);
+  EXPECT_GT(readback.blue_dominant_pixels, 100U);
+  EXPECT_EQ(readback.canonical_hash, 9189736358881991061ULL);
+  EXPECT_EQ(context.validation_error_count(), 0U);
+  EXPECT_EQ(context.validation_warning_count(), 0U);
+
+  vkDestroyQueryPool(context.device(), query_pool, nullptr);
+  vkDestroyFence(context.device(), fence, nullptr);
+  vkDestroyCommandPool(context.device(), command_pool, nullptr);
+  pipeline.cleanup(context.device());
+  target.cleanup(context.device());
+  allocator.cleanup();
+  context.cleanup();
+#else
+  GTEST_SKIP() << "Vulkan support was not enabled for this build";
+#endif
+}
+
+TEST(VulkanHardware, SwapchainRecreationStress) {
+#if OMNICPP_VULKAN_TYPES_AVAILABLE && defined(VK_USE_PLATFORM_XCB_KHR)
+  if (!omnicpp::render::VulkanContext::is_available()) GTEST_SKIP() << "Vulkan loader unavailable";
+  const char* display_name = std::getenv("DISPLAY");
+  if (!display_name) GTEST_SKIP() << "DISPLAY is unavailable";
+
+  xcb_connection_t* connection = xcb_connect(display_name, nullptr);
+  if (!connection || xcb_connection_has_error(connection)) {
+    if (connection) xcb_disconnect(connection);
+    GTEST_SKIP() << "XCB display is unavailable";
+  }
+  const auto setup = xcb_get_setup(connection);
+  const auto* screen = xcb_setup_roots_iterator(setup).data;
+  if (!screen) {
+    xcb_disconnect(connection);
+    GTEST_SKIP() << "XCB screen is unavailable";
+  }
+  const xcb_window_t window = xcb_generate_id(connection);
+  const std::uint32_t event_mask = XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_STRUCTURE_NOTIFY;
+  xcb_create_window(connection, XCB_COPY_FROM_PARENT, window, screen->root,
+                    0, 0, 640, 480, 0, XCB_WINDOW_CLASS_INPUT_OUTPUT,
+                    screen->root_visual, XCB_CW_EVENT_MASK, &event_mask);
+  xcb_map_window(connection, window);
+  xcb_flush(connection);
+
+  omnicpp::render::VulkanContext context;
+  ASSERT_TRUE(context.initialize("OmniCppRecreationTest", true).is_ok());
+
+  VkSurfaceKHR surface = VK_NULL_HANDLE;
+  omnicpp::render::SurfaceCreateInfo surface_info;
+  surface_info.display = connection;
+  surface_info.window = reinterpret_cast<void*>(static_cast<std::uintptr_t>(window));
+  auto surface_result = omnicpp::render::create_platform_surface(context.instance(), surface_info, surface);
+  if (!surface_result.is_ok()) {
+    context.cleanup();
+    xcb_destroy_window(connection, window);
+    xcb_disconnect(connection);
+    GTEST_SKIP() << "XCB Vulkan surface unavailable";
+  }
+  ASSERT_NE(surface, VK_NULL_HANDLE);
+
+  omnicpp::render::VulkanSwapchain swapchain;
+  ASSERT_TRUE(swapchain.create(context.device(), context.physical_device(), surface, {}).is_ok());
+  ASSERT_TRUE(swapchain.create_image_views(context.device()).is_ok());
+
+  const VkFormat depth_format = omnicpp::render::VulkanRenderPass::find_supported_depth_format(context.physical_device());
+  ASSERT_NE(depth_format, VK_FORMAT_UNDEFINED);
+  omnicpp::render::VulkanRenderPass render_pass;
+  ASSERT_TRUE(render_pass.create(context.device(), swapchain.image_format(), depth_format).is_ok());
+  ASSERT_TRUE(render_pass.create_depth_resources(context.device(), context.physical_device(), depth_format,
+                                                 swapchain.extent_width(), swapchain.extent_height()).is_ok());
+  ASSERT_TRUE(render_pass.create_framebuffers(context.device(), swapchain.image_views(),
+                                              swapchain.extent_width(), swapchain.extent_height()).is_ok());
+
+  omnicpp::render::VulkanPipeline pipeline;
+#ifdef OMNICPP_TEST_SHADER_DIR
+  const std::string shader_dir = OMNICPP_TEST_SHADER_DIR;
+  ASSERT_TRUE(pipeline.load_shader_stage_file(context.device(), shader_dir + "/triangle.vert.spv", "vertex").is_ok());
+  ASSERT_TRUE(pipeline.load_shader_stage_file(context.device(), shader_dir + "/triangle.frag.spv", "fragment").is_ok());
+  ASSERT_TRUE(pipeline.all_core_stages_loaded());
+  ASSERT_TRUE(pipeline.create_graphics_pipeline(context.device(), render_pass.render_pass(),
+                                                swapchain.image_format(), VK_NULL_HANDLE,
+                                                true, true, false).is_ok());
+#else
+  GTEST_SKIP() << "Test shaders were not compiled";
+#endif
+
+  omnicpp::render::VulkanRenderer renderer;
+  renderer.set_timeline_pacing(context.has_timeline_semaphores());
+  ASSERT_TRUE(renderer.initialize(context, swapchain, render_pass).is_ok());
+  renderer.set_synchronization2(context.has_synchronization2());
+
+  auto render_frames = [&](std::uint32_t count) -> bool {
+    for (std::uint32_t i = 0; i < count; ++i) {
+      auto image = renderer.begin_frame();
+      if (!image.is_ok()) return false;
+      if (!renderer.record_commands(image.value(), render_pass.framebuffer(image.value()),
+                                    swapchain.extent_width(), swapchain.extent_height()).is_ok()) return false;
+      if (!renderer.submit_frame().is_ok()) return false;
+      if (!renderer.present_frame().is_ok()) return false;
+    }
+    return true;
+  };
+  ASSERT_TRUE(render_frames(4));
+
+  // Recreate at a different extent: retire framebuffers, rebuild swapchain,
+  // framebuffers, and renderer per-image resources, then render again.
+  renderer.wait_idle();
+  render_pass.cleanup(context.device());
+  ASSERT_TRUE(swapchain.recreate(context.device(), context.physical_device(), surface, 320, 240).is_ok());
+  ASSERT_TRUE(render_pass.create(context.device(), swapchain.image_format(), depth_format).is_ok());
+  ASSERT_TRUE(render_pass.create_depth_resources(context.device(), context.physical_device(), depth_format,
+                                                 swapchain.extent_width(), swapchain.extent_height()).is_ok());
+  ASSERT_TRUE(render_pass.create_framebuffers(context.device(), swapchain.image_views(),
+              swapchain.extent_width(), swapchain.extent_height()).is_ok());
+  ASSERT_TRUE(renderer.resync_for_swapchain(swapchain, render_pass.render_pass()).is_ok());
+  ASSERT_TRUE(render_frames(4));
+  renderer.wait_idle();
+
+  EXPECT_EQ(context.validation_error_count(), 0U);
+  EXPECT_EQ(context.validation_warning_count(), 0U);
+
+  renderer.cleanup(context.device());
+  pipeline.cleanup(context.device());
+  render_pass.cleanup(context.device());
+  swapchain.cleanup(context.device());
+  context.destroy_surface(surface);
+  context.cleanup();
+  xcb_destroy_window(connection, window);
+  xcb_disconnect(connection);
+#else
+  GTEST_SKIP() << "Vulkan XCB support was not enabled for this build";
+#endif
+}
+
+TEST(VulkanSwapchain, ChooseSurfaceFormatPrefersSRGB) {
+#if OMNICPP_VULKAN_TYPES_AVAILABLE
+  std::vector<VkSurfaceFormatKHR> formats = {
+      VkSurfaceFormatKHR{VK_FORMAT_R8G8B8A8_UNORM, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR},
+      VkSurfaceFormatKHR{VK_FORMAT_B8G8R8A8_SRGB, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR}};
+  const auto chosen = omnicpp::render::VulkanSwapchain::choose_surface_format(formats);
+  EXPECT_EQ(chosen.format, VK_FORMAT_B8G8R8A8_SRGB);
+#else
+  std::vector<VkFormat> formats = {50, 44};
+  const auto chosen = omnicpp::render::VulkanSwapchain::choose_surface_format(formats);
+  EXPECT_EQ(chosen, static_cast<VkFormat>(50));
+#endif
+}
+
+TEST(VulkanSwapchain, ChoosePresentModeReturnsValidValue) {
+  std::vector<VkPresentModeKHR> modes = {VK_PRESENT_MODE_FIFO_KHR, VK_PRESENT_MODE_MAILBOX_KHR};
+  const auto chosen = omnicpp::render::VulkanSwapchain::choose_present_mode(modes, true);
+  EXPECT_EQ(chosen, VK_PRESENT_MODE_FIFO_KHR);
+}
+
+TEST(VulkanSwapchain, ChoosePresentModeMailboxWithoutVsync) {
+  std::vector<VkPresentModeKHR> modes = {VK_PRESENT_MODE_FIFO_KHR, VK_PRESENT_MODE_MAILBOX_KHR};
+  const auto chosen = omnicpp::render::VulkanSwapchain::choose_present_mode(modes, false);
+  EXPECT_EQ(chosen, VK_PRESENT_MODE_MAILBOX_KHR);
+}
+
+TEST(VulkanSwapchain, ChooseExtentClampsToCapabilities) {
+  VkSurfaceCapabilitiesKHR caps{};
+  caps.minImageExtent = {100, 100};
+  caps.maxImageExtent = {2000, 2000};
+  caps.currentExtent = {std::numeric_limits<std::uint32_t>::max(), std::numeric_limits<std::uint32_t>::max()};
+  const auto extent = omnicpp::render::VulkanSwapchain::choose_extent(caps, 5000, 5000);
+  EXPECT_EQ(extent.width, 2000u);
+  EXPECT_EQ(extent.height, 2000u);
+}
+
+TEST(VulkanSwapchain, ChooseExtentUsesCurrentExtentWhenDefined) {
+  VkSurfaceCapabilitiesKHR caps{};
+  caps.currentExtent = {1920, 1080};
+  const auto extent = omnicpp::render::VulkanSwapchain::choose_extent(caps, 800, 600);
+  EXPECT_EQ(extent.width, 1920u);
+  EXPECT_EQ(extent.height, 1080u);
+}
+
+TEST(VulkanSwapchain, CreateFailsWithoutDevice) {
+  omnicpp::render::VulkanSwapchain swapchain;
+  auto result = swapchain.create(nullptr, nullptr, nullptr, {});
+  EXPECT_FALSE(result.is_ok());
+}
+
+TEST(VulkanSwapchain, CreateImageViewsFailsWithoutImages) {
+  omnicpp::render::VulkanSwapchain swapchain;
+  auto result = swapchain.create_image_views(nullptr);
+  EXPECT_FALSE(result.is_ok());
+}
+
+TEST(VulkanSwapchain, CleanupIsIdempotent) {
+  omnicpp::render::VulkanSwapchain swapchain;
+  swapchain.cleanup(nullptr);
+  swapchain.cleanup(nullptr);
+  EXPECT_FALSE(swapchain.is_valid());
+}
+
+TEST(VulkanSwapchain, RecreateFailsWithZeroDimensions) {
+  omnicpp::render::VulkanSwapchain swapchain;
+  auto result = swapchain.recreate(nullptr, nullptr, nullptr, 0, 0);
+  EXPECT_FALSE(result.is_ok());
+}
+
+// ============================================================================
+// VulkanRenderPass Tests
+// ============================================================================
+
+TEST(VulkanRenderPass, CreateFailsWithoutDevice) {
+  omnicpp::render::VulkanRenderPass rp;
+  auto result = rp.create(nullptr, static_cast<VkFormat>(43), static_cast<VkFormat>(100));
+  EXPECT_FALSE(result.is_ok());
+}
+
+TEST(VulkanRenderPass, FramebufferCountZeroBeforeCreation) {
+  omnicpp::render::VulkanRenderPass rp;
+  EXPECT_EQ(rp.framebuffer_count(), 0u);
+}
+
+TEST(VulkanRenderPass, CleanupIsIdempotent) {
+  omnicpp::render::VulkanRenderPass rp;
+  rp.cleanup(nullptr);
+  rp.cleanup(nullptr);
+  EXPECT_EQ(rp.render_pass(), nullptr);
+}
+
+TEST(VulkanRenderPass, FindSupportedDepthFormatReturnsUndefinedWithoutDevice) {
+  const auto format = omnicpp::render::VulkanRenderPass::find_supported_depth_format(nullptr);
+  EXPECT_EQ(format, VK_FORMAT_UNDEFINED);
+}
+
+TEST(VulkanOffscreenTarget, RejectsInvalidDimensions) {
+  omnicpp::render::VulkanOffscreenTarget target;
+  auto result = target.create(nullptr, nullptr, VK_FORMAT_UNDEFINED, 0, 0);
+  EXPECT_FALSE(result.is_ok());
+  EXPECT_FALSE(target.is_valid());
+}
+
+TEST(VulkanOffscreenTarget, CleanupIsIdempotent) {
+  omnicpp::render::VulkanOffscreenTarget target;
+  target.cleanup(nullptr);
+  target.cleanup(nullptr);
+  EXPECT_FALSE(target.is_valid());
+}
+
+// ============================================================================
+// VulkanPipeline Tests
+// ============================================================================
+
+TEST(VulkanPipeline, LoadShaderFailsWithEmptyData) {
+  omnicpp::render::VulkanPipeline pipeline;
+  auto result = pipeline.load_shader(nullptr, nullptr, 0);
+  EXPECT_FALSE(result.is_ok());
+}
+
+TEST(VulkanPipeline, LoadShaderFromBytesFailsWithEmpty) {
+  omnicpp::render::VulkanPipeline pipeline;
+  std::vector<std::uint8_t> empty;
+  auto result = pipeline.load_shader_from_bytes(nullptr, empty);
+  EXPECT_FALSE(result.is_ok());
+}
+
+TEST(VulkanPipeline, LoadShaderFromBytesFailsWithOddSize) {
+  omnicpp::render::VulkanPipeline pipeline;
+  std::vector<std::uint8_t> bad(5, 0);
+  auto result = pipeline.load_shader_from_bytes(nullptr, bad);
+  EXPECT_FALSE(result.is_ok());
+}
+
+TEST(VulkanPipeline, CreateGraphicsPipelineFailsWithoutDevice) {
+  omnicpp::render::VulkanPipeline pipeline;
+  auto result = pipeline.create_graphics_pipeline(nullptr, nullptr, static_cast<VkFormat>(43));
+  EXPECT_FALSE(result.is_ok());
+}
+
+TEST(VulkanPipeline, CleanupIsIdempotent) {
+  omnicpp::render::VulkanPipeline pipeline;
+  pipeline.cleanup(nullptr);
+  pipeline.cleanup(nullptr);
+  EXPECT_EQ(pipeline.pipeline(), nullptr);
+  EXPECT_EQ(pipeline.pipeline_layout(), nullptr);
+}
+
+TEST(VulkanPipeline, LoadShaderFileFailsWithNonexistentFile) {
+  omnicpp::render::VulkanPipeline pipeline;
+  auto result = pipeline.load_shader_file(nullptr, "/nonexistent/shader.spv");
+  EXPECT_FALSE(result.is_ok());
+}
+
+TEST(VulkanPipeline, LoadShaderStageFailsWithNullDevice) {
+  omnicpp::render::VulkanPipeline pipeline;
+  EXPECT_FALSE(pipeline.load_shader_stage_file(nullptr, "/nonexistent.spv", "vertex").is_ok());
+  EXPECT_FALSE(pipeline.has_stage("vertex"));
+  EXPECT_FALSE(pipeline.has_stage("unknown"));
+  EXPECT_FALSE(pipeline.all_core_stages_loaded());
+}
+
+TEST(VulkanRenderer, ResyncFailsBeforeInit) {
+  omnicpp::render::VulkanSwapchain swapchain;
+  omnicpp::render::VulkanRenderer renderer;
+  EXPECT_FALSE(renderer.resync_for_swapchain(swapchain, nullptr).is_ok());
+}
+
+// ============================================================================
+// VulkanRenderer Tests
+// ============================================================================
+
+TEST(VulkanRenderer, InitializeFailsWithoutContext) {
+  omnicpp::render::VulkanContext ctx;
+  omnicpp::render::VulkanSwapchain swapchain;
+  omnicpp::render::VulkanRenderPass render_pass;
+  omnicpp::render::VulkanRenderer renderer;
+  auto result = renderer.initialize(ctx, swapchain, render_pass);
+  EXPECT_FALSE(result.is_ok());
+}
+
+TEST(VulkanRenderer, IsFalseBeforeInit) {
+  omnicpp::render::VulkanRenderer renderer;
+  EXPECT_FALSE(renderer.is_initialized());
+  EXPECT_EQ(renderer.frame_count(), 0u);
+}
+
+TEST(VulkanRenderer, RejectsZeroFramesInFlight) {
+  omnicpp::render::VulkanContext context;
+  omnicpp::render::VulkanSwapchain swapchain;
+  omnicpp::render::VulkanRenderPass render_pass;
+  omnicpp::render::VulkanRenderer renderer;
+  omnicpp::render::RendererConfig config;
+  config.max_frames_in_flight = 0;
+  auto result = renderer.initialize(context, swapchain, render_pass, config);
+  EXPECT_FALSE(result.is_ok());
+}
+
+TEST(VulkanRenderer, CleanupIsIdempotent) {
+  omnicpp::render::VulkanRenderer renderer;
+  renderer.cleanup(nullptr);
+  renderer.cleanup(nullptr);
+  EXPECT_FALSE(renderer.is_initialized());
+}
+
+TEST(VulkanRenderer, CreateCommandPoolFailsWithoutDevice) {
+  auto result = omnicpp::render::VulkanRenderer::create_command_pool(nullptr, 0);
+  EXPECT_FALSE(result.is_ok());
+}
+
+TEST(VulkanRenderer, AllocateCommandBufferFailsWithoutDevice) {
+  auto result = omnicpp::render::VulkanRenderer::allocate_command_buffer(nullptr, nullptr);
+  EXPECT_FALSE(result.is_ok());
+}
+
+TEST(VulkanRenderer, BeginFrameFailsBeforeInit) {
+  omnicpp::render::VulkanRenderer renderer;
+  auto result = renderer.begin_frame();
+  EXPECT_FALSE(result.is_ok());
+}
+
+TEST(VulkanRenderer, EndFrameFailsBeforeInit) {
+  omnicpp::render::VulkanRenderer renderer;
+  auto result = renderer.end_frame();
+  EXPECT_FALSE(result.is_ok());
+}
+
+TEST(VulkanRenderer, WaitIdleIsSafeBeforeInit) {
+  omnicpp::render::VulkanRenderer renderer;
+  renderer.wait_idle();
+}
+
+// ============================================================================
+// FrameResources Tests
+// ============================================================================
+
+TEST(FrameResources, CleanupIsIdempotent) {
+  omnicpp::render::FrameResources frame;
+  frame.cleanup(nullptr);
+  frame.cleanup(nullptr);
+  EXPECT_EQ(frame.command_buffer, nullptr);
+}
+
+// ============================================================================
+// Config Tests
+// ============================================================================
+
+TEST(SwapchainConfig, DefaultValues) {
+  omnicpp::render::SwapchainConfig config;
+  EXPECT_EQ(config.width, 800u);
+  EXPECT_EQ(config.height, 600u);
+  EXPECT_TRUE(config.vsync);
+  EXPECT_EQ(config.max_frames_in_flight, 2u);
+}
+
+TEST(RendererConfig, DefaultValues) {
+  omnicpp::render::RendererConfig config;
+  EXPECT_EQ(config.max_frames_in_flight, 2u);
+  EXPECT_FLOAT_EQ(config.clear_color_r, 0.0f);
+  EXPECT_FLOAT_EQ(config.clear_color_a, 1.0f);
+  EXPECT_FLOAT_EQ(config.clear_depth, 1.0f);
+}
+
+// ============================================================================
+// SoftwareRasterizer Tests
+// ============================================================================
+
+TEST(SoftwareRasterizer, ClearSetsBlack) {
+  omnicpp::render::SoftwareRasterizer rast(64, 64);
+  rast.clear(0xFF000000);
+  EXPECT_EQ(rast.get_pixel(0, 0), 0xFF000000u);
+  EXPECT_EQ(rast.get_pixel(32, 32), 0xFF000000u);
+}
+
+TEST(SoftwareRasterizer, ClearSetsDepth) {
+  omnicpp::render::SoftwareRasterizer rast(8, 8);
+  rast.clear(0xFF000000, 0.5f);
+  EXPECT_FLOAT_EQ(rast.depth_data()[0], 0.5f);
+}
+
+TEST(SoftwareRasterizer, DrawTriangleFillsPixels) {
+  omnicpp::render::SoftwareRasterizer rast(100, 100);
+  rast.clear(0xFF000000);
+  rast.draw_triangle(10, 10, 0, 0xFFFF0000, 90, 10, 0, 0xFF00FF00, 50, 90, 0, 0xFF0000FF);
+  EXPECT_NE(rast.get_pixel(50, 50), 0xFF000000u);
+  EXPECT_EQ(rast.get_pixel(0, 0), 0xFF000000u);
+  EXPECT_EQ(rast.get_pixel(99, 99), 0xFF000000u);
+}
+
+TEST(SoftwareRasterizer, DrawTriangleIsDeterministic) {
+  omnicpp::render::SoftwareRasterizer rast1(64, 64);
+  omnicpp::render::SoftwareRasterizer rast2(64, 64);
+  rast1.clear(0xFF000000);
+  rast2.clear(0xFF000000);
+  rast1.draw_triangle(10, 10, 0, 0xFFFF0000, 50, 10, 0, 0xFF00FF00, 30, 50, 0, 0xFF0000FF);
+  rast2.draw_triangle(10, 10, 0, 0xFFFF0000, 50, 10, 0, 0xFF00FF00, 30, 50, 0, 0xFF0000FF);
+  EXPECT_EQ(rast1.frame_hash(), rast2.frame_hash());
+}
+
+TEST(SoftwareRasterizer, DepthBufferClosesFarther) {
+  omnicpp::render::SoftwareRasterizer rast(100, 100);
+  rast.clear(0xFF000000);
+  rast.draw_triangle(20, 20, 0.5f, 0xFF0000FF, 80, 20, 0.5f, 0xFF0000FF, 50, 80, 0.5f, 0xFF0000FF);
+  rast.draw_triangle(20, 20, 0.1f, 0xFFFF0000, 80, 20, 0.1f, 0xFFFF0000, 50, 80, 0.1f, 0xFFFF0000);
+  std::uint8_t r = (rast.get_pixel(50, 40) >> 16) & 0xFF;
+  EXPECT_GT(r, 200u);
+}
+
+TEST(SoftwareRasterizer, BothWindingOrdersRasterize) {
+  omnicpp::render::SoftwareRasterizer rast1(100, 100);
+  omnicpp::render::SoftwareRasterizer rast2(100, 100);
+  rast1.clear(0xFF000000);
+  rast2.clear(0xFF000000);
+  rast1.draw_triangle(50, 10, 0, 0xFFFF0000, 90, 90, 0, 0xFF00FF00, 10, 90, 0, 0xFF0000FF);
+  rast2.draw_triangle(50, 10, 0, 0xFFFF0000, 10, 90, 0, 0xFF0000FF, 90, 90, 0, 0xFF00FF00);
+  EXPECT_NE(rast1.get_pixel(50, 50), 0xFF000000u);
+  EXPECT_NE(rast2.get_pixel(50, 50), 0xFF000000u);
+}
+
+TEST(SoftwareRasterizer, FrameHashChangesWithContent) {
+  omnicpp::render::SoftwareRasterizer rast(32, 32);
+  rast.clear(0xFF000000);
+  std::uint64_t hash_empty = rast.frame_hash();
+  rast.draw_triangle(5, 5, 0, 0xFFFF0000, 25, 5, 0, 0xFF00FF00, 15, 25, 0, 0xFF0000FF);
+  EXPECT_NE(hash_empty, rast.frame_hash());
+}
+
+TEST(SoftwareRasterizer, WidthAndHeightAreCorrect) {
+  omnicpp::render::SoftwareRasterizer rast(320, 240);
+  EXPECT_EQ(rast.width(), 320u);
+  EXPECT_EQ(rast.height(), 240u);
+}
+
+TEST(SoftwareRasterizer, GetPixelOutOfBoundsReturnsZero) {
+  omnicpp::render::SoftwareRasterizer rast(10, 10);
+  EXPECT_EQ(rast.get_pixel(100, 100), 0u);
+}
