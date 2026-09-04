@@ -1,0 +1,108 @@
+#pragma once
+
+/**
+ * @file vulkan_context.hpp
+ * @brief Vulkan instance and device abstraction.
+ */
+
+#include "engine/core/deterministic_runtime.hpp"
+#include "engine/render/vulkan_types.hpp"
+#include <atomic>
+#include <cstdint>
+#include <string>
+#include <vector>
+
+namespace omnicpp::render {
+
+struct QueueFamilyIndices {
+  std::int32_t graphics_family{-1};
+  std::int32_t present_family{-1};
+  [[nodiscard]] bool is_complete() const noexcept {
+    return graphics_family >= 0 && present_family >= 0;
+  }
+};
+
+struct DeviceProperties {
+  std::string name;
+  std::uint32_t api_version{0};
+  std::uint32_t driver_version{0};
+  std::uint32_t vendor_id{0};
+  std::uint32_t device_id{0};
+  bool is_discrete_gpu{false};
+  std::uint64_t max_image_dimension_2d{0};
+  //! Timestamp period in nanoseconds per tick (0 when unsupported).
+  float timestamp_period_ns{0.0f};
+};
+
+class VulkanContext final {
+public:
+  VulkanContext() = default;
+  ~VulkanContext();
+
+  VulkanContext(const VulkanContext&) = delete;
+  VulkanContext& operator=(const VulkanContext&) = delete;
+  VulkanContext(VulkanContext&&) = delete;
+  VulkanContext& operator=(VulkanContext&&) = delete;
+
+  [[nodiscard]] omnicpp::core::Result<void> initialize(
+      const std::string& app_name, bool enable_validation = false);
+  //! Create a VK_EXT_headless_surface surface for GPU-only validation.
+  [[nodiscard]] omnicpp::core::Result<void> create_surface(VkSurfaceKHR& surface);
+  //! Destroy a surface created by this context.
+  void destroy_surface(VkSurfaceKHR& surface) noexcept;
+  void cleanup() noexcept;
+
+  [[nodiscard]] bool is_initialized() const noexcept { return initialized_; }
+  [[nodiscard]] VkInstance instance() const noexcept { return instance_; }
+  [[nodiscard]] VkPhysicalDevice physical_device() const noexcept { return physical_device_; }
+  [[nodiscard]] VkDevice device() const noexcept { return device_; }
+  [[nodiscard]] VkQueue graphics_queue() const noexcept { return graphics_queue_; }
+  [[nodiscard]] VkQueue present_queue() const noexcept { return present_queue_; }
+  [[nodiscard]] const QueueFamilyIndices& queue_families() const noexcept { return queue_families_; }
+  [[nodiscard]] const DeviceProperties& device_properties() const noexcept { return device_properties_; }
+  [[nodiscard]] bool has_validation() const noexcept { return validation_enabled_; }
+  //! True when the device supports Vulkan 1.3 and Synchronization 2 was enabled.
+  [[nodiscard]] bool has_synchronization2() const noexcept { return synchronization2_enabled_; }
+  //! True when the device supports Vulkan 1.3 and timeline semaphores were enabled.
+  [[nodiscard]] bool has_timeline_semaphores() const noexcept { return timeline_semaphores_enabled_; }
+  //! True when descriptor indexing (bindless: runtime arrays, partially bound,
+  //! update-after-bind) was negotiated and enabled on the device.
+  [[nodiscard]] bool has_descriptor_indexing() const noexcept { return descriptor_indexing_enabled_; }
+  [[nodiscard]] std::uint32_t validation_warning_count() const noexcept {
+    return validation_warning_count_.load(std::memory_order_relaxed);
+  }
+  [[nodiscard]] std::uint32_t validation_error_count() const noexcept {
+    return validation_error_count_.load(std::memory_order_relaxed);
+  }
+
+  [[nodiscard]] static bool is_available() noexcept;
+
+private:
+  bool check_validation_layer_support();
+  std::vector<const char*> get_required_extensions(bool validation);
+  std::uint32_t rate_device_suitability(VkPhysicalDevice device);
+  bool check_device_extension_support(VkPhysicalDevice device);
+  QueueFamilyIndices find_queue_families(VkPhysicalDevice device, VkSurfaceKHR surface);
+  std::uint32_t get_highest_api_version();
+  void record_validation_message(std::uint32_t severity, std::uint32_t type,
+                                 const char* message) noexcept;
+
+  bool initialized_{false};
+  bool validation_enabled_{false};
+  bool headless_surface_enabled_{false};
+  bool synchronization2_enabled_{false};
+  bool timeline_semaphores_enabled_{false};
+  bool descriptor_indexing_enabled_{false};
+  VkInstance instance_{nullptr};
+  VkPhysicalDevice physical_device_{nullptr};
+  VkDevice device_{nullptr};
+  VkQueue graphics_queue_{nullptr};
+  VkQueue present_queue_{nullptr};
+  VkDebugUtilsMessengerEXT debug_messenger_{nullptr};
+  QueueFamilyIndices queue_families_{};
+  DeviceProperties device_properties_{};
+  std::atomic<std::uint32_t> validation_warning_count_{0};
+  std::atomic<std::uint32_t> validation_error_count_{0};
+};
+
+} // namespace omnicpp::render

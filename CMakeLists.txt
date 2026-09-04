@@ -32,12 +32,37 @@ include(cmake/CompilerFlags.cmake)
 # Build Options
 # ============================================================================
 option(OMNICPP_BUILD_ENGINE "Build engine library" ON)
-option(OMNICPP_BUILD_GAME "Build game executable" ON)
+option(OMNICPP_LEGACY_ENGINE "Build legacy subsystem engine and game" OFF)
+option(OMNICPP_BUILD_GAME "Build game executable (requires OMNICPP_LEGACY_ENGINE)" OFF)
 option(OMNICPP_BUILD_TESTS "Build tests" ON)
 option(OMNICPP_BUILD_EXAMPLES "Build examples" OFF)
 option(OMNICPP_ENABLE_COVERAGE "Enable code coverage" OFF)
 option(OMNICPP_ENABLE_FORMATTING "Enable code formatting targets" ON)
 option(OMNICPP_ENABLE_LINTING "Enable code linting targets" ON)
+option(OMNICPP_ENABLE_ASAN "Enable AddressSanitizer" OFF)
+option(OMNICPP_ENABLE_UBSAN "Enable UndefinedBehaviorSanitizer" OFF)
+option(OMNICPP_ENABLE_TSAN "Enable ThreadSanitizer" OFF)
+option(OMNICPP_VULKAN_VALIDATION_TESTS
+       "Force VK_LAYER_KHRONOS_validation for Vulkan CTest runs" OFF)
+
+if(OMNICPP_ENABLE_ASAN AND OMNICPP_ENABLE_TSAN)
+    message(FATAL_ERROR "AddressSanitizer and ThreadSanitizer cannot be enabled together")
+endif()
+if(OMNICPP_ENABLE_ASAN OR OMNICPP_ENABLE_UBSAN OR OMNICPP_ENABLE_TSAN)
+    add_compile_options(-fno-omit-frame-pointer)
+    if(OMNICPP_ENABLE_ASAN)
+        add_compile_options(-fsanitize=address)
+        add_link_options(-fsanitize=address)
+    endif()
+    if(OMNICPP_ENABLE_UBSAN)
+        add_compile_options(-fsanitize=undefined)
+        add_link_options(-fsanitize=undefined)
+    endif()
+    if(OMNICPP_ENABLE_TSAN)
+        add_compile_options(-fsanitize=thread)
+        add_link_options(-fsanitize=thread)
+    endif()
+endif()
 
 # ============================================================================
 # Dependency Options
@@ -110,28 +135,8 @@ else()
     message(STATUS "Qt6 support disabled (OMNICPP_USE_QT6=OFF)")
 endif()
 
-# Use Nix Vulkan headers for compilation but system Vulkan for runtime
-# This is what the wrapper script handles at runtime anyway
-set(NIX_VULKAN_INCLUDE "/nix/store/lhzl3zl3mfl46grkmxda6j5921bki81j-vulkan-headers-1.4.335.0/include")
-set(SYSTEM_VULKAN_LIB "/usr/lib/libvulkan.so")
-
-# Set up the variables for build
-set(Vulkan_FOUND TRUE)
-set(Vulkan_INCLUDE_DIRS "${NIX_VULKAN_INCLUDE}")
-set(Vulkan_LIBRARIES "${SYSTEM_VULKAN_LIB}")
-
-# Create the imported target
-if(NOT TARGET Vulkan::Vulkan)
-    add_library(Vulkan::Vulkan SHARED IMPORTED)
-    set_target_properties(Vulkan::Vulkan PROPERTIES
-        IMPORTED_LOCATION "${SYSTEM_VULKAN_LIB}"
-        INTERFACE_INCLUDE_DIRECTORIES "${NIX_VULKAN_INCLUDE}"
-    )
-    message(STATUS "Created Vulkan::Vulkan target (Nix headers + system loader)")
-endif()
-
-message(STATUS "Final Vulkan_INCLUDE_DIRS = ${Vulkan_INCLUDE_DIRS}")
-message(STATUS "Final Vulkan_LIBRARIES = ${Vulkan_LIBRARIES}")
+# Vulkan is discovered by cmake/FindDependencies.cmake. Do not manufacture
+# imported targets or host-specific paths here; this keeps optional builds portable.
 
 # ============================================================================
 # Vulkan Configuration
@@ -164,8 +169,10 @@ if(OMNICPP_BUILD_ENGINE)
     add_subdirectory(src/engine)
 endif()
 
-if(OMNICPP_BUILD_GAME)
-    add_subdirectory(src/game)
+if(OMNICPP_LEGACY_ENGINE)
+    if(OMNICPP_BUILD_GAME)
+        message(WARNING "Game target requires legacy engine source tree which has been archived.")
+    endif()
 endif()
 
 if(OMNICPP_BUILD_TESTS)

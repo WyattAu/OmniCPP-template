@@ -1,76 +1,136 @@
 cmake_minimum_required(VERSION 3.28...4.0)
 project(OmniCppTests VERSION 1.0.0 LANGUAGES CXX)
 
-# C++ standard
-# Using C++23 as per ADR-016: C++23 Without Modules
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-# Find dependencies
-# Vulkan is configured in cmake/FindDependencies.cmake for Nix environment
-find_package(Qt6 COMPONENTS Core Gui Widgets)
 find_package(Threads REQUIRED)
 
-# Find Google Test - use the one already found by parent CMakeLists.txt
-# The parent CMakeLists.txt (FindDependencies.cmake) already handles GTest via CPM
-# so we don't need to find it again here
+if(OMNICPP_USE_VULKAN AND Vulkan_FOUND)
+    # Prefer glslc (shaderc); fall back to glslangValidator where glslc is not
+    # packaged (e.g. CI runners with only glslang-tools installed).
+    find_program(OMNICPP_GLSLC glslc)
+    find_program(OMNICPP_GLSLANG_VALIDATOR glslangValidator)
+    if(OMNICPP_GLSLC)
+        set(OMNICPP_SHADER_COMPILER "${OMNICPP_GLSLC}")
+        set(OMNICPP_SHADER_COMPILER_ARGS "")
+    elseif(OMNICPP_GLSLANG_VALIDATOR)
+        set(OMNICPP_SHADER_COMPILER "${OMNICPP_GLSLANG_VALIDATOR}")
+        set(OMNICPP_SHADER_COMPILER_ARGS "-V")
+    endif()
+    if(OMNICPP_SHADER_COMPILER)
+        set(OMNICPP_SHADER_DIR ${CMAKE_CURRENT_BINARY_DIR}/shaders)
+        file(MAKE_DIRECTORY ${OMNICPP_SHADER_DIR})
+        add_custom_command(
+            OUTPUT ${OMNICPP_SHADER_DIR}/triangle.vert.spv
+            COMMAND ${OMNICPP_SHADER_COMPILER} ${OMNICPP_SHADER_COMPILER_ARGS}
+                    ${CMAKE_SOURCE_DIR}/assets/shaders/triangle.vert
+                    -o ${OMNICPP_SHADER_DIR}/triangle.vert.spv
+            DEPENDS ${CMAKE_SOURCE_DIR}/assets/shaders/triangle.vert
+            VERBATIM
+        )
+        add_custom_command(
+            OUTPUT ${OMNICPP_SHADER_DIR}/triangle.frag.spv
+            COMMAND ${OMNICPP_SHADER_COMPILER} ${OMNICPP_SHADER_COMPILER_ARGS}
+                    ${CMAKE_SOURCE_DIR}/assets/shaders/triangle.frag
+                    -o ${OMNICPP_SHADER_DIR}/triangle.frag.spv
+            DEPENDS ${CMAKE_SOURCE_DIR}/assets/shaders/triangle.frag
+            VERBATIM
+        )
+        add_custom_command(
+            OUTPUT ${OMNICPP_SHADER_DIR}/ubo_triangle.frag.spv
+            COMMAND ${OMNICPP_SHADER_COMPILER} ${OMNICPP_SHADER_COMPILER_ARGS}
+                    ${CMAKE_SOURCE_DIR}/assets/shaders/ubo_triangle.frag
+                    -o ${OMNICPP_SHADER_DIR}/ubo_triangle.frag.spv
+            DEPENDS ${CMAKE_SOURCE_DIR}/assets/shaders/ubo_triangle.frag
+            VERBATIM
+        )
+        add_custom_command(
+            OUTPUT ${OMNICPP_SHADER_DIR}/bindless_palette.frag.spv
+            COMMAND ${OMNICPP_SHADER_COMPILER} ${OMNICPP_SHADER_COMPILER_ARGS}
+                    ${CMAKE_SOURCE_DIR}/assets/shaders/bindless_palette.frag
+                    -o ${OMNICPP_SHADER_DIR}/bindless_palette.frag.spv
+            DEPENDS ${CMAKE_SOURCE_DIR}/assets/shaders/bindless_palette.frag
+            VERBATIM
+        )
+        add_custom_target(omnicpp_test_shaders
+            DEPENDS
+                ${OMNICPP_SHADER_DIR}/triangle.vert.spv
+                ${OMNICPP_SHADER_DIR}/triangle.frag.spv
+                ${OMNICPP_SHADER_DIR}/ubo_triangle.frag.spv
+                ${OMNICPP_SHADER_DIR}/bindless_palette.frag.spv
+        )
+    endif()
+endif()
 
-# Include directories
-include_directories(${CMAKE_SOURCE_DIR}/include)
+# ============================================================================
+# Canonical runtime tests — these link ONLY to omnicpp_runtime.
+# They must never depend on omnicpp_engine.
+# ============================================================================
 
-# Unit test executable
 add_executable(omnicpp_unit_tests
-    unit/test_quill_logger.cpp
-    unit/test_input_manager.cpp
-    unit/test_resource_manager.cpp
-    unit/test_physics_engine.cpp
-    unit/test_audio_manager.cpp
-    unit/test_ecs.cpp
+    unit/test_deterministic_runtime.cpp
+    unit/test_engine.cpp
+    unit/test_concurrency.cpp
+    unit/test_platform_primitives.cpp
+    unit/test_ecs_foundation.cpp
+    unit/test_rendering.cpp
+)
+target_link_libraries(omnicpp_unit_tests PRIVATE omnicpp_runtime Threads::Threads gtest gtest_main)
+target_include_directories(omnicpp_unit_tests PRIVATE ${CMAKE_SOURCE_DIR}/include)
+if(TARGET omnicpp_test_shaders)
+    add_dependencies(omnicpp_unit_tests omnicpp_test_shaders)
+    target_compile_definitions(omnicpp_unit_tests PRIVATE
+        OMNICPP_TEST_SHADER_DIR=\"${OMNICPP_SHADER_DIR}\")
+endif()
+
+add_executable(omnicpp_runtime_only_tests
+    unit/test_runtime_only.cpp
+)
+target_link_libraries(omnicpp_runtime_only_tests PRIVATE omnicpp_runtime Threads::Threads gtest gtest_main)
+target_include_directories(omnicpp_runtime_only_tests PRIVATE ${CMAKE_SOURCE_DIR}/include)
+
+add_executable(omnicpp_deterministic_runtime_benchmark
+    performance/deterministic_runtime_benchmark.cpp
+)
+target_link_libraries(omnicpp_deterministic_runtime_benchmark PRIVATE omnicpp_runtime Threads::Threads)
+target_include_directories(omnicpp_deterministic_runtime_benchmark PRIVATE ${CMAKE_SOURCE_DIR}/include)
+
+# ============================================================================
+# Legacy tests — only built when OMNICPP_LEGACY_ENGINE=ON.
+# ============================================================================
+
+if(OMNICPP_LEGACY_ENGINE)
+    add_executable(omnicpp_legacy_tests
+        unit/test_input_manager.cpp
     )
+    target_link_libraries(omnicpp_legacy_tests PRIVATE omnicpp_engine Threads::Threads gtest gtest_main)
+    target_include_directories(omnicpp_legacy_tests PRIVATE ${CMAKE_SOURCE_DIR}/include)
 
-target_link_libraries(omnicpp_unit_tests
-    PRIVATE
-    omnicpp_engine
-    Threads::Threads
-    gtest
-    gtest_main
-)
-
-if(Vulkan_FOUND)
-    target_link_libraries(omnicpp_unit_tests PRIVATE Vulkan::Vulkan)
+    add_executable(omnicpp_integration_tests
+        test_engine.cpp
+    )
+    target_link_libraries(omnicpp_integration_tests PRIVATE omnicpp_engine Threads::Threads)
+    target_include_directories(omnicpp_integration_tests PRIVATE ${CMAKE_SOURCE_DIR}/include)
 endif()
 
-if(Qt6_FOUND)
-    target_link_libraries(omnicpp_unit_tests PRIVATE Qt6::Core Qt6::Gui Qt6::Widgets)
-endif()
+# ============================================================================
+# Test registration
+# ============================================================================
 
-# Integration test executable
-add_executable(omnicpp_integration_tests
-    test_engine.cpp
-    test_game.cpp
-)
-
-target_link_libraries(omnicpp_integration_tests
-    PRIVATE
-    omnicpp_engine
-    Threads::Threads
-)
-
-if(Vulkan_FOUND)
-    target_link_libraries(omnicpp_integration_tests PRIVATE Vulkan::Vulkan)
-endif()
-
-if(Qt6_FOUND)
-    target_link_libraries(omnicpp_integration_tests PRIVATE Qt6::Core Qt6::Gui Qt6::Widgets)
-endif()
-
-# Enable testing
 enable_testing()
+add_test(NAME OmniCppUnitTests COMMAND omnicpp_unit_tests)
+add_test(NAME OmniCppRuntimeOnly COMMAND omnicpp_runtime_only_tests)
+add_test(NAME OmniCppDeterministicRuntimeBenchmark COMMAND omnicpp_deterministic_runtime_benchmark)
 
-# Unit tests
-add_test(NAME SpdLogLoggerTest COMMAND omnicpp_unit_tests)
+if(OMNICPP_VULKAN_VALIDATION_TESTS AND OMNICPP_USE_VULKAN AND Vulkan_FOUND)
+    set_tests_properties(OmniCppUnitTests OmniCppRuntimeOnly OmniCppDeterministicRuntimeBenchmark
+        PROPERTIES ENVIRONMENT "VK_LOADER_LAYERS_ENABLE=VK_LAYER_KHRONOS_validation")
+endif()
 
-# Integration tests
-add_test(NAME EngineTest COMMAND omnicpp_integration_tests --test-engine)
-add_test(NAME GameTest COMMAND omnicpp_integration_tests --test-game)
+if(OMNICPP_LEGACY_ENGINE)
+    add_test(NAME OmniCppLegacyTests COMMAND omnicpp_legacy_tests)
+    add_test(NAME OmniCppEngineIntegration COMMAND omnicpp_integration_tests --test-engine)
+    add_test(NAME OmniCppGameIntegration COMMAND omnicpp_integration_tests --test-game)
+endif()

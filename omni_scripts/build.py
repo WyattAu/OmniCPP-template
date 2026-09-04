@@ -26,6 +26,7 @@ from .cmake import CMakeManager
 from .conan import ConanManager
 from .utils import (
     CommandExecutionError,
+    run_command,
     NotADirectoryError,
     log_error,
     log_info,
@@ -33,7 +34,7 @@ from .utils import (
 )
 
 
-@dataclass
+@dataclass(init=False)
 class BuildContext:
     """Context for build operations.
 
@@ -55,10 +56,10 @@ class BuildContext:
         unique_id: Unique identifier for this build context.
     """
 
-    product: str
-    task: str
-    arch: str
-    build_type: str
+    product: str = "standalone"
+    task: str = "build"
+    arch: str = "x64"
+    build_type: str = "debug"
     compiler: Optional[str] = None
     is_cross_compilation: bool = False
     lib_flag: bool = False
@@ -66,6 +67,43 @@ class BuildContext:
     qt_vulkan_lib_flag: bool = False
     qt_vulkan_st_flag: bool = False
     unique_id: str = field(default_factory=lambda: str(uuid.uuid4()))
+
+    def __init__(self, product: str = "standalone", task: str = "build", arch: str = "x64", build_type: str = "debug", compiler: Optional[str] = None, is_cross_compilation: bool = False, lib_flag: bool = False, st_flag: bool = False, qt_vulkan_lib_flag: bool = False, qt_vulkan_st_flag: bool = False, unique_id: Optional[str] = None, target: Optional[str] = None, preset: Optional[str] = None) -> None:
+        self.product = target or product
+        self.task = preset or task
+        self.arch = arch
+        self.build_type = build_type
+        self.compiler = compiler
+        self.is_cross_compilation = is_cross_compilation
+        self.lib_flag = lib_flag
+        self.st_flag = st_flag
+        self.qt_vulkan_lib_flag = qt_vulkan_lib_flag
+        self.qt_vulkan_st_flag = qt_vulkan_st_flag
+        self.unique_id = unique_id or str(uuid.uuid4())
+
+    @property
+    def target(self) -> str:
+        return self.product
+
+    @property
+    def preset(self) -> str:
+        return self.task
+
+    def to_dict(self) -> Dict[str, Any]:
+        result = self.__dict__.copy()
+        result["target"] = self.product
+        result["preset"] = self.task
+        return result
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "BuildContext":
+        values = dict(data)
+        if "target" in values and "product" not in values:
+            values["product"] = values.pop("target")
+        values.pop("preset", None)
+        values.setdefault("task", "build")
+        values.setdefault("arch", "x64")
+        return cls(**values)
 
 
 class BuildError(Exception):
@@ -95,7 +133,7 @@ class BuildError(Exception):
         context_str = (
             f" Context: {self.context}" if self.context else ""
         )
-        return f"BuildError: {self.message}{context_str}"
+        return f"{self.message}{context_str}"
 
 
 class ConfigurationError(BuildError):
@@ -189,7 +227,7 @@ class BuildManager:
         conan_manager: The Conan manager instance.
     """
 
-    def __init__(self, workspace_dir: Path) -> None:
+    def __init__(self, workspace_dir: Optional[Path] = None) -> None:
         """Initialize build manager.
 
         Args:
@@ -198,6 +236,7 @@ class BuildManager:
         Raises:
             NotADirectoryError: If workspace_dir is not a valid directory.
         """
+        workspace_dir = workspace_dir or Path.cwd()
         if not workspace_dir.is_dir():
             raise NotADirectoryError(
                 f"Workspace directory does not exist: {workspace_dir}",
@@ -207,6 +246,18 @@ class BuildManager:
         self.workspace_dir = workspace_dir
         self.cmake_manager = CMakeManager(workspace_dir)
         self.conan_manager = ConanManager(workspace_dir)
+
+    def clean(self, context: BuildContext) -> bool:
+        self.clean_build_directories(context)
+        return True
+
+    def configure(self, context: BuildContext) -> bool:
+        self.configure_build_system(context)
+        return True
+
+    def build(self, context: BuildContext) -> bool:
+        self.build_project(context)
+        return True
 
     def clean_build_directories(self, context: BuildContext) -> None:
         """Clean build directories for specified targets.

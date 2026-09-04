@@ -1,89 +1,65 @@
 /**
  * @file engine.hpp
- * @brief Core engine interface
+ * @brief Canonical deterministic engine lifecycle API.
  */
 
 #pragma once
 
 #include <cstdint>
 #include <memory>
-#include <string>
+#include "engine/core/deterministic_runtime.hpp"
 
 namespace OmniCpp::Engine::Core {
 
-  /**
-   * @brief Engine configuration structure
-   */
-  struct EngineConfig {
-    uint32_t max_fps{ 60 };
-    float fixed_timestep{ 0.01667f }; // ~60 FPS
-    bool enable_profiling{ false };
-  };
+/** Configuration for the canonical deterministic runtime. */
+struct EngineConfig {
+  std::uint32_t max_fps{60};
+  float fixed_timestep{0.01667F};
+  bool enable_profiling{false};
+  bool headless{true};
+  omnicpp::core::CatchUpPolicy catch_up_policy{omnicpp::core::CatchUpPolicy::run_all};
+  std::uint32_t max_catch_up_ticks{1};
+  omnicpp::core::EventTransport event_transport{omnicpp::core::EventTransport::spsc};
+  omnicpp::core::TimeMode time_mode{omnicpp::core::TimeMode::floating_point};
+};
 
-  /**
-   * @brief Core engine class
-   * 
-   * Manages main game loop, initialization, and shutdown of all engine subsystems.
-   * Follows C++23 best practices with RAII and move semantics.
-   */
-  class Engine {
-  public:
-    Engine ();
-    ~Engine ();
+/**
+ * Canonical runtime facade.
+ *
+ * The core implementation is dependency-light and headless. Graphics, audio,
+ * networking, scripting, and other subsystems are optional integrations and
+ * are not initialized by this class.
+ */
+class Engine {
+public:
+  Engine();
+  ~Engine();
 
-    // Delete copy operations (C++23 best practice)
-    Engine (const Engine&) = delete;
-    Engine& operator= (const Engine&) = delete;
+  Engine(const Engine&) = delete;
+  Engine& operator=(const Engine&) = delete;
+  Engine(Engine&&) noexcept;
+  Engine& operator=(Engine&&) noexcept;
 
-    // Enable move operations (C++23 best practice)
-    Engine (Engine&&) noexcept;
-    Engine& operator= (Engine&&) noexcept;
+  /** Initialize the runtime; returns error code on failure. */
+  [[nodiscard]] omnicpp::core::Result<void> initialize(const EngineConfig& config);
+  /** Perform one non-blocking runtime service pass. */
+  void run();
+  /** Idempotently stop the runtime. */
+  void shutdown();
+  /** Advance deterministic simulation by elapsed seconds. */
+  void update(float delta_time);
+  /** Reserved render hook; the canonical headless runtime performs no rendering. */
+  void render();
 
-    /**
-     * @brief Initialize engine with configuration
-     * @param config Engine configuration
-     * @return true if successful, false otherwise
-     */
-    bool initialize (const EngineConfig& config);
+  [[nodiscard]] bool is_running() const noexcept;
+  [[nodiscard]] const EngineConfig& get_config() const noexcept;
+  [[nodiscard]] bool post_event(std::uint64_t event) noexcept;
+  [[nodiscard]] std::uint64_t overrun_count() const noexcept;
+  [[nodiscard]] double dropped_time_seconds() const noexcept;
 
-    /**
-     * @brief Run engine main loop
-     * 
-     * This method blocks until engine is shut down.
-     */
-    void run ();
-
-    /**
-     * @brief Shutdown engine and all subsystems
-     */
-    void shutdown ();
-
-    /**
-     * @brief Update engine state
-     * @param deltaTime Time since last update in seconds
-     */
-    void update (float deltaTime);
-
-    /**
-     * @brief Render current frame
-     */
-    void render ();
-
-    /**
-     * @brief Check if engine is running
-     * @return true if running, false otherwise
-     */
-    [[nodiscard]] bool is_running () const noexcept;
-
-    /**
-     * @brief Get engine configuration
-     * @return Current engine configuration
-     */
-    [[nodiscard]] const EngineConfig& get_config () const noexcept;
-
-  private:
-    struct Impl;
-    std::unique_ptr<Impl> m_impl; // Pimpl idiom for ABI stability
-  };
+private:
+  struct Impl;
+  std::unique_ptr<Impl> m_impl;
+};
 
 } // namespace OmniCpp::Engine::Core

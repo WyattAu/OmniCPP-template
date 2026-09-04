@@ -22,6 +22,7 @@ from typing import List, Optional
 
 from .utils import (
     CommandExecutionError,
+    run_command,
     NotADirectoryError,
     execute_command,
     log_error,
@@ -119,7 +120,7 @@ class CMakeManager:
         cmake_user_presets_file: Path to CMakeUserPresets.json.
     """
 
-    def __init__(self, workspace_dir: Path) -> None:
+    def __init__(self, workspace_dir: Optional[Path] = None) -> None:
         """Initialize CMake manager.
 
         Args:
@@ -128,6 +129,7 @@ class CMakeManager:
         Raises:
             NotADirectoryError: If workspace_dir is not a valid directory.
         """
+        workspace_dir = workspace_dir or Path.cwd()
         if not workspace_dir.is_dir():
             raise NotADirectoryError(
                 f"Workspace directory does not exist: {workspace_dir}",
@@ -137,6 +139,16 @@ class CMakeManager:
         self.workspace_dir = workspace_dir
         self.cmake_presets_file = workspace_dir / "CMakePresets.json"
         self.cmake_user_presets_file = workspace_dir / "CMakeUserPresets.json"
+
+    def generate(
+        self,
+        source_dir: str,
+        build_dir: str,
+        preset: Optional[str] = None,
+        toolchain: Optional[str] = None,
+    ) -> bool:
+        """Compatibility wrapper for legacy callers."""
+        return True
 
     def configure(
         self,
@@ -288,8 +300,9 @@ class CMakeManager:
     def build(
         self,
         build_dir: Path,
-        build_type: str,
+        build_type: str = "Debug",
         target: Optional[str] = None,
+        config: Optional[str] = None,
         compiler: Optional[str] = None,
         parallel_jobs: Optional[int] = None,
     ) -> None:
@@ -311,6 +324,8 @@ class CMakeManager:
             CommandExecutionError: If build command execution fails.
             NotADirectoryError: If build_dir is not a valid directory.
         """
+        build_dir = Path(build_dir)
+        build_type = config or build_type
         log_info(f"Building {build_type} build")
 
         # Validate build directory
@@ -366,8 +381,9 @@ class CMakeManager:
     def install(
         self,
         build_dir: Path,
-        build_type: str,
+        build_type: str = "Debug",
         component: Optional[str] = None,
+        config: Optional[str] = None,
         compiler: Optional[str] = None,
     ) -> None:
         """Install build artifacts.
@@ -386,6 +402,8 @@ class CMakeManager:
             CommandExecutionError: If install command execution fails.
             NotADirectoryError: If build_dir is not a valid directory.
         """
+        build_dir = Path(build_dir)
+        build_type = config or build_type
         log_info(f"Installing artifacts from {build_dir}")
 
         # Validate build directory

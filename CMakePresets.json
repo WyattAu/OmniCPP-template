@@ -1,11 +1,84 @@
 {
   "version": 3,
   "cmakeMinimumRequired": {
-    "major": 4,
-    "minor": 0,
+    "major": 3,
+    "minor": 28,
     "patch": 0
   },
   "configurePresets": [
+    {
+      "name": "headless-debug",
+      "displayName": "Headless Debug",
+      "description": "Portable deterministic runtime and tests without graphics dependencies",
+      "binaryDir": "${sourceDir}/build/headless-debug",
+      "generator": "Ninja",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+        "OMNICPP_BUILD_ENGINE": "ON",
+        "OMNICPP_BUILD_GAME": "OFF",
+        "OMNICPP_LEGACY_ENGINE": "OFF",
+        "OMNICPP_BUILD_TESTS": "ON",
+        "OMNICPP_BUILD_EXAMPLES": "OFF",
+        "OMNICPP_USE_VULKAN": "OFF",
+        "OMNICPP_USE_QT6": "OFF",
+        "OMNICPP_USE_GLFW": "OFF",
+        "OMNICPP_USE_QUILL": "OFF",
+        "OMNICPP_USE_GLM": "OFF",
+        "OMNICPP_USE_STB": "OFF",
+        "OMNICPP_USE_NLOHMANN_JSON": "OFF",
+        "OMNICPP_ENABLE_FORMATTING": "OFF",
+        "OMNICPP_ENABLE_LINTING": "OFF"
+      }
+    },
+    {
+      "name": "asan-ubsan",
+      "displayName": "Address and Undefined Sanitizers",
+      "description": "Headless sanitizer build",
+      "inherits": "headless-debug",
+      "binaryDir": "${sourceDir}/build/asan-ubsan",
+      "cacheVariables": {
+        "OMNICPP_ENABLE_ASAN": "ON",
+        "OMNICPP_ENABLE_UBSAN": "ON"
+      }
+    },
+    {
+      "name": "tsan",
+      "displayName": "Thread Sanitizer",
+      "description": "Headless thread-sanitized build",
+      "inherits": "headless-debug",
+      "binaryDir": "${sourceDir}/build/tsan",
+      "cacheVariables": {
+        "OMNICPP_ENABLE_TSAN": "ON"
+      }
+    },
+    {
+      "name": "vulkan-validation",
+      "displayName": "Vulkan Validation",
+      "description": "NVIDIA/WSI Vulkan build with Khronos validation forced for CTest",
+      "inherits": "headless-debug",
+      "binaryDir": "${sourceDir}/build/vulkan-validation",
+      "cacheVariables": {
+        "OMNICPP_USE_VULKAN": "ON",
+        "OMNICPP_VULKAN_VALIDATION_TESTS": "ON",
+        "OMNICPP_USE_QT6": "OFF",
+        "OMNICPP_USE_GLFW": "OFF",
+        "OMNICPP_USE_QUILL": "OFF",
+        "OMNICPP_USE_GLM": "OFF",
+        "OMNICPP_USE_STB": "OFF",
+        "OMNICPP_USE_NLOHMANN_JSON": "OFF"
+      }
+    },
+    {
+      "name": "headless-release",
+      "displayName": "Headless Release",
+      "description": "Optimized deterministic runtime build",
+      "inherits": "headless-debug",
+      "binaryDir": "${sourceDir}/build/headless-release",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
+      }
+    },
     {
       "name": "default",
       "displayName": "Default Config",
@@ -1792,6 +1865,24 @@
       "name": "nix-qt6-vulkan-release",
       "configurePreset": "nix-qt6-vulkan-release",
       "displayName": "Nix Qt6 Vulkan Release Build"
+    },
+    {
+      "name": "vulkan-validation",
+      "configurePreset": "vulkan-validation",
+      "displayName": "Vulkan Validation Build"
+    }
+  ],
+  "testPresets": [
+    {
+      "name": "vulkan-validation",
+      "configurePreset": "vulkan-validation",
+      "displayName": "Vulkan Validation Tests",
+      "environment": {
+        "VK_LOADER_LAYERS_ENABLE": "VK_LAYER_KHRONOS_validation"
+      },
+      "output": {
+        "outputOnFailure": true
+      }
     }
   ]
 }

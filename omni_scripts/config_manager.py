@@ -39,36 +39,35 @@ class ConfigManager:
         Raises:
             ConfigurationError: If configuration file is invalid or missing
         """
-        print(f"        if not os.path.exists(self.config_path):
-            print(f"            raise ConfigurationError(
+        if not os.path.exists(self.config_path):
+            raise ConfigurationError(
                 f"Configuration file not found: {self.config_path}",
-                {"path": self.config_path}
+                {"path": self.config_path},
             )
 
         try:
             with open(self.config_path, "r", encoding="utf-8") as f:
                 config: Dict[str, Any] = json.load(f)
-            print(f"        except json.JSONDecodeError as e:
-            print(f"            raise ConfigurationError(
+        except json.JSONDecodeError as e:
+            raise ConfigurationError(
                 f"Invalid JSON in configuration file: {e}",
-                {"path": self.config_path, "error": str(e)}
-            )
-        except Exception as e:
-            print(f"            raise ConfigurationError(
+                {"path": self.config_path, "error": str(e)},
+            ) from e
+        except OSError as e:
+            raise ConfigurationError(
                 f"Failed to load configuration: {e}",
-                {"path": self.config_path, "error": str(e)}
-            )
+                {"path": self.config_path, "error": str(e)},
+            ) from e
 
-        # Validate configuration
-        print(f"        if not self.validate(config):
-            print(f"            raise ConfigurationError(
+        if not self.validate(config):
+            raise ConfigurationError(
                 "Configuration validation failed",
-                {"path": self.config_path}
+                {"path": self.config_path},
             )
 
         self._config = config
         self._logger.info(f"Configuration loaded from {self.config_path}")
-        print(f"        return config
+        return config
 
     def get(self, key: str, default: Any = None) -> Any:
         """Get configuration value.
@@ -111,31 +110,26 @@ class ConfigManager:
         Returns:
             True if valid, False otherwise
         """
-        print(f"        # Basic validation - check required fields
         required_fields = ["project_name", "project_version"]
-        print(f"
         for field in required_fields:
             if field not in config:
-                print(f"                self._logger.error(f"Missing required field: {field}")
+                self._logger.error(f"Missing required field: {field}")
                 return False
 
-        # Validate types
-        print(f"        if not isinstance(config.get("project_name"), str):
-            print(f"            self._logger.error("project_name must be a string")
+        if not isinstance(config.get("project_name"), str):
+            self._logger.error("project_name must be a string")
             return False
 
         if not isinstance(config.get("project_version"), str):
-            print(f"            self._logger.error("project_version must be a string")
+            self._logger.error("project_version must be a string")
             return False
 
-        # Validate optional fields if present
-        if "cpp_standard" in config:
-            print(f"            if config["cpp_standard"] not in ["20", "23"]:
-                print(f"                self._logger.error(f"Invalid cpp_standard: {config['cpp_standard']}")
-                return False
+        if "cpp_standard" in config and str(config["cpp_standard"]) not in {"20", "23"}:
+            self._logger.error(f"Invalid cpp_standard: {config['cpp_standard']}")
+            return False
 
         self._logger.debug("Configuration validation passed")
-        print(f"        return True
+        return True
 
     def get_all(self) -> Dict[str, Any]:
         """Get all configuration values.
