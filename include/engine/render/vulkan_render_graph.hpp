@@ -18,6 +18,10 @@
 
 namespace omnicpp::render {
 
+//! Mirrors VK_QUEUE_FAMILY_IGNORED (0xFFFFFFFF) so the Vulkan-off shim build
+//! compiles the same headers; identical value when Vulkan is enabled.
+inline constexpr std::uint32_t kIgnoredQueueFamily = 0xFFFFFFFFU;
+
 //! Declares how one pass uses one image attachment.
 struct RenderPassAttachment {
   VkImage image{VK_NULL_HANDLE};
@@ -43,11 +47,24 @@ struct RenderPassAttachment {
     VkImageLayout final_layout);
 
 //! One render pass: a name, its attachments, and a record callback handle.
+struct GraphBufferEdge {
+  VkBuffer buffer{VK_NULL_HANDLE};
+  std::uint32_t producer_stage{0};   //!< Stage that wrote the buffer.
+  std::uint32_t consumer_stage{0};   //!< Stage that reads/writes it next.
+  std::uint32_t consumer_access{0};  //!< Consumer's access mask.
+  //! Queue-family indices for ownership transfer (set by the caller when the
+  //! producer is recorded on another queue); VK_QUEUE_FAMILY_IGNORED otherwise.
+  std::uint32_t producer_family{kIgnoredQueueFamily};
+  std::uint32_t consumer_family{kIgnoredQueueFamily};
+};
+
 struct GraphPass {
   const char* name{nullptr};
   VkRenderPass render_pass{VK_NULL_HANDLE};
   VkFramebuffer framebuffer{VK_NULL_HANDLE};
   std::vector<RenderPassAttachment> attachments;
+  //! Buffer dependencies this pass CONSUMES (barriers run before the pass).
+  std::vector<GraphBufferEdge> buffer_edges;
   //! Clear values handed to the record callback (ownership stays with caller).
   const VkClearValue* clear_values{nullptr};
   std::uint32_t clear_value_count{0};
@@ -57,7 +74,7 @@ struct GraphPass {
   void* user_data{nullptr};
 };
 
-//! A computed transition inserted before a pass.
+//! One compute pass: dispatches recorded through a callback (no render pass).
 struct GraphBarrier {
   VkImage image{VK_NULL_HANDLE};
   VkImageLayout old_layout{VK_IMAGE_LAYOUT_UNDEFINED};
@@ -68,6 +85,66 @@ struct GraphBarrier {
   std::uint32_t dst_stage{0};
 };
 
+struct GraphComputePass {
+  const char* name{nullptr};
+  std::uint32_t group_count_x{0};
+  std::uint32_t group_count_y{1};
+  std::uint32_t group_count_z{1};
+  //! Buffer resource edges the pass needs synchronized (see GraphBufferEdge).
+  std::vector<GraphBufferEdge> buffer_edges;
+  //! Opaque handle returned to the record callback.
+  void* user_data{nullptr};
+};
+
+//! An ordered graph node: either a render pass or a compute pass.
+struct GraphNode {
+  const GraphPass* render{nullptr};
+  const GraphComputePass* compute{nullptr};
+  [[nodiscard]] static GraphNode from_render(const GraphPass& p) noexcept { return {&p, nullptr}; }
+  [[nodiscard]] static GraphNode from_compute(const GraphComputePass& p) noexcept { return {nullptr, &p}; }
+};
+
+//! A compiled buffer dependency edge between two passes (producer → this
+//! consumer). When producer and consumer land on different queue families,
+//! the executor emits an ownership RELEASE on the producer side and ACQUIRE
+//! on the consumer side; within one queue it is a plain buffer barrier.
+//! Compiled plan for a mixed render/compute graph.
+struct CompiledGraph {
+  //! Per node: image barriers to insert before it (layout transitions and
+  //! write edges, computed exactly as before).
+  std::vector<std::vector<GraphBarrier>> barriers_per_node;
+  //! Per node: buffer edges to synchronize before it.
+  std::vector<std::vector<GraphBufferEdge>> buffer_edges_per_node;
+};
+
+//!
+//! @brief Compiles a mixed render/compute node sequence.
+//!
+//! Image tracking is unchanged; buffer edges are validated (non-null buffer,
+//! non-zero stages) and passed through to the executor, which emits either a
+//! plain barrier or a family release/acquire pair depending on the families.
+[[nodiscard]] CompiledGraph compile_graph(
+    const std::vector<GraphNode>& nodes);
+
+/**
+ * @brief Executes a compiled mixed graph inside one command buffer.
+ *
+ * Compute passes run their record callback outside any render pass; render
+ * passes behave exactly as execute_render_graph. Buffer edges whose producer
+ * family differs from the consumer family emit release (producer stage, on
+ * the node BEFORE the consumer) and acquire halves — callers driving a
+ * multi-queue split pass each queue's own sub-sequence and call this once
+ * per queue; single-queue graphs get plain barriers only.
+ */
+void execute_graph(
+    VkCommandBuffer command_buffer,
+    const std::vector<GraphNode>& nodes,
+    const CompiledGraph& compiled,
+    void (*record_render)(VkCommandBuffer, const GraphPass&, void*),
+    void (*record_compute)(VkCommandBuffer, const GraphComputePass&, void*),
+    std::uint32_t current_family = kIgnoredQueueFamily);
+
+//! A computed transition inserted before a pass.
 //! Compiled barrier plan: barriers_[pass_index] run before that pass.
 struct CompiledRenderGraph {
   std::vector<std::vector<GraphBarrier>> barriers_per_pass;

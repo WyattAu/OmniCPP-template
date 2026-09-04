@@ -254,11 +254,45 @@ depth-tested, backface-culled, and animated. `VulkanHardware.CubeMeshDepthOcclus
 verifies by pixel classification: the near cube occludes the far one, swapping depths
 swaps the visible color both ways, and a 45-degree rotation changes the rendered image.
 
+## Mixed Render/Compute Graph
+
+`compile_graph`/`execute_graph` (same header as the render graph) extend the pass
+sequence with `GraphComputePass` nodes and `GraphBufferEdge` dependencies declared on
+the **consumer** node (the barrier runs before the consumer's work). Edges whose
+producer and consumer families differ emit release/acquire ownership halves based on
+the `current_family` argument; same-queue edges are plain buffer barriers. Compute
+passes record through a callback outside any render pass.
+`VulkanHardware.RenderGraphComputeThenDraw` drives compute-generated animated geometry
+through the graph and verifies both the buffer content analytically and the render by
+pixel readback.
+
+## GPU-Driven Scale-Up: LOD + Occlusion + Counters
+
+`cull_lod_occlude.comp` combines per-instance frustum culling, tile-based occlusion
+against the previous frame's reduced depth pyramid (1-frame latency, conservative),
+distance-band LOD selection with per-instance bias, per-band compaction lists, and
+per-band indirect draw commands. Atomic counters report accepted/frustum-culled/
+occlusion-culled per frame for lock-free readback. `depth_reduce.comp` reduces a depth
+source to per-tile maxima. `VulkanHardware.GpuLodOcclusionCounters` verifies occlusion
+rejection (stats + empty draw commands), band assignment, bias forcing, and
+boundary-crossing animation on hardware.
+
+## Scene Rendering: Objects, Lighting, Animation
+
+`scene.vert`/`scene.frag` render instanced cubes and a ground slab with per-instance
+data pulling, lambert + Blinn-Phong directional lighting, and an **analytically
+ray-traced sphere** in the fragment stage (depth ordering between the sphere and the
+rasterized geometry falls out of the per-pixel ray hit).
+`VulkanHardware.Scene3DObjectsLightingAnimation` verifies by pixel classification:
+the lit ground dominates the lower frame, the sphere renders red-dominant at the frame
+center in front of the cube behind it, orbiting a cube changes the image while static
+elements stay identical, and the animation round-trips to a byte-identical frame.
+
 ## Remaining Roadmap
 
 1. **Cross-vendor hardware runs** (AMD/Intel/mobile) — requires physical hardware or a
    GPU CI service; the lavapipe CI job covers driver-independent correctness.
-2. Render-graph-native async compute: partition passes onto the compute queue with
-   automatic release/acquire barriers (the `AsyncComputeQueue` primitives exist).
-3. GPU-driven scene scale-up: mesh-level LOD selection, Hi-Z occlusion culling, and
-   per-draw culling counters read back through the telemetry path.
+2. True async-compute partitioning through the mixed graph: run the compute sub-sequence
+   on the dedicated queue with release/acquire halves (primitives are in place).
+3. Depth-pyramid from the actual depth attachment (copy depth -> sampled image) so
+   occlusion uses the real previous frame instead of a CPU-reduced stand-in.

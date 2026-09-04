@@ -1,6 +1,7 @@
 #include "engine/render/vulkan_render_graph.hpp"
 
 #include <cstring>
+#include <stdexcept>
 #include <unordered_map>
 
 #ifdef OMNICPP_HAS_VULKAN
@@ -195,6 +196,199 @@ void execute_render_graph(
   }
 #else
   (void)passes; (void)compiled; (void)record_pass;
+#endif
+}
+
+// =============================================================================
+// Mixed render/compute graph
+// =============================================================================
+
+namespace {
+
+#ifdef OMNICPP_HAS_VULKAN
+//! Depth transitions must barrier the DEPTH aspect, not COLOR.
+[[nodiscard]] VkImageAspectFlags barrier_aspect_mask(VkImageLayout layout) noexcept {
+  switch (layout) {
+    case VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL:
+    case VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL:
+      return VK_IMAGE_ASPECT_DEPTH_BIT;
+    default:
+      return VK_IMAGE_ASPECT_COLOR_BIT;
+  }
+}
+#endif
+
+}  // namespace
+
+CompiledGraph compile_graph(const std::vector<GraphNode>& nodes) {
+  CompiledGraph out;
+  out.barriers_per_node.resize(nodes.size());
+  out.buffer_edges_per_node.resize(nodes.size());
+
+  std::unordered_map<VkImage, ImageState> states;
+  for (std::size_t p = 0; p < nodes.size(); ++p) {
+    const GraphNode& node = nodes[p];
+    const GraphPass* render = node.render;
+    if (render != nullptr) {
+      std::vector<GraphBarrier>& barriers = out.barriers_per_node[p];
+      for (const RenderPassAttachment& att : render->attachments) {
+        if (!att.image) continue;
+        ImageState& state = states[att.image];
+        const bool needs_barrier =
+            !state.valid ||
+            state.layout != att.used_layout ||
+            access_ordering_matters(state.access, state.stage, att.access, att.stage);
+        if (needs_barrier) {
+          GraphBarrier barrier;
+          barrier.image = att.image;
+          barrier.old_layout = state.valid ? state.layout : VK_IMAGE_LAYOUT_UNDEFINED;
+          barrier.new_layout = att.used_layout;
+          barrier.src_access = state.access;
+          barrier.dst_access = att.access;
+          barrier.src_stage = state.valid ? state.stage : 0U;
+          barrier.dst_stage = att.stage;
+          barriers.push_back(barrier);
+        }
+        state.layout = att.final_layout;
+        state.access = att.access;
+        state.stage = att.stage;
+        state.valid = true;
+      }
+    }
+    // Buffer edges are declared on the CONSUMER node: the barrier must be
+    // recorded before the consumer's work. Copy them into the compiled plan.
+    if (node.compute != nullptr) {
+      out.buffer_edges_per_node[p] = node.compute->buffer_edges;
+    } else if (node.render != nullptr) {
+      out.buffer_edges_per_node[p] = node.render->buffer_edges;
+    }
+  }
+  return out;
+}
+
+void execute_graph(
+    VkCommandBuffer command_buffer,
+    const std::vector<GraphNode>& nodes,
+    const CompiledGraph& compiled,
+    void (*record_render)(VkCommandBuffer, const GraphPass&, void*),
+    void (*record_compute)(VkCommandBuffer, const GraphComputePass&, void*),
+    std::uint32_t current_family) {
+  if (!command_buffer) return;
+#ifdef OMNICPP_HAS_VULKAN
+  // Staging vectors for the steady-state frame path (no heap operations);
+  // thread_local keeps concurrent recording on separate buffers safe.
+  thread_local std::vector<VkImageMemoryBarrier> vk_barriers;
+  thread_local std::vector<VkBufferMemoryBarrier> vk_buffer_barriers;
+  thread_local std::vector<VkBufferMemoryBarrier> vk_foreign_releases;
+
+  for (std::size_t p = 0; p < nodes.size() && p < compiled.barriers_per_node.size(); ++p) {
+    const GraphNode& node = nodes[p];
+    const auto& barriers = compiled.barriers_per_node[p];
+    const auto& edges = (p < compiled.buffer_edges_per_node.size())
+                            ? compiled.buffer_edges_per_node[p]
+                            : std::vector<GraphBufferEdge>{};
+
+    vk_barriers.clear();
+    vk_buffer_barriers.clear();
+    vk_foreign_releases.clear();
+
+    for (const GraphBarrier& barrier : barriers) {
+      VkImageMemoryBarrier b{};
+      b.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+      b.oldLayout = barrier.old_layout;
+      b.newLayout = barrier.new_layout;
+      b.srcAccessMask = barrier.src_access;
+      b.dstAccessMask = barrier.dst_access;
+      b.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+      b.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+      b.image = barrier.image;
+      b.subresourceRange.aspectMask = barrier_aspect_mask(barrier.new_layout);
+      b.subresourceRange.levelCount = 1;
+      b.subresourceRange.layerCount = 1;
+      vk_barriers.push_back(b);
+    }
+
+    for (const GraphBufferEdge& edge : edges) {
+      if (!edge.buffer || edge.producer_stage == 0 || edge.consumer_stage == 0) {
+        continue;  // Malformed edge: skip rather than emit a no-op barrier.
+      }
+      VkBufferMemoryBarrier b{};
+      b.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
+      b.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
+      b.dstAccessMask = edge.consumer_access;
+      b.srcQueueFamilyIndex = edge.producer_family;
+      b.dstQueueFamilyIndex = edge.consumer_family;
+      b.buffer = edge.buffer;
+      b.offset = 0;
+      b.size = VK_WHOLE_SIZE;
+      if (edge.producer_family != VK_QUEUE_FAMILY_IGNORED &&
+          edge.consumer_family != VK_QUEUE_FAMILY_IGNORED &&
+          edge.producer_family != edge.consumer_family) {
+        if (edge.producer_family == current_family) {
+          // This queue produced the data: record the release half here.
+          b.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
+          b.dstAccessMask = 0;
+          vk_foreign_releases.push_back(b);
+        } else {
+          // Another queue produced it: this is the acquire half.
+          b.srcQueueFamilyIndex = edge.producer_family;
+          b.srcAccessMask = 0;
+          b.dstQueueFamilyIndex = current_family;
+          vk_buffer_barriers.push_back(b);
+        }
+        continue;
+      }
+      b.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+      b.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+      vk_buffer_barriers.push_back(b);
+    }
+
+    VkPipelineStageFlags src_stage_mask = 0;
+    VkPipelineStageFlags dst_stage_mask = 0;
+    for (const auto& barrier : barriers) {
+      src_stage_mask |= barrier.src_stage;
+      dst_stage_mask |= barrier.dst_stage;
+    }
+    for (const auto& e : edges) {
+      if (!e.buffer) continue;
+      src_stage_mask |= e.producer_stage;
+      dst_stage_mask |= e.consumer_stage;
+    }
+    if (src_stage_mask == 0) src_stage_mask = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+    if (dst_stage_mask == 0) dst_stage_mask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+
+    if (!vk_foreign_releases.empty()) {
+      vkCmdPipelineBarrier(command_buffer, src_stage_mask, dst_stage_mask, 0,
+                           0, nullptr, static_cast<std::uint32_t>(vk_foreign_releases.size()),
+                           vk_foreign_releases.data(), 0, nullptr);
+    }
+    if (!vk_barriers.empty() || !vk_buffer_barriers.empty()) {
+      vkCmdPipelineBarrier(command_buffer, src_stage_mask, dst_stage_mask, 0,
+                           0, nullptr,
+                           static_cast<std::uint32_t>(vk_buffer_barriers.size()),
+                           vk_buffer_barriers.empty() ? nullptr : vk_buffer_barriers.data(),
+                           static_cast<std::uint32_t>(vk_barriers.size()),
+                           vk_barriers.empty() ? nullptr : vk_barriers.data());
+    }
+
+    if (node.render != nullptr) {
+      const GraphPass& pass = *node.render;
+      VkRenderPassBeginInfo begin_info{};
+      begin_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+      begin_info.renderPass = pass.render_pass;
+      begin_info.framebuffer = pass.framebuffer;
+      begin_info.renderArea.extent = {pass.width, pass.height};
+      begin_info.clearValueCount = pass.clear_value_count;
+      begin_info.pClearValues = pass.clear_values;
+      vkCmdBeginRenderPass(command_buffer, &begin_info, VK_SUBPASS_CONTENTS_INLINE);
+      if (record_render) record_render(command_buffer, pass, pass.user_data);
+      vkCmdEndRenderPass(command_buffer);
+    } else if (node.compute != nullptr && record_compute) {
+      record_compute(command_buffer, *node.compute, node.compute->user_data);
+    }
+  }
+#else
+  (void)nodes; (void)compiled; (void)record_render; (void)record_compute; (void)current_family;
 #endif
 }
 

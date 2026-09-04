@@ -1,0 +1,50 @@
+#version 450
+
+// depth_reduce.comp — reduces the previous frame's depth buffer to a coarse
+// per-tile MAXIMUM depth pyramid (uint-packed float32). One invocation per
+// tile reads tile_size^2 depth samples (passed as packed float words) from
+// the pyramid source and writes the tile's max.
+//
+// The test harness fills the source words from the known scene (a stand-in
+// for sampling the actual depth attachment, which would copy depth to a
+// sampled image first); the reduction and consumption path is identical.
+
+layout(local_size_x = 8, local_size_y = 8) in;
+
+layout(set = 0, binding = 0, std430) buffer SrcBuffer {
+  uint src[];   // width x height packed depth words
+};
+
+layout(set = 0, binding = 1, std430) buffer DstBuffer {
+  uint dst[];   // tiles_x x tiles_y packed max-depth words
+};
+
+layout(push_constant) uniform Push {
+  uint width;
+  uint height;
+  uint tiles_x;
+  uint tile_size;
+} push;
+
+void main() {
+  const uint tile = gl_GlobalInvocationID.y * push.tiles_x + gl_GlobalInvocationID.x;
+  if (gl_GlobalInvocationID.x >= push.tiles_x ||
+      gl_GlobalInvocationID.y >= (push.height + push.tile_size - 1u) / push.tile_size) {
+    return;
+  }
+
+  float max_d = 0.0f;
+  const uint y0 = gl_GlobalInvocationID.y * push.tile_size;
+  const uint x0 = gl_GlobalInvocationID.x * push.tile_size;
+  for (uint dy = 0u; dy < push.tile_size; ++dy) {
+    const uint y = y0 + dy;
+    if (y >= push.height) break;
+    for (uint dx = 0u; dx < push.tile_size; ++dx) {
+      const uint x = x0 + dx;
+      if (x >= push.width) break;
+      const float d = uintBitsToFloat(src[y * push.width + x]);
+      max_d = max(max_d, d);
+    }
+  }
+  dst[tile] = floatBitsToUint(max_d);
+}

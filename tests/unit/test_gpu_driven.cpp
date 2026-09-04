@@ -330,10 +330,17 @@ TEST(VulkanHardware, GpuDrivenCullIndirectDraw) {
     struct {
       float view_proj[16];
       std::uint32_t data_offset;
-      std::uint32_t pad[3];
+      std::uint32_t comp_offset;
+      std::uint32_t lod_scale;
+      std::uint32_t pad0;
     } gfx_push_data{};
     make_perspective(kFovY, kAspect, kNear, kFar, gfx_push_data.view_proj);
     gfx_push_data.data_offset = kInstanceCount;  // compacted list precedes data
+    gfx_push_data.comp_offset = 0U;              // list starts at word 0
+    {
+      const float one = 1.0f;
+      std::memcpy(&gfx_push_data.lod_scale, &one, 4U);
+    }
     vkCmdPushConstants(cb, gfx_pipe.pipeline_layout(), VK_SHADER_STAGE_VERTEX_BIT,
                        0, kGfxPushBytes, &gfx_push_data);
     vkCmdDrawIndirect(cb, draw_buf.value().buffer, 0, 1, sizeof(DrawCmd));
@@ -646,10 +653,17 @@ TEST(VulkanHardware, SustainedGpuDrivenFrameBenchmark) {
     struct {
       float view_proj[16];
       std::uint32_t data_offset;
-      std::uint32_t pad[3];
+      std::uint32_t comp_offset;
+      std::uint32_t lod_scale;
+      std::uint32_t pad0;
     } gfx_push_data{};
     make_perspective(kFovY, kAspect, kNear, kFar, gfx_push_data.view_proj);
     gfx_push_data.data_offset = kInstanceCount;
+    gfx_push_data.comp_offset = 0U;
+    {
+      const float one = 1.0f;
+      std::memcpy(&gfx_push_data.lod_scale, &one, 4U);
+    }
     vkCmdPushConstants(cb, gfx_pipe.pipeline_layout(), VK_SHADER_STAGE_VERTEX_BIT,
                        0, kGfxPushBytes, &gfx_push_data);
     vkCmdDrawIndirect(cb, draw_buf.value().buffer, 0, 1, sizeof(DrawCmd));

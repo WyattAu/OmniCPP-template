@@ -135,6 +135,40 @@ if(OMNICPP_USE_VULKAN AND Vulkan_FOUND)
             DEPENDS ${CMAKE_SOURCE_DIR}/assets/shaders/cube.frag
             VERBATIM
         )
+
+        add_custom_command(
+            OUTPUT ${OMNICPP_SHADER_DIR}/cull_lod_occlude.comp.spv
+            COMMAND ${OMNICPP_SHADER_COMPILER} ${OMNICPP_SHADER_COMPILER_ARGS}
+                    ${CMAKE_SOURCE_DIR}/assets/shaders/cull_lod_occlude.comp
+                    -o ${OMNICPP_SHADER_DIR}/cull_lod_occlude.comp.spv
+            DEPENDS ${CMAKE_SOURCE_DIR}/assets/shaders/cull_lod_occlude.comp
+            VERBATIM
+        )
+        add_custom_command(
+            OUTPUT ${OMNICPP_SHADER_DIR}/depth_reduce.comp.spv
+            COMMAND ${OMNICPP_SHADER_COMPILER} ${OMNICPP_SHADER_COMPILER_ARGS}
+                    ${CMAKE_SOURCE_DIR}/assets/shaders/depth_reduce.comp
+                    -o ${OMNICPP_SHADER_DIR}/depth_reduce.comp.spv
+            DEPENDS ${CMAKE_SOURCE_DIR}/assets/shaders/depth_reduce.comp
+            VERBATIM
+        )
+
+        add_custom_command(
+            OUTPUT ${OMNICPP_SHADER_DIR}/scene.vert.spv
+            COMMAND ${OMNICPP_SHADER_COMPILER} ${OMNICPP_SHADER_COMPILER_ARGS}
+                    ${CMAKE_SOURCE_DIR}/assets/shaders/scene.vert
+                    -o ${OMNICPP_SHADER_DIR}/scene.vert.spv
+            DEPENDS ${CMAKE_SOURCE_DIR}/assets/shaders/scene.vert
+            VERBATIM
+        )
+        add_custom_command(
+            OUTPUT ${OMNICPP_SHADER_DIR}/scene.frag.spv
+            COMMAND ${OMNICPP_SHADER_COMPILER} ${OMNICPP_SHADER_COMPILER_ARGS}
+                    ${CMAKE_SOURCE_DIR}/assets/shaders/scene.frag
+                    -o ${OMNICPP_SHADER_DIR}/scene.frag.spv
+            DEPENDS ${CMAKE_SOURCE_DIR}/assets/shaders/scene.frag
+            VERBATIM
+        )
         add_custom_command(
             OUTPUT ${OMNICPP_SHADER_DIR}/bindless_textures.frag.spv
             COMMAND ${OMNICPP_SHADER_COMPILER} ${OMNICPP_SHADER_COMPILER_ARGS}
@@ -169,6 +203,10 @@ if(OMNICPP_USE_VULKAN AND Vulkan_FOUND)
                 ${OMNICPP_SHADER_DIR}/gpu_objects.frag.spv
                 ${OMNICPP_SHADER_DIR}/cube.vert.spv
                 ${OMNICPP_SHADER_DIR}/cube.frag.spv
+                ${OMNICPP_SHADER_DIR}/cull_lod_occlude.comp.spv
+                ${OMNICPP_SHADER_DIR}/depth_reduce.comp.spv
+                ${OMNICPP_SHADER_DIR}/scene.vert.spv
+                ${OMNICPP_SHADER_DIR}/scene.frag.spv
         )
     endif()
 endif()
@@ -185,6 +223,9 @@ add_executable(omnicpp_unit_tests
     unit/test_platform_primitives.cpp
     unit/test_ecs_foundation.cpp
     unit/test_rendering.cpp
+    unit/test_render_graph_async.cpp
+    unit/test_gpu_lod_occlusion.cpp
+    unit/test_scene3d.cpp
     unit/test_gpu_driven.cpp
     unit/test_objects3d.cpp
     unit/test_reflector_and_allocator_robustness.cpp

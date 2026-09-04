@@ -18,8 +18,8 @@ layout(set = 0, binding = 0, std430) readonly buffer InstanceBuffer {
 layout(push_constant) uniform Push {
   mat4 view_proj;   // column-major 4x4
   uint data_offset; // word index where instance data begins (== N)
-  uint pad0;
-  uint pad1;
+  uint comp_offset; // word index of the compacted list this draw consumes
+  uint lod_scale;   // LOD geometry scale, packed float (1.0 / 0.6 / 0.35)
   uint pad2;
 } push;
 
@@ -40,9 +40,10 @@ const vec3 CUBE[36] = vec3[36](
 );
 
 void main() {
-  // gl_InstanceIndex enumerates the ACCEPTED set; the cull pass recorded
-  // each accepted instance's original index in the compacted list.
-  const uint instance = instances.words[gl_InstanceIndex];
+  // gl_InstanceIndex enumerates the ACCEPTED set of ONE LOD band; the cull
+  // pass recorded each accepted instance's original index in that band's
+  // compacted list at push.comp_offset.
+  const uint instance = instances.words[push.comp_offset + gl_InstanceIndex];
   const uint base = push.data_offset + instance * 8u;
   const vec4 xform = vec4(uintBitsToFloat(instances.words[base + 0u]),
                           uintBitsToFloat(instances.words[base + 1u]),
@@ -53,7 +54,8 @@ void main() {
                          uintBitsToFloat(instances.words[base + 6u]),
                          uintBitsToFloat(instances.words[base + 7u]));
 
-  const vec3 local = CUBE[gl_VertexIndex] * xform.w + xform.xyz;
+  const float lod_scale = uintBitsToFloat(push.lod_scale);
+  const vec3 local = CUBE[gl_VertexIndex] * xform.w * lod_scale + xform.xyz;
   gl_Position = push.view_proj * vec4(local, 1.0);
   v_color = tint.rgb;
 }
