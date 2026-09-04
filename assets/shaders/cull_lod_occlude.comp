@@ -1,8 +1,9 @@
 #version 450
 
 // cull_lod_occlude.comp — full GPU-driven pre-pass: per-instance frustum
-// culling + distance-based LOD selection + tile-based occlusion against the
-// PREVIOUS frame's reduced depth pyramid. Produces, per LOD band, a compacted
+// culling + FOOTPRINT-ADAPTIVE occlusion against the previous frame's mip-
+// chained depth pyramid (1-frame latency, conservative) + distance-band LOD
+// selection with per-instance bias. Produces, per LOD band, a compacted
 // accepted-index list and an indirect draw command; graphics never sees a
 // culled instance and draws each at its selected LOD. Per-draw counters let
 // the CPU read back acceptance/cull statistics without stalls (read once per
@@ -17,8 +18,10 @@
 //   [5]  stats_frustum_culled     (atomic)
 //   [6]  stats_occlusion_culled   (atomic)
 //   [7..9]  reserved
-//   [10 .. 10+4T-1]               depth pyramid: T tiles, uint = packed
-//                                 max-depth qfloat (0x3F800000 == 1.0 far)
+//   [P .. P+63]      pyramid level 0: 8x8 tiles (32px texels), packed max depth
+//   [P+64 .. P+79]   level 1: 4x4 (64px)
+//   [P+80 .. P+83]   level 2: 2x2 (128px)
+//   [P+84]           level 3: 1x1 (256px)
 //   [sp .. sp+4N-1]   spheres: N x (cx, cy, cz, radius)      (push: sphere_off)
 //   [ld .. ld+N-1]    per-instance LOD bias words            (push: lod_off)
 //   [cp .. cp+N-1]    compacted indices, band 0 (LOD0)       (push: comp0_off)
@@ -28,9 +31,10 @@
 // Binding 1..3: VkDrawIndirectCommand per band (vertexCount=36 pre-filled;
 // instanceCount maintained atomically here).
 //
-// Occlusion test: project the sphere center; reject when every depth-tile
-// sample it covers in the previous frame's pyramid is nearer than the
-// sphere's own closest depth (conservative, 1-frame latency).
+// Occlusion test: project the sphere's screen-space bounding square, pick the
+// pyramid level whose texel size best matches the footprint (footprint spans
+// <= 2x2 texels there), and reject when EVERY covered texel's max depth is
+// nearer than the sphere's nearest-point depth. Conservative at every level.
 
 layout(local_size_x = 64) in;
 
@@ -55,7 +59,8 @@ layout(push_constant) uniform Push {
   uint tile_size;     // pyramid tile edge in pixels
   uint near_z;        // packed float
   uint far_z;         // packed float
-  uint pyramid_off;   // word index of the pyramid inside the payload buffer
+  uint pyramid_off;   // word index of pyramid L0 inside the payload buffer
+  uint occl_mode;     // 0 = legacy 2x2-tile center test, 1 = footprint-adaptive mip chain
 } push;
 
 
@@ -99,7 +104,50 @@ void main() {
 
   const uint tcx = cull.words[2];
   const uint tcy = cull.words[3];
-  if (tcx > 0u && tcy > 0u) {
+  if (tcx > 0u && tcy > 0u && push.occl_mode != 0u) {
+    // ---- Footprint-adaptive occlusion against the mip chain. ----
+    // Project the sphere's screen-space bounding square (center +/- radius
+    // projected at the center's depth), then walk from L0 down until the
+    // footprint spans <= 2 texels per axis. Level dims are hard-wired to the
+    // 256x256 / 32px layout: 8, 4, 2, 1.
+    const float texel = 2.0f * tan_half_v.x;  // NDC per 32px tile
+    const float half_x = radius * tan_half_v.x / (-center.z);
+    const float half_y = radius * tan_half_v.y / (-center.z);
+    uint level = 0u;
+    if (half_x * 2.0f > texel || half_y * 2.0f > texel) level = 1u;
+    if (level == 1u && (half_x * 4.0f > texel || half_y * 4.0f > texel)) level = 2u;
+    if (level == 2u && (half_x * 8.0f > texel || half_y * 8.0f > texel)) level = 3u;
+    const uint ldims[4] = uint[4](8u, 4u, 2u, 1u);
+    const uint lstart[4] = uint[4](0u, 64u, 80u, 84u);
+    const uint lx = ldims[level];
+    const uint base = push.pyramid_off + lstart[level];
+
+    const vec2 uv_c = ndc * 0.5f + 0.5f;
+    const vec2 half_uv = vec2(half_x, half_y) * 0.5f;
+    const vec2 uv_min = clamp(uv_c - half_uv, vec2(0.0f), vec2(1.0f));
+    const vec2 uv_max = clamp(uv_c + half_uv, vec2(0.0f), vec2(1.0f));
+    const uvec2 t_min = uvec2(clamp(uvec2(uv_min * float(lx)), uvec2(0u), uvec2(lx - 1u)));
+    const uvec2 t_max = uvec2(clamp(uvec2(uv_max * float(lx)), uvec2(0u), uvec2(lx - 1u)));
+
+    bool covered_everywhere = true;
+    bool any_sample = false;
+    for (uint ty = t_min.y; ty <= t_max.y; ++ty) {
+      for (uint tx = t_min.x; tx <= t_max.x; ++tx) {
+        const uint packed = cull.words[base + ty * lx + tx];
+        if (packed != 0u) {
+          any_sample = true;
+          if (uintBitsToFloat(packed) >= depth_min) {
+            covered_everywhere = false;
+          }
+        }
+      }
+    }
+    if (any_sample && covered_everywhere) {
+      atomicAdd(cull.words[6], 1u);  // occlusion-culled
+      return;
+    }
+  } else if (tcx > 0u && tcy > 0u) {
+    // ---- Legacy path: 2x2 tiles around the projected center (L0 only). ----
     const vec2 uv = ndc * 0.5f + 0.5f;
     if (all(greaterThanEqual(uv, vec2(0.0f))) && all(lessThanEqual(uv, vec2(1.0f)))) {
       // Sample the 2x2 tile footprint around the projected center.

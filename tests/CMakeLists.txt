@@ -154,6 +154,24 @@ if(OMNICPP_USE_VULKAN AND Vulkan_FOUND)
         )
 
         add_custom_command(
+            OUTPUT ${OMNICPP_SHADER_DIR}/depth_reduce_mips.comp.spv
+            COMMAND ${OMNICPP_SHADER_COMPILER} ${OMNICPP_SHADER_COMPILER_ARGS}
+                    ${CMAKE_SOURCE_DIR}/assets/shaders/depth_reduce_mips.comp
+                    -o ${OMNICPP_SHADER_DIR}/depth_reduce_mips.comp.spv
+            DEPENDS ${CMAKE_SOURCE_DIR}/assets/shaders/depth_reduce_mips.comp
+            VERBATIM
+        )
+
+        add_custom_command(
+            OUTPUT ${OMNICPP_SHADER_DIR}/gen_cube_ring.comp.spv
+            COMMAND ${OMNICPP_SHADER_COMPILER} ${OMNICPP_SHADER_COMPILER_ARGS}
+                    ${CMAKE_SOURCE_DIR}/assets/shaders/gen_cube_ring.comp
+                    -o ${OMNICPP_SHADER_DIR}/gen_cube_ring.comp.spv
+            DEPENDS ${CMAKE_SOURCE_DIR}/assets/shaders/gen_cube_ring.comp
+            VERBATIM
+        )
+
+        add_custom_command(
             OUTPUT ${OMNICPP_SHADER_DIR}/scene.vert.spv
             COMMAND ${OMNICPP_SHADER_COMPILER} ${OMNICPP_SHADER_COMPILER_ARGS}
                     ${CMAKE_SOURCE_DIR}/assets/shaders/scene.vert
@@ -205,6 +223,8 @@ if(OMNICPP_USE_VULKAN AND Vulkan_FOUND)
                 ${OMNICPP_SHADER_DIR}/cube.frag.spv
                 ${OMNICPP_SHADER_DIR}/cull_lod_occlude.comp.spv
                 ${OMNICPP_SHADER_DIR}/depth_reduce.comp.spv
+                ${OMNICPP_SHADER_DIR}/depth_reduce_mips.comp.spv
+                ${OMNICPP_SHADER_DIR}/gen_cube_ring.comp.spv
                 ${OMNICPP_SHADER_DIR}/scene.vert.spv
                 ${OMNICPP_SHADER_DIR}/scene.frag.spv
         )
@@ -227,6 +247,8 @@ add_executable(omnicpp_unit_tests
     unit/test_gpu_lod_occlusion.cpp
     unit/test_scene3d.cpp
     unit/test_depth_pyramid.cpp
+    unit/test_depth_pyramid_mips.cpp
+    unit/test_dual_queue_graph.cpp
     unit/test_gpu_driven.cpp
     unit/test_objects3d.cpp
     unit/test_reflector_and_allocator_robustness.cpp

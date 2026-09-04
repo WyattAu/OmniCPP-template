@@ -281,7 +281,12 @@ The cull shader computes each sphere's nearest-point depth with the **exact**
 GL-projection mapping (`c1 - c2/view_d`, constants from the `near_z`/`far_z` push
 constants), so occlusion comparisons against real rendered depth are exact rather
 than a linear proxy. The pyramid lives at a caller-chosen word offset
-(`pyramid_off` push constant) subject to storage-buffer offset alignment.
+(`pyramid_off` push constant) subject to storage-buffer offset alignment. The
+`occl_mode` push constant selects between the legacy 2x2-tile center test and a
+**footprint-adaptive** test: the sphere's projected bounding square picks the
+mip level whose texel size best matches it (footprint spans <= 2x2 texels
+there), so small occluders can hide behind small geometry and large occluders
+are tested against coarser, cheaper texels.
 
 ## Real-Depth Occlusion: End-to-End Pyramid
 
@@ -292,6 +297,37 @@ depth attachment to a buffer (`vkCmdCopyImageToBuffer`), reduce it on the GPU, t
 cull against that pyramid. The cube behind the wall is occlusion-culled by real
 pixel data; the front cube survives. Tile maxima are verified against the analytic
 projection mapping.
+
+## Mip-Chained Pyramid + Footprint-Adaptive Occlusion
+
+`depth_reduce_mips.comp` builds a 4-level MAX pyramid from the copied depth
+buffer: 8x8 tiles of 32px texels, then 4x4 @ 64px, 2x2 @ 128px, and a 1x1 whole-
+frame max (85 words total). One level per dispatch with a buffer barrier between
+levels — a single dispatch cannot synchronize across workgroups, so inter-level
+visibility must come from explicit barriers. Level 0 verifies analytically
+against the projection mapping; level 3 equals the nearest rendered depth in the
+frame.
+
+`VulkanHardware.MipPyramidOcclusionAdaptive` renders the wall scene, builds the
+chain on the GPU, and culls with both modes (adaptive occludes the hidden cube,
+legacy mode still passes) with zero validation diagnostics.
+
+## Dual-Queue Pipelined Rendering
+
+`VulkanHardware.DualQueuePipelinedGraph` drives the steady-state two-queue
+pipeline the async-compute primitives were built for: the compute queue produces
+NEXT frame's GPU-driven draw state (per-frame ring generation, then GPU-side
+frustum culling that maintains the indirect draw's instanceCount), while the
+graphics queue renders frame N's already-culled state. Ordering is one frame of
+latency — compute for frame N+1 is submitted before graphics for frame N, and
+graphics waits on compute N's timeline value (`VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT`
+included in the wait mask) — no CPU round-trip, no CPU touch of per-frame draw
+data after setup. Per-frame command buffers + fences are required: re-recording
+or fence-resetting while frame N is still pending violates
+VUID-vkQueueSubmit-pCommandBuffers-00071 / VUID-vkResetFences-pFences-01123.
+Verified by per-frame analytic readback (positions exact per frame),
+cull-produced instanceCounts (2 / 1 / 2 including a partial-cull frame), and a
+skipped path on devices without a COMPUTE-only family (CI's lavapipe).
 
 ## Scene Rendering: Objects, Lighting, Animation
 
@@ -308,8 +344,8 @@ elements stay identical, and the animation round-trips to a byte-identical frame
 
 1. **Cross-vendor hardware runs** (AMD/Intel/mobile) — requires physical hardware or a
    GPU CI service; the lavapipe CI job covers driver-independent correctness.
-2. True async-compute partitioning through the mixed graph: run the compute sub-sequence
-   on the dedicated queue with release/acquire halves (primitives are in place).
-3. Mip-chained depth pyramid (sampled-image reduction over levels) and spatially
-   finer tile footprints for the occlusion test (current: 2x2 tiles around the
-   projected center, conservative).
+2. Sampled-image pyramid (depth -> image with VK_IMAGE_USAGE_SAMPLED, filterable
+   reduction) to replace the buffer-copy path, and hierarchical per-tile descent
+   instead of whole-footprint single-level tests.
+3. Prev-frame pyramid ping-pong (double-buffered H-Z) so the cull runs on the
+   same frame's render instead of a CPU-reduced copy of the previous one.

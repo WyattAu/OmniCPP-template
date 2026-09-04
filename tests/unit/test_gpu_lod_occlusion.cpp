@@ -176,7 +176,7 @@ TEST(VulkanHardware, GpuLodOcclusionCounters) {
 
   // --- Pipelines. ---
   const std::string shader_dir = OMNICPP_TEST_SHADER_DIR;
-  const VkPushConstantRange comp_push{VK_SHADER_STAGE_COMPUTE_BIT, 0, 52U};
+  const VkPushConstantRange comp_push{VK_SHADER_STAGE_COMPUTE_BIT, 0, 56U};
   omnicpp::render::VulkanPipeline comp_pipe;
   ASSERT_TRUE(comp_pipe.load_shader_stage_file(
       context.device(), shader_dir + "/cull_lod_occlude.comp.spv", "compute").is_ok());
@@ -266,9 +266,9 @@ TEST(VulkanHardware, GpuLodOcclusionCounters) {
     vkCmdBindPipeline(cb, VK_PIPELINE_BIND_POINT_COMPUTE, comp_pipe.pipeline());
     vkCmdBindDescriptorSets(cb, VK_PIPELINE_BIND_POINT_COMPUTE,
                             comp_pipe.pipeline_layout(), 0, 1, &cull_set.value(), 0, nullptr);
-    const std::uint32_t push[13] = {kSphereOff, kLodOff, kComp0Off, kComp1Off,
+    const std::uint32_t push[14] = {kSphereOff, kLodOff, kComp0Off, kComp1Off,
                                     kComp2Off, 0U, 0U, kSize, kSize, kTile,
-                                    bits(0.1f), bits(100.0f), 10U};
+                                    bits(0.1f), bits(100.0f), 10U, 0U};
     vkCmdPushConstants(cb, comp_pipe.pipeline_layout(), VK_SHADER_STAGE_COMPUTE_BIT,
                        0, sizeof(push), push);
     vkCmdDispatch(cb, (kInstances + 63U) / 64U, 1, 1);

@@ -1,0 +1,68 @@
+#version 450
+
+// depth_reduce_mips.comp — builds a mip-chained MAXIMUM depth pyramid from
+// the previous frame's depth buffer. One level per dispatch (push.level);
+// the recorder inserts a buffer barrier between levels so each level's
+// writes are visible to the next. Level 0 reduces the copied depth buffer
+// to 8x8 tiles of 32px texels; each finer level max-reduces a 2x2 quad of
+// the level above (4x4 @ 64px, 2x2 @ 128px, 1x1 @ 256px). All values are
+// uint-packed float32 NDC depths.
+//
+// Pyramid layout (words relative to the dst sub-range base):
+//   [0  .. 63]  level 0: 8x8
+//   [64 .. 79]  level 1: 4x4
+//   [80 .. 83]  level 2: 2x2
+//   [84]        level 3: 1x1
+
+layout(local_size_x = 8, local_size_y = 8) in;
+
+layout(set = 0, binding = 0, std430) buffer SrcBuffer {
+  uint src[];   // width x height packed depth words
+};
+
+layout(set = 0, binding = 1, std430) buffer DstBuffer {
+  uint dst[];   // 85 packed words (see layout above)
+};
+
+layout(push_constant) uniform Push {
+  uint width;
+  uint height;
+  uint tile_size;  // level-0 texel edge in pixels (32)
+  uint level;      // 0..3
+} push;
+
+void main() {
+  const uint dims[4]   = uint[4](8u, 4u, 2u, 1u);
+  const uint offset[4] = uint[4](0u, 64u, 80u, 84u);
+  const uint d = dims[push.level];
+  if (gl_GlobalInvocationID.x >= d || gl_GlobalInvocationID.y >= d) return;
+
+  const uint base = offset[push.level];
+  if (push.level == 0u) {
+    const uint px = gl_GlobalInvocationID.x * push.tile_size;
+    const uint py = gl_GlobalInvocationID.y * push.tile_size;
+    float max_d = 0.0f;
+    for (uint dy = 0u; dy < push.tile_size; ++dy) {
+      const uint y = py + dy;
+      if (y >= push.height) break;
+      for (uint dx = 0u; dx < push.tile_size; ++dx) {
+        const uint x = px + dx;
+        if (x >= push.width) break;
+        max_d = max(max_d, uintBitsToFloat(src[y * push.width + x]));
+      }
+    }
+    dst[base + gl_GlobalInvocationID.y * d + gl_GlobalInvocationID.x] =
+        floatBitsToUint(max_d);
+  } else {
+    const uint pd = dims[push.level - 1u];
+    const uint pbase = offset[push.level - 1u];
+    const uint px = gl_GlobalInvocationID.x * 2u;
+    const uint py = gl_GlobalInvocationID.y * 2u;
+    float max_d = uintBitsToFloat(dst[pbase + py * pd + px]);
+    max_d = max(max_d, uintBitsToFloat(dst[pbase + py * pd + px + 1u]));
+    max_d = max(max_d, uintBitsToFloat(dst[pbase + (py + 1u) * pd + px]));
+    max_d = max(max_d, uintBitsToFloat(dst[pbase + (py + 1u) * pd + px + 1u]));
+    dst[base + gl_GlobalInvocationID.y * d + gl_GlobalInvocationID.x] =
+        floatBitsToUint(max_d);
+  }
+}

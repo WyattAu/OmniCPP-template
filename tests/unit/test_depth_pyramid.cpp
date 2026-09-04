@@ -217,7 +217,7 @@ TEST(VulkanHardware, RealDepthPyramidOcclusion) {
                                      cull_buf.value().buffer, 0, VK_WHOLE_SIZE).is_ok());
   }
 
-  const VkPushConstantRange cull_push{VK_SHADER_STAGE_COMPUTE_BIT, 0, 52U};
+  const VkPushConstantRange cull_push{VK_SHADER_STAGE_COMPUTE_BIT, 0, 56U};
   omnicpp::render::VulkanPipeline cull_pipe;
   ASSERT_TRUE(cull_pipe.load_shader_stage_file(
       context.device(), shader_dir + "/cull_lod_occlude.comp.spv", "compute").is_ok());
@@ -419,9 +419,9 @@ TEST(VulkanHardware, RealDepthPyramidOcclusion) {
   vkCmdBindPipeline(cb, VK_PIPELINE_BIND_POINT_COMPUTE, cull_pipe.pipeline());
   vkCmdBindDescriptorSets(cb, VK_PIPELINE_BIND_POINT_COMPUTE,
                           cull_pipe.pipeline_layout(), 0, 1, &cull_set.value(), 0, nullptr);
-  const std::uint32_t cull_pc[13] = {kSphereOff, kLodOff, kComp0Off, 0U, 0U,
+  const std::uint32_t cull_pc[14] = {kSphereOff, kLodOff, kComp0Off, 0U, 0U,
                                      0U, 0U, kSize, kSize, kTile,
-                                     bits(0.1f), bits(100.0f), kWordPyramid};
+                                     bits(0.1f), bits(100.0f), kWordPyramid, 0U};
   vkCmdPushConstants(cb, cull_pipe.pipeline_layout(), VK_SHADER_STAGE_COMPUTE_BIT,
                      0, sizeof(cull_pc), cull_pc);
   vkCmdDispatch(cb, (kInstances + 63U) / 64U, 1, 1);
