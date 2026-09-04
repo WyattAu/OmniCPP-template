@@ -6,6 +6,7 @@
  */
 
 #include "engine/core/deterministic_runtime.hpp"
+#include "engine/core/latency_telemetry.hpp"
 #include "engine/render/vulkan_context.hpp"
 #include "engine/render/vulkan_swapchain.hpp"
 #include "engine/render/vulkan_render_pass.hpp"
@@ -94,6 +95,15 @@ public:
   //! Query function pointers from the device each initialize(); nullptr on 1.2 devices.
   [[nodiscard]] const GpuTiming& gpu_timing() const noexcept { return gpu_timing_; }
 
+  //! CPU frame-time telemetry: one sample per successfully presented frame,
+  //! measured from begin_frame() to present completion. Windowed percentiles
+  //! (p50/p90/p99/p99.9/max) over the most recent samples.
+  void record_frame_latency(bool enabled) noexcept { frame_latency_enabled_ = enabled; }
+  [[nodiscard]] const omnicpp::core::LatencyStats& frame_latency_stats();
+  [[nodiscard]] const omnicpp::core::LatencyTracker<>& frame_latency_tracker() const noexcept {
+    return frame_latency_;
+  }
+
   [[nodiscard]] static omnicpp::core::Result<VkCommandPool> create_command_pool(
       VkDevice device, std::uint32_t queue_family_index);
   [[nodiscard]] static omnicpp::core::Result<VkCommandBuffer> allocate_command_buffer(
@@ -127,6 +137,12 @@ private:
   // Timeline mode: frame value whose submit last rendered each swapchain image.
   std::vector<std::uint64_t> image_last_frame_;
   GpuTiming gpu_timing_{};
+  // CPU frame-time telemetry.
+  static constexpr std::int64_t kNoTimestamp = -1;
+  std::int64_t frame_begin_ns_{kNoTimestamp};
+  bool frame_latency_enabled_{true};
+  omnicpp::core::LatencyTracker<> frame_latency_{};
+  omnicpp::core::LatencyStats frame_latency_stats_{};
 };
 
 } // namespace omnicpp::render

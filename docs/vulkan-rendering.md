@@ -55,6 +55,15 @@ corresponding feature is actually enabled.
 
 Both paths preserve per-image render-finished semaphore ownership.
 
+### CPU Frame-Time Percentiles
+
+The renderer records one CPU frame-time sample per successfully presented frame
+(`begin_frame()` → present completion) into a fixed-capacity ring buffer
+(`engine/core/latency_telemetry.hpp`, 4096-sample window, no allocation on the
+record path). `frame_latency_stats()` returns nearest-rank **p50 / p90 / p99 /
+p99.9 / max** over the most recent window — tail latency, not averages.
+Recording can be disabled with `record_frame_latency(false)`.
+
 ### Timeline Frame Pacing
 
 When `set_timeline_pacing(true)` is requested and timeline semaphores are negotiated:
@@ -158,7 +167,18 @@ Key hardware tests (`tests/unit/test_rendering.cpp`):
 - `VulkanHardware.DescriptorReflectionAndUboRender`
 - `VulkanHardware.RenderGraphTwoPassBarriersAndRender`
 - `VulkanHardware.ParallelRecorderMultithreadedBands`
+- `VulkanHardware.ParallelRecorderContentionStress` — repeated multithreaded
+  recording waves with band count above core count (TSan pressure test)
 - Allocator/upload-ring sub-allocation and byte-verification tests
+
+Robustness suites (`tests/unit/test_reflector_and_allocator_robustness.cpp`):
+
+- `SpirvReflector.*` — the reflector survives truncation, lying instruction
+  word counts, and 2000 iterations of random byte corruption of a real shader
+  without out-of-bounds reads
+- `VulkanAllocator.RandomizedAllocFreePreservesDisjointness` — randomized
+  alloc/free sequences (fixed seed) verified for non-overlap and full
+  reclamation
 
 Tests skip gracefully when no Vulkan loader, display, or compiled shaders are present, so
 the same binary runs on GPU-less CI machines and full-GPU workstations.

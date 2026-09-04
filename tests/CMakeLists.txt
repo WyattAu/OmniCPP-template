@@ -76,6 +76,8 @@ add_executable(omnicpp_unit_tests
     unit/test_platform_primitives.cpp
     unit/test_ecs_foundation.cpp
     unit/test_rendering.cpp
+    unit/test_reflector_and_allocator_robustness.cpp
+    unit/test_latency_telemetry.cpp
 )
 target_link_libraries(omnicpp_unit_tests PRIVATE omnicpp_runtime Threads::Threads gtest gtest_main)
 target_include_directories(omnicpp_unit_tests PRIVATE ${CMAKE_SOURCE_DIR}/include)

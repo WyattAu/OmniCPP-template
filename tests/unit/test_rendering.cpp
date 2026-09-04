@@ -1,7 +1,9 @@
 #include <gtest/gtest.h>
+#include <algorithm>
 #include <cstdlib>
 #include <fstream>
 #include <iostream>
+#include <thread>
 #include "engine/render/vulkan_context.hpp"
 #include "engine/render/vulkan_surface.hpp"
 #include "engine/render/vulkan_swapchain.hpp"
@@ -469,6 +471,10 @@ TEST(VulkanHardware, HeadlessSwapchainAndRenderSubmission) {
   }
   renderer.wait_idle();
   EXPECT_EQ(renderer.frame_count(), 9U);
+  // Frame-latency telemetry: one sample per presented frame.
+  EXPECT_EQ(renderer.frame_latency_tracker().total_count(), 9U);
+  EXPECT_EQ(renderer.frame_latency_stats().window_count, 9U);
+  EXPECT_GT(renderer.frame_latency_stats().p50_ns, 0U);
   EXPECT_EQ(context.validation_error_count(), 0U);
   EXPECT_EQ(context.validation_warning_count(), 0U);
 
@@ -1333,6 +1339,127 @@ TEST(VulkanHardware, ParallelRecorderMultithreadedBands) {
       VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
   ASSERT_TRUE(readback.submitted);
   EXPECT_GT(readback.non_clear_pixels, 100U);
+  EXPECT_EQ(context.validation_error_count(), 0U);
+  EXPECT_EQ(context.validation_warning_count(), 0U);
+
+  vkDestroyFence(context.device(), fence, nullptr);
+  vkDestroyCommandPool(context.device(), command_pool, nullptr);
+  pipeline.cleanup(context.device());
+  target.cleanup(context.device());
+  recorder.cleanup();
+  allocator.cleanup();
+  context.cleanup();
+#else
+  GTEST_SKIP() << "Vulkan support or test shaders were not enabled";
+#endif
+}
+
+// TSan stress: repeated multithreaded recording waves under high contention.
+// Each wave re-records all bands from live worker threads, then the frame is
+// submitted before the next wave — the pattern race detectors need sustained
+// interleaving pressure to surface latent data races.
+TEST(VulkanHardware, ParallelRecorderContentionStress) {
+#if OMNICPP_VULKAN_TYPES_AVAILABLE && defined(OMNICPP_TEST_SHADER_DIR)
+  if (!omnicpp::render::VulkanContext::is_available()) GTEST_SKIP() << "Vulkan loader unavailable";
+
+  omnicpp::render::VulkanContext context;
+  ASSERT_TRUE(context.initialize("OmniCppParallelStressTest", true).is_ok());
+
+  omnicpp::render::VulkanMemoryAllocator allocator;
+  ASSERT_TRUE(allocator.initialize(context.device(), context.physical_device()).is_ok());
+
+  constexpr std::uint32_t kWidth = 256;
+  constexpr std::uint32_t kHeight = 128;
+  // Band count above core count forces queueing/stealing between threads.
+  const std::uint32_t band_count =
+      static_cast<std::uint32_t>(std::max(8U, std::thread::hardware_concurrency() * 2U));
+
+  omnicpp::render::VulkanOffscreenTarget target;
+  ASSERT_TRUE(target.create(context.device(), context.physical_device(),
+                            VK_FORMAT_B8G8R8A8_UNORM, kWidth, kHeight, &allocator).is_ok());
+  ASSERT_TRUE(target.create_render_pass(context.device()).is_ok());
+  ASSERT_TRUE(target.create_framebuffer(context.device()).is_ok());
+
+  const std::string shader_dir = OMNICPP_TEST_SHADER_DIR;
+  omnicpp::render::VulkanPipeline pipeline;
+  ASSERT_TRUE(pipeline.load_shader_stage_file(context.device(),
+                                              shader_dir + "/triangle.vert.spv", "vertex").is_ok());
+  ASSERT_TRUE(pipeline.load_shader_stage_file(context.device(),
+                                              shader_dir + "/triangle.frag.spv", "fragment").is_ok());
+  ASSERT_TRUE(pipeline.create_pipeline_layout(context.device()).is_ok());
+  ASSERT_TRUE(pipeline.create_graphics_pipeline(
+      context.device(), target.render_pass(), target.format(),
+      pipeline.pipeline_layout(), false, false, false).is_ok());
+
+  omnicpp::render::VulkanParallelRecorder recorder;
+  ASSERT_TRUE(recorder.initialize(
+      context.device(),
+      static_cast<std::uint32_t>(context.queue_families().graphics_family),
+      band_count).is_ok());
+
+  const auto pool_result = omnicpp::render::VulkanRenderer::create_command_pool(
+      context.device(), static_cast<std::uint32_t>(context.queue_families().graphics_family));
+  ASSERT_TRUE(pool_result.is_ok());
+  const VkCommandPool command_pool = pool_result.value();
+  const auto cb_result = omnicpp::render::VulkanRenderer::allocate_command_buffer(
+      context.device(), command_pool);
+  ASSERT_TRUE(cb_result.is_ok());
+  const VkCommandBuffer command_buffer = cb_result.value();
+
+  VkFenceCreateInfo fence_info{};
+  fence_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+  VkFence fence = VK_NULL_HANDLE;
+  ASSERT_EQ(vkCreateFence(context.device(), &fence_info, nullptr, &fence), VK_SUCCESS);
+
+  constexpr int kWaves = 12;
+  for (int wave = 0; wave < kWaves; ++wave) {
+    auto secondaries = recorder.record_parallel(
+        kWidth, kHeight,
+        [&pipeline](VkCommandBuffer cmd, VkRect2D band_scissor) {
+          VkViewport viewport{};
+          viewport.width = static_cast<float>(band_scissor.extent.width);
+          viewport.height = static_cast<float>(band_scissor.extent.height);
+          viewport.x = 0.0f;
+          viewport.y = static_cast<float>(band_scissor.offset.y);
+          viewport.maxDepth = 1.0f;
+          vkCmdSetViewport(cmd, 0, 1, &viewport);
+          vkCmdSetScissor(cmd, 0, 1, &band_scissor);
+          vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.pipeline());
+          vkCmdDraw(cmd, 3, 1, 0, 0);
+        },
+        target.render_pass(), target.framebuffer());
+    ASSERT_TRUE(secondaries.is_ok());
+
+    VkCommandBufferBeginInfo begin{};
+    begin.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    begin.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+    ASSERT_EQ(vkBeginCommandBuffer(command_buffer, &begin), VK_SUCCESS);
+    VkRenderPassBeginInfo render_begin{};
+    render_begin.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+    render_begin.renderPass = target.render_pass();
+    render_begin.framebuffer = target.framebuffer();
+    render_begin.renderArea.extent = {kWidth, kHeight};
+    VkClearValue clear{};
+    clear.color = {{0.0f, 0.0f, 0.0f, 1.0f}};
+    render_begin.clearValueCount = 1;
+    render_begin.pClearValues = &clear;
+    vkCmdBeginRenderPass(command_buffer, &render_begin,
+                         VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
+    vkCmdExecuteCommands(command_buffer,
+                         static_cast<std::uint32_t>(secondaries.value().size()),
+                         secondaries.value().data());
+    vkCmdEndRenderPass(command_buffer);
+    ASSERT_EQ(vkEndCommandBuffer(command_buffer), VK_SUCCESS);
+
+    ASSERT_EQ(vkResetFences(context.device(), 1, &fence), VK_SUCCESS);
+    VkSubmitInfo submit{};
+    submit.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    submit.commandBufferCount = 1;
+    submit.pCommandBuffers = &command_buffer;
+    ASSERT_EQ(vkQueueSubmit(context.graphics_queue(), 1, &submit, fence), VK_SUCCESS);
+    ASSERT_EQ(vkWaitForFences(context.device(), 1, &fence, VK_TRUE, UINT64_MAX), VK_SUCCESS);
+  }
+
   EXPECT_EQ(context.validation_error_count(), 0U);
   EXPECT_EQ(context.validation_warning_count(), 0U);
 

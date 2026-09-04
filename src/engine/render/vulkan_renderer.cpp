@@ -4,6 +4,7 @@
  */
 
 #include "engine/render/vulkan_renderer.hpp"
+#include "engine/core/clock.hpp"
 #include <cstring>
 
 #ifdef OMNICPP_HAS_VULKAN
@@ -130,6 +131,7 @@ omnicpp::core::Result<std::uint32_t> VulkanRenderer::begin_frame() {
   if (!initialized_) return omnicpp::core::Result<std::uint32_t>::error(omnicpp::core::RuntimeError::vulkan_not_available);
 
   auto& frame = frames_[current_frame_];
+  frame_begin_ns_ = omnicpp::core::SteadyClock::now_ns();
   if (timeline_pacing_) {
     // Timeline pacing: this frame's slot is safe when the timeline has passed
     // the value this slot last signaled (one frame in flight per slot).
@@ -387,6 +389,14 @@ omnicpp::core::Result<void> VulkanRenderer::present_frame() {
   }
 
   frame_acquired_ = false;
+  if (frame_latency_enabled_ && frame_begin_ns_ >= 0) {
+    const auto now_ns = omnicpp::core::SteadyClock::now_ns();
+    if (now_ns >= frame_begin_ns_) {
+      frame_latency_.record(static_cast<std::uint64_t>(now_ns - frame_begin_ns_));
+      frame_latency_stats_ = frame_latency_.percentiles();
+    }
+    frame_begin_ns_ = kNoTimestamp;
+  }
   current_frame_ = (current_frame_ + 1) % static_cast<std::uint32_t>(frames_.size());
   ++frame_count_;
   return omnicpp::core::Result<void>::ok();
@@ -399,6 +409,10 @@ omnicpp::core::Result<void> VulkanRenderer::end_frame() {
   auto submit_result = submit_frame();
   if (!submit_result.is_ok()) return submit_result;
   return present_frame();
+}
+
+const omnicpp::core::LatencyStats& VulkanRenderer::frame_latency_stats() {
+  return frame_latency_stats_;
 }
 
 omnicpp::core::Result<void> VulkanRenderer::resync_for_swapchain(
