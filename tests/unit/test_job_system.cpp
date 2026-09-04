@@ -22,9 +22,12 @@
 #endif
 #endif
 
-#if defined(__SANITIZE_ADDRESS__) || (defined(__clang__) && defined(__has_feature) && \
-                                       __has_feature(address_sanitizer))
+#if defined(__SANITIZE_ADDRESS__)
 #define OMNICPP_ASAN 1
+#elif defined(__clang__) && defined(__has_feature)
+#if __has_feature(address_sanitizer)
+#define OMNICPP_ASAN 1
+#endif
 #endif
 
 namespace {
