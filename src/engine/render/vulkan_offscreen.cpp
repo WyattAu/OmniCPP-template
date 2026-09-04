@@ -117,7 +117,8 @@ omnicpp::core::Result<void> VulkanOffscreenTarget::create_depth(
   VkImageFormatProperties fmt_props{};
   if (vkGetPhysicalDeviceImageFormatProperties(
           physical_device, depth_format, VK_IMAGE_TYPE_2D, VK_IMAGE_TILING_OPTIMAL,
-          VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, 0, &fmt_props) != VK_SUCCESS) {
+          VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
+          0, &fmt_props) != VK_SUCCESS) {
     return omnicpp::core::Result<void>::error(omnicpp::core::RuntimeError::invalid_config);
   }
 
@@ -130,7 +131,8 @@ omnicpp::core::Result<void> VulkanOffscreenTarget::create_depth(
   image_info.format = depth_format;
   image_info.tiling = VK_IMAGE_TILING_OPTIMAL;
   image_info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-  image_info.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+  image_info.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT |
+                     VK_IMAGE_USAGE_TRANSFER_SRC_BIT;  // allow Hi-Z pyramid copies
   image_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
   image_info.samples = VK_SAMPLE_COUNT_1_BIT;
   if (vkCreateImage(device, &image_info, nullptr, &depth_image_) != VK_SUCCESS) {
@@ -212,7 +214,9 @@ omnicpp::core::Result<void> VulkanOffscreenTarget::create_render_pass(VkDevice d
   depth_attachment.format = depth_format_;
   depth_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
   depth_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-  depth_attachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+  // Store, don't discard: the depth pyramid path copies this attachment out
+  // after the pass (TRANSFER_SRC usage), so the resolved depth must survive.
+  depth_attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
   depth_attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
   depth_attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
   depth_attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;

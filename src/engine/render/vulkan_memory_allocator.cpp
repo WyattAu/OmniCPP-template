@@ -97,9 +97,15 @@ std::uint32_t VulkanMemoryAllocator::find_memory_type(
 std::size_t VulkanMemoryAllocator::find_or_create_block(
     VkDeviceSize size, std::uint32_t type_bits, VkMemoryPropertyFlags properties) {
 #ifdef OMNICPP_HAS_VULKAN
-  // Prefer an existing block that supports the resource's memory types.
+  // Prefer an existing block that supports the resource's memory types AND
+  // carries every requested property. A DEVICE_LOCAL-only block must never
+  // serve a HOST_VISIBLE request: its range would be unmapped (mapped=null).
+  VkPhysicalDeviceMemoryProperties memory_properties{};
+  vkGetPhysicalDeviceMemoryProperties(physical_device_, &memory_properties);
   for (std::size_t i = 0; i < blocks_.size(); ++i) {
     if ((type_bits & (1U << blocks_[i].memory_type)) == 0U) continue;
+    const auto block_flags = memory_properties.memoryTypes[blocks_[i].memory_type].propertyFlags;
+    if ((block_flags & properties) != properties) continue;
     for (const auto& range : blocks_[i].free_ranges) {
       if (range.size >= size) return i;
     }

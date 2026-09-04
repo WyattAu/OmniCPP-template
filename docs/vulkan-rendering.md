@@ -277,6 +277,22 @@ source to per-tile maxima. `VulkanHardware.GpuLodOcclusionCounters` verifies occ
 rejection (stats + empty draw commands), band assignment, bias forcing, and
 boundary-crossing animation on hardware.
 
+The cull shader computes each sphere's nearest-point depth with the **exact**
+GL-projection mapping (`c1 - c2/view_d`, constants from the `near_z`/`far_z` push
+constants), so occlusion comparisons against real rendered depth are exact rather
+than a linear proxy. The pyramid lives at a caller-chosen word offset
+(`pyramid_off` push constant) subject to storage-buffer offset alignment.
+
+## Real-Depth Occlusion: End-to-End Pyramid
+
+`VulkanHardware.RealDepthPyramidOcclusion` closes the loop with no CPU depth
+knowledge: render a wall+cube scene (D32 depth stored — `VulkanOffscreenTarget`
+depth attachments use `STORE` so the pyramid path can copy them), copy the actual
+depth attachment to a buffer (`vkCmdCopyImageToBuffer`), reduce it on the GPU, then
+cull against that pyramid. The cube behind the wall is occlusion-culled by real
+pixel data; the front cube survives. Tile maxima are verified against the analytic
+projection mapping.
+
 ## Scene Rendering: Objects, Lighting, Animation
 
 `scene.vert`/`scene.frag` render instanced cubes and a ground slab with per-instance
@@ -294,5 +310,6 @@ elements stay identical, and the animation round-trips to a byte-identical frame
    GPU CI service; the lavapipe CI job covers driver-independent correctness.
 2. True async-compute partitioning through the mixed graph: run the compute sub-sequence
    on the dedicated queue with release/acquire halves (primitives are in place).
-3. Depth-pyramid from the actual depth attachment (copy depth -> sampled image) so
-   occlusion uses the real previous frame instead of a CPU-reduced stand-in.
+3. Mip-chained depth pyramid (sampled-image reduction over levels) and spatially
+   finer tile footprints for the occlusion test (current: 2x2 tiles around the
+   projected center, conservative).

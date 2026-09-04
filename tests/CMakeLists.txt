@@ -226,6 +226,7 @@ add_executable(omnicpp_unit_tests
     unit/test_render_graph_async.cpp
     unit/test_gpu_lod_occlusion.cpp
     unit/test_scene3d.cpp
+    unit/test_depth_pyramid.cpp
     unit/test_gpu_driven.cpp
     unit/test_objects3d.cpp
     unit/test_reflector_and_allocator_robustness.cpp

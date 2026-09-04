@@ -55,6 +55,7 @@ layout(push_constant) uniform Push {
   uint tile_size;     // pyramid tile edge in pixels
   uint near_z;        // packed float
   uint far_z;         // packed float
+  uint pyramid_off;   // word index of the pyramid inside the payload buffer
 } push;
 
 
@@ -82,14 +83,19 @@ void main() {
 
   // ---- Occlusion against the previous frame's depth pyramid. ----
   // Clip position of the sphere center; NDC depth of the NEAREST point.
-  const float tan_half = 1.2f;  // matches frustum margin tan(50 deg)
-  const vec2 ndc = center.xy / (-center.z * tan_half);
-  const float ndc_depth = ((-center.z - radius) - 0.1f) / (100.0f - 0.1f)
-                        * (100.0f / (-center.z - radius));
-  // Simplified: linear depth proxy in [0,1]; conservative because the real
-  // projection compresses near values less than this proxy.
-  const float depth_min = clamp(((-center.z - radius) - 0.1f) / (100.0f - 0.1f),
-                                0.0f, 1.0f);
+  const vec2 tan_half_v = vec2(1.2f, 1.2f);  // matches frustum margin
+  const vec2 ndc = center.xy / (-center.z * tan_half_v);
+  // Exact NDC depth of the nearest sphere point for the GL-style projection
+  // used by our matrices: ndc(viewD) = C1 - C2/viewD, with viewD the view-space
+  // distance. Pyramid values are real rendered NDC depth, so the comparison
+  // (tile max < sphere nearest => fully behind geometry) is exact, not proxy.
+  const float near_z = uintBitsToFloat(push.near_z);
+  const float far_z = uintBitsToFloat(push.far_z);
+  const float inv_range = 1.0f / (far_z - near_z);
+  const float c1 = (far_z + near_z) * inv_range;
+  const float c2 = 2.0f * far_z * near_z * inv_range;
+  const float view_d = max(-center.z - radius, near_z);
+  const float depth_min = clamp(c1 - c2 / view_d, 0.0f, 1.0f);
 
   const uint tcx = cull.words[2];
   const uint tcy = cull.words[3];
@@ -105,7 +111,7 @@ void main() {
         for (uint dx = 0u; dx < 2u; ++dx) {
           const uvec2 t = uvec2(min(tile_min.x + dx, tcx - 1u),
                                 min(tile_min.y + dy, tcy - 1u));
-          const uint packed = cull.words[10u + t.y * tcx + t.x];
+          const uint packed = cull.words[push.pyramid_off + t.y * tcx + t.x];
           const float scene_max_depth = uintBitsToFloat(packed);
           if (packed != 0u) {
             any_sample = true;

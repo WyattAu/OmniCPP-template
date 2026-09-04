@@ -176,7 +176,7 @@ TEST(VulkanHardware, GpuLodOcclusionCounters) {
 
   // --- Pipelines. ---
   const std::string shader_dir = OMNICPP_TEST_SHADER_DIR;
-  const VkPushConstantRange comp_push{VK_SHADER_STAGE_COMPUTE_BIT, 0, 48U};
+  const VkPushConstantRange comp_push{VK_SHADER_STAGE_COMPUTE_BIT, 0, 52U};
   omnicpp::render::VulkanPipeline comp_pipe;
   ASSERT_TRUE(comp_pipe.load_shader_stage_file(
       context.device(), shader_dir + "/cull_lod_occlude.comp.spv", "compute").is_ok());
@@ -266,9 +266,9 @@ TEST(VulkanHardware, GpuLodOcclusionCounters) {
     vkCmdBindPipeline(cb, VK_PIPELINE_BIND_POINT_COMPUTE, comp_pipe.pipeline());
     vkCmdBindDescriptorSets(cb, VK_PIPELINE_BIND_POINT_COMPUTE,
                             comp_pipe.pipeline_layout(), 0, 1, &cull_set.value(), 0, nullptr);
-    const std::uint32_t push[12] = {kSphereOff, kLodOff, kComp0Off, kComp1Off,
+    const std::uint32_t push[13] = {kSphereOff, kLodOff, kComp0Off, kComp1Off,
                                     kComp2Off, 0U, 0U, kSize, kSize, kTile,
-                                    bits(0.1f), bits(100.0f)};
+                                    bits(0.1f), bits(100.0f), 10U};
     vkCmdPushConstants(cb, comp_pipe.pipeline_layout(), VK_SHADER_STAGE_COMPUTE_BIT,
                        0, sizeof(push), push);
     vkCmdDispatch(cb, (kInstances + 63U) / 64U, 1, 1);
@@ -331,10 +331,12 @@ TEST(VulkanHardware, GpuLodOcclusionCounters) {
       words[kSphereOff + i * 4U + 3] = bits(sphere[3]);
     }
     // Pyramid: all tiles at clear depth 1.0 except the central wall block
-    // (rows/cols 2..5) holding the wall's farthest surface depth. The wall
-    // front face sits at z=-20; standard Vulkan depth = (dist - near)/(far-near)
-    // = (20 - 0.1)/99.9 ~= 0.199 (nearer = smaller).
-    const float wall_depth = (20.0f - 0.1f) / 99.9f;
+    // (rows/cols 2..5) holding the wall's depth. The wall sits at z=-20;
+    // the cull shader compares against exact GL-projection NDC depth
+    // (1.002 - 0.2002/d), so the tile holds 1.002 - 0.2002/20 ~= 0.992
+    // (nearer = smaller). Front spheres (|z| < 20) have nearest-point depth
+    // < 0.992 -> visible; back spheres -> occluded.
+    const float wall_depth = 1.002f - 0.2002f / 20.0f;
     for (std::uint32_t t = 0; t < kTilesX * kTilesY; ++t) {
       words[kWordPyramid + t] = bits(1.0f);
     }
