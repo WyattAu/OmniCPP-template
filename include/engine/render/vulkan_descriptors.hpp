@@ -39,6 +39,10 @@ struct ReflectedBinding {
 struct DescriptorSetLayoutInfo {
   VkDescriptorSetLayout layout{VK_NULL_HANDLE};
   std::vector<ReflectedBinding> bindings;
+  //! Pool backing this layout (one pool per layout).
+  VkDescriptorPool pool{VK_NULL_HANDLE};
+  //! True when created via `create_layout(..., /*bindless=*/true)`.
+  bool bindless{false};
 };
 
 /**
@@ -58,9 +62,13 @@ public:
   void cleanup() noexcept;
   [[nodiscard]] bool is_initialized() const noexcept { return device_ != VK_NULL_HANDLE; }
 
-  //! Build a layout from bindings; sets_per_frame reserves pool capacity.
+  //! Build a layout from bindings; sets_to_reserve reserves pool capacity.
+  //! With `bindless` (requires device descriptor-indexing support), the layout
+  //! is created partially bound with update-after-bind: descriptors may be
+  //! bound as null and written any time up to draw/dispatch submission.
   [[nodiscard]] omnicpp::core::Result<VkDescriptorSetLayout> create_layout(
-      const std::vector<ReflectedBinding>& bindings, std::uint32_t sets_to_reserve);
+      const std::vector<ReflectedBinding>& bindings, std::uint32_t sets_to_reserve,
+      bool bindless = false);
 
   //! Allocate a descriptor set from the internal pool for `layout`.
   [[nodiscard]] omnicpp::core::Result<VkDescriptorSet> allocate_set(
@@ -80,9 +88,12 @@ public:
     return layouts_;
   }
 
+  //! Look up the recorded info for a layout created by this manager.
+  [[nodiscard]] const DescriptorSetLayoutInfo* find_layout(
+      VkDescriptorSetLayout layout) const noexcept;
+
 private:
   VkDevice device_{VK_NULL_HANDLE};
-  VkDescriptorPool pool_{VK_NULL_HANDLE};
   std::vector<DescriptorSetLayoutInfo> layouts_;
 };
 

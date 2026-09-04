@@ -65,6 +65,9 @@ public:
   [[nodiscard]] bool has_synchronization2() const noexcept { return synchronization2_enabled_; }
   //! True when the device supports Vulkan 1.3 and timeline semaphores were enabled.
   [[nodiscard]] bool has_timeline_semaphores() const noexcept { return timeline_semaphores_enabled_; }
+  //! True when descriptor indexing (bindless: runtime arrays, partially bound,
+  //! update-after-bind) was negotiated and enabled on the device.
+  [[nodiscard]] bool has_descriptor_indexing() const noexcept { return descriptor_indexing_enabled_; }
   [[nodiscard]] std::uint32_t validation_warning_count() const noexcept {
     return validation_warning_count_.load(std::memory_order_relaxed);
   }
@@ -89,6 +92,7 @@ private:
   bool headless_surface_enabled_{false};
   bool synchronization2_enabled_{false};
   bool timeline_semaphores_enabled_{false};
+  bool descriptor_indexing_enabled_{false};
   VkInstance instance_{nullptr};
   VkPhysicalDevice physical_device_{nullptr};
   VkDevice device_{nullptr};

@@ -129,11 +129,18 @@ omnicpp::core::Result<Allocation> VulkanMemoryAllocator::allocate_sized(
   Block& block = blocks_[block_index];
 
   // First-fit with alignment: carve [aligned_start, aligned_start + size).
+  // NOTE: no references into block.free_ranges may be held across the mutations
+  // below — insert() can reallocate the vector and leave the reference dangling
+  // (this was a real heap-corruption bug). Everything is computed from a value
+  // copy first, then applied by index.
   for (std::size_t r = 0; r < block.free_ranges.size(); ++r) {
-    FreeRange& range = block.free_ranges[r];
-    const VkDeviceSize aligned_start = round_up(range.offset, alignment);
-    const VkDeviceSize pad = aligned_start - range.offset;
-    if (pad >= range.size || range.size - pad < size) continue;
+    const FreeRange original = block.free_ranges[r];
+    const VkDeviceSize aligned_start = round_up(original.offset, alignment);
+    const VkDeviceSize pad = aligned_start - original.offset;
+    if (pad >= original.size || original.size - pad < size) continue;
+
+    const VkDeviceSize remainder_offset = aligned_start + size;
+    const VkDeviceSize remainder_size = original.size - pad - size;
 
     Allocation allocation;
     allocation.memory = block.memory;
@@ -144,22 +151,20 @@ omnicpp::core::Result<Allocation> VulkanMemoryAllocator::allocate_sized(
     allocation.memory_type = block.memory_type;
     allocation.block_index = block_index;
 
-    if (pad > 0) {
-      // Return the leading pad as its own free range (may be zero-size trimmed
-      // by the general carve below when pad == range remainder).
-      FreeRange pad_range{range.offset, pad};
-      range.offset = aligned_start;
-      range.size = range.size - pad;
+    if (pad > 0 && remainder_size == 0) {
+      // Whole range minus the pad: slot becomes the pad range.
+      block.free_ranges[r] = FreeRange{original.offset, pad};
+    } else if (pad > 0) {
+      // Slot becomes the remainder, pad is inserted before it.
+      block.free_ranges[r] = FreeRange{remainder_offset, remainder_size};
       block.free_ranges.insert(
-          block.free_ranges.begin() + static_cast<std::ptrdiff_t>(r), pad_range);
-      ++r; // range now sits one slot later.
-    }
-    if (range.size == size) {
+          block.free_ranges.begin() + static_cast<std::ptrdiff_t>(r),
+          FreeRange{original.offset, pad});
+    } else if (remainder_size == 0) {
       block.free_ranges.erase(block.free_ranges.begin() +
                               static_cast<std::ptrdiff_t>(r));
     } else {
-      range.offset += size;
-      range.size -= size;
+      block.free_ranges[r] = FreeRange{remainder_offset, remainder_size};
     }
     block.used += size;
     ++allocation_count_;

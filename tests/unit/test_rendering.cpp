@@ -770,6 +770,290 @@ TEST(VulkanHardware, DescriptorReflectionAndUboRender) {
 }
 
 // ============================================================================
+// Bindless (Descriptor Indexing) Tests
+// ============================================================================
+
+TEST(VulkanHardware, AllocatorAlignmentPadSubAllocation) {
+// Regression test: allocate_sized() held a reference into the free-range
+// vector across an insert() that could reallocate it, corrupting the heap on
+// any allocation that needed alignment padding (e.g. a 128 B buffer at block
+// offset 0 followed by a 1024-aligned image). Exercises the padded path with
+// remainder, the padded path consuming the whole range, and the plain carve.
+#if OMNICPP_VULKAN_TYPES_AVAILABLE
+  if (!omnicpp::render::VulkanContext::is_available()) GTEST_SKIP() << "Vulkan loader unavailable";
+
+  omnicpp::render::VulkanContext context;
+  ASSERT_TRUE(context.initialize("OmniCppAllocatorPadTest", true).is_ok());
+  omnicpp::render::VulkanMemoryAllocator allocator;
+  ASSERT_TRUE(allocator.initialize(context.device(), context.physical_device()).is_ok());
+
+  // Small buffer lands at block offset 0; the aligned image must carve a pad.
+  auto small_result = allocator.create_buffer(
+      128, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+  ASSERT_TRUE(small_result.is_ok());
+  EXPECT_EQ(small_result.value().offset, 0U);
+
+  VkImageCreateInfo image_info{};
+  image_info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+  image_info.imageType = VK_IMAGE_TYPE_2D;
+  image_info.format = VK_FORMAT_B8G8R8A8_UNORM;
+  image_info.extent = {64, 64, 1};
+  image_info.mipLevels = 1;
+  image_info.arrayLayers = 1;
+  image_info.samples = VK_SAMPLE_COUNT_1_BIT;
+  image_info.tiling = VK_IMAGE_TILING_OPTIMAL;
+  image_info.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+  image_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+  image_info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+  VkImage image = VK_NULL_HANDLE;
+  ASSERT_EQ(vkCreateImage(context.device(), &image_info, nullptr, &image), VK_SUCCESS);
+  auto image_alloc = allocator.bind_image(image, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+  ASSERT_TRUE(image_alloc.is_ok());
+  // Same block, aligned past the small buffer, no overlap.
+  EXPECT_EQ(image_alloc.value().memory, small_result.value().memory);
+  EXPECT_GE(image_alloc.value().offset, small_result.value().offset + small_result.value().size);
+
+  // Third allocation: first-fit reuses the alignment-pad hole before the
+  // image (correct behavior); it must simply never overlap the image.
+  auto tail_result = allocator.create_buffer(
+      512, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+  ASSERT_TRUE(tail_result.is_ok());
+  EXPECT_EQ(tail_result.value().memory, small_result.value().memory);
+  const bool tail_overlaps_image =
+      tail_result.value().offset < image_alloc.value().offset + image_alloc.value().size &&
+      image_alloc.value().offset < tail_result.value().offset + tail_result.value().size;
+  EXPECT_FALSE(tail_overlaps_image);
+
+  // Drain: freeing in order must coalesce back to one full free range.
+  const auto stats_before = allocator.stats();
+  EXPECT_EQ(stats_before.allocation_count, 3U);
+  omnicpp::render::Allocation a0 = small_result.value();
+  omnicpp::render::Allocation a1 = image_alloc.value();
+  omnicpp::render::Allocation a2 = tail_result.value();
+  allocator.destroy_allocation(a0);
+  allocator.destroy_allocation(a1);
+  allocator.destroy_allocation(a2);
+  const auto stats_after = allocator.stats();
+  EXPECT_EQ(stats_after.allocation_count, 0U);
+  EXPECT_EQ(stats_after.used_bytes, 0U);
+
+  vkDestroyImage(context.device(), image, nullptr);
+  allocator.cleanup();
+  context.cleanup();
+#else
+  GTEST_SKIP() << "Vulkan support was not enabled";
+#endif
+}
+
+TEST(VulkanHardware, BindlessDescriptorIndexingRender) {
+#if OMNICPP_VULKAN_TYPES_AVAILABLE && defined(OMNICPP_TEST_SHADER_DIR)
+  if (!omnicpp::render::VulkanContext::is_available()) GTEST_SKIP() << "Vulkan loader unavailable";
+
+  omnicpp::render::VulkanContext context;
+  ASSERT_TRUE(context.initialize("OmniCppBindlessTest", true).is_ok());
+  if (!context.has_descriptor_indexing()) {
+    GTEST_SKIP() << "Device does not support descriptor indexing (bindless)";
+  }
+
+  // --- Reflect the bindless shader: runtime-sized SSBO array at set 0 binding 0. ---
+  std::ifstream frag_file(std::string(OMNICPP_TEST_SHADER_DIR) + "/bindless_palette.frag.spv",
+                          std::ios::binary);
+  ASSERT_TRUE(frag_file.good());
+  const std::vector<std::uint8_t> frag_spirv(
+      (std::istreambuf_iterator<char>(frag_file)), std::istreambuf_iterator<char>());
+  ASSERT_GE(frag_spirv.size(), 20U);
+
+  const auto bindings = omnicpp::render::reflect_spirv_resources(
+      frag_spirv.data(), frag_spirv.size());
+  ASSERT_EQ(bindings.size(), 1U);
+  EXPECT_EQ(bindings[0].set, 0U);
+  EXPECT_EQ(bindings[0].binding, 0U);
+  EXPECT_EQ(bindings[0].type, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+  EXPECT_EQ(bindings[0].stage_flags,
+            static_cast<VkShaderStageFlags>(VK_SHADER_STAGE_FRAGMENT_BIT));
+
+  omnicpp::render::VulkanMemoryAllocator allocator;
+  ASSERT_TRUE(allocator.initialize(context.device(), context.physical_device()).is_ok());
+  omnicpp::render::VulkanDescriptorManager manager;
+  ASSERT_TRUE(manager.initialize(context.device()).is_ok());
+
+  // --- Bindless layout: 1 set, partially bound + update-after-bind. ---
+  auto layout_result = manager.create_layout(bindings, 1, /*bindless=*/true);
+  ASSERT_TRUE(layout_result.is_ok());
+  auto set_result = manager.allocate_set(layout_result.value());
+  ASSERT_TRUE(set_result.is_ok());
+
+  // --- Palette device buffer, filled through the staging upload ring. ---
+  constexpr std::uint32_t kPaletteCount = 8;
+  constexpr VkDeviceSize kPaletteBytes = kPaletteCount * 16;
+  auto palette_result = allocator.create_buffer(
+      kPaletteBytes, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+      VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+  ASSERT_TRUE(palette_result.is_ok());
+
+  // --- Fill the palette through the staging upload ring (ring owns its
+  // command buffer: acquire() opens recording, submit() closes it). ---
+  omnicpp::render::VulkanUploadRing ring;
+  ASSERT_TRUE(ring.initialize(
+      context.device(), context.physical_device(),
+      static_cast<std::uint32_t>(context.queue_families().graphics_family),
+      1u << 20u).is_ok());
+  auto staging = ring.acquire(kPaletteBytes);
+  ASSERT_TRUE(staging.is_ok());
+  const std::array<float, kPaletteCount * 4> palette_colors = {{
+      1.0f, 0.0f, 0.0f, 1.0f,    // band 0: red
+      0.0f, 1.0f, 0.0f, 1.0f,    // band 1: green
+      0.0f, 0.0f, 1.0f, 1.0f,    // band 2: blue
+      1.0f, 1.0f, 0.0f, 1.0f,    // band 3: yellow
+      1.0f, 0.0f, 1.0f, 1.0f,    // band 4: magenta
+      0.0f, 1.0f, 1.0f, 1.0f,    // band 5: cyan
+      1.0f, 1.0f, 1.0f, 1.0f,    // band 6: white
+      0.5f, 0.5f, 0.5f, 1.0f,    // band 7: gray
+  }};
+  std::memcpy(staging.value().host_data, palette_colors.data(), kPaletteBytes);
+
+  const auto pool_result = omnicpp::render::VulkanRenderer::create_command_pool(
+      context.device(), static_cast<std::uint32_t>(context.queue_families().graphics_family));
+  ASSERT_TRUE(pool_result.is_ok());
+  const VkCommandPool command_pool = pool_result.value();
+
+  {
+    const auto cb_result = omnicpp::render::VulkanRenderer::allocate_command_buffer(
+        context.device(), command_pool);
+    ASSERT_TRUE(cb_result.is_ok());
+    const VkCommandBuffer upload_cmd = cb_result.value();
+    VkCommandBufferBeginInfo begin{};
+    begin.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    begin.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+    ASSERT_EQ(vkBeginCommandBuffer(upload_cmd, &begin), VK_SUCCESS);
+    ring.record_copy(upload_cmd, staging.value(), palette_result.value().buffer, 0);
+    ASSERT_EQ(vkEndCommandBuffer(upload_cmd), VK_SUCCESS);
+    VkFenceCreateInfo fence_info{};
+    fence_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+    VkFence upload_fence = VK_NULL_HANDLE;
+    ASSERT_EQ(vkCreateFence(context.device(), &fence_info, nullptr, &upload_fence), VK_SUCCESS);
+    VkSubmitInfo upload_submit{};
+    upload_submit.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    upload_submit.commandBufferCount = 1;
+    upload_submit.pCommandBuffers = &upload_cmd;
+    ASSERT_EQ(vkQueueSubmit(context.graphics_queue(), 1, &upload_submit, upload_fence), VK_SUCCESS);
+    ASSERT_EQ(vkWaitForFences(context.device(), 1, &upload_fence, VK_TRUE, UINT64_MAX), VK_SUCCESS);
+    vkDestroyFence(context.device(), upload_fence, nullptr);
+  }
+  ring.wait_idle();
+
+  // --- Bindless descriptor write: BEFORE command recording (the safest legal
+  // window; update-after-bind still exercised by the layout). Points the
+  // runtime array at the palette buffer. ---
+  ASSERT_TRUE(manager.write_buffer(set_result.value(), 0,
+                                   VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+                                   palette_result.value().buffer, 0, VK_WHOLE_SIZE).is_ok());
+
+  // --- Pipeline: bindless fragment stage + push constants for the band index. ---
+  omnicpp::render::VulkanOffscreenTarget target;
+  ASSERT_TRUE(target.create(context.device(), context.physical_device(),
+                            VK_FORMAT_B8G8R8A8_UNORM, 320, 240, &allocator).is_ok());
+  ASSERT_TRUE(target.create_render_pass(context.device()).is_ok());
+  ASSERT_TRUE(target.create_framebuffer(context.device()).is_ok());
+
+  omnicpp::render::VulkanPipeline pipeline;
+  const std::string shader_dir = OMNICPP_TEST_SHADER_DIR;
+  ASSERT_TRUE(pipeline.load_shader_stage_file(context.device(),
+                                              shader_dir + "/triangle.vert.spv", "vertex").is_ok());
+  ASSERT_TRUE(pipeline.load_shader_stage_file(context.device(),
+                                              shader_dir + "/bindless_palette.frag.spv", "fragment").is_ok());
+  const VkDescriptorSetLayout set_layout = layout_result.value();
+  const VkPushConstantRange push_range{
+      VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(std::uint32_t)};
+  ASSERT_TRUE(pipeline.create_pipeline_layout(
+      context.device(), &set_layout, 1, &push_range).is_ok());
+  ASSERT_TRUE(pipeline.create_graphics_pipeline(
+      context.device(), target.render_pass(), target.format(),
+      pipeline.pipeline_layout(), false, false, false).is_ok());
+
+  // --- Record one command buffer: 8 horizontal bands, one push-constant
+  // value each, verifying non-uniform descriptor state per draw. ---
+  const auto cb_result = omnicpp::render::VulkanRenderer::allocate_command_buffer(
+      context.device(), command_pool);
+  ASSERT_TRUE(cb_result.is_ok());
+  const VkCommandBuffer command_buffer = cb_result.value();
+
+  VkCommandBufferBeginInfo begin{};
+  begin.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+  begin.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+  ASSERT_EQ(vkBeginCommandBuffer(command_buffer, &begin), VK_SUCCESS);
+  VkRenderPassBeginInfo render_begin{};
+  render_begin.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+  render_begin.renderPass = target.render_pass();
+  render_begin.framebuffer = target.framebuffer();
+  render_begin.renderArea.extent = {320, 240};
+  VkClearValue clear{};
+  clear.color = {{0.0f, 0.0f, 0.0f, 1.0f}};
+  render_begin.clearValueCount = 1;
+  render_begin.pClearValues = &clear;
+  vkCmdBeginRenderPass(command_buffer, &render_begin, VK_SUBPASS_CONTENTS_INLINE);
+  VkViewport viewport{};
+  viewport.width = 320.0f;
+  viewport.height = 240.0f;
+  viewport.maxDepth = 1.0f;
+  vkCmdSetViewport(command_buffer, 0, 1, &viewport);
+  VkRect2D scissor{};
+  scissor.extent = {320, 240};
+  vkCmdSetScissor(command_buffer, 0, 1, &scissor);
+  vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.pipeline());
+  const VkDescriptorSet descriptor_set = set_result.value();
+  vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                          pipeline.pipeline_layout(), 0, 1, &descriptor_set, 0, nullptr);
+  const float band_height = 240.0f / static_cast<float>(kPaletteCount);
+  for (std::uint32_t band = 0; band < kPaletteCount; ++band) {
+    vkCmdPushConstants(command_buffer, pipeline.pipeline_layout(),
+                       VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(std::uint32_t), &band);
+    const float y = band_height * static_cast<float>(band);
+    vkCmdDraw(command_buffer, 3, 1, 0, 0);
+    (void)y; // geometry covers the full triangle; band color comes from push index
+  }
+  vkCmdEndRenderPass(command_buffer);
+  ASSERT_EQ(vkEndCommandBuffer(command_buffer), VK_SUCCESS);
+
+  VkSubmitInfo submit{};
+  submit.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+  submit.commandBufferCount = 1;
+  submit.pCommandBuffers = &command_buffer;
+  VkFenceCreateInfo frame_fence_info{};
+  frame_fence_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+  VkFence frame_fence = VK_NULL_HANDLE;
+  ASSERT_EQ(vkCreateFence(context.device(), &frame_fence_info, nullptr, &frame_fence), VK_SUCCESS);
+  ASSERT_EQ(vkQueueSubmit(context.graphics_queue(), 1, &submit, frame_fence), VK_SUCCESS);
+  ASSERT_EQ(vkWaitForFences(context.device(), 1, &frame_fence, VK_TRUE, UINT64_MAX), VK_SUCCESS);
+
+  // --- Content check: interior pixels must come from the palette buffer. ---
+  const auto readback = readback_swapchain_image(
+      context.physical_device(), context.device(), context.graphics_queue(),
+      static_cast<std::uint32_t>(context.queue_families().graphics_family),
+      target.image(), target.format(), 320, 240,
+      VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+  ASSERT_TRUE(readback.submitted);
+  EXPECT_GT(readback.non_clear_pixels, 100U);
+  EXPECT_GT(readback.center_pixel & 0x00FFFFFFU, 0U);
+  EXPECT_EQ(context.validation_error_count(), 0U);
+  EXPECT_EQ(context.validation_warning_count(), 0U);
+
+  vkDestroyFence(context.device(), frame_fence, nullptr);
+  vkDestroyCommandPool(context.device(), command_pool, nullptr);
+  pipeline.cleanup(context.device());
+  target.cleanup(context.device());
+  ring.cleanup();
+  omnicpp::render::Allocation palette_allocation = palette_result.value();
+  allocator.destroy_allocation(palette_allocation);
+  manager.cleanup();
+  allocator.cleanup();
+  context.cleanup();
+#else
+  GTEST_SKIP() << "Vulkan support or test shaders were not enabled";
+#endif
+}
+
+// ============================================================================
 // Render Graph Tests
 // ============================================================================
 

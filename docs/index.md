@@ -29,14 +29,14 @@ Archetype-based SoA layout with deterministic entity iteration.
 Complete GPU rendering pipeline extracted from legacy code, Qt-free, headlessly tested.
 Full details in [Vulkan Rendering Stack](vulkan-rendering.md).
 
-- **VulkanContext**: Instance creation, device enumeration, queue selection, Vulkan 1.2/1.3 feature negotiation (Synchronization 2, timeline semaphores)
+- **VulkanContext**: Instance creation, device enumeration, queue selection, Vulkan 1.2/1.3 feature negotiation (Synchronization 2, timeline semaphores, descriptor indexing)
 - **VulkanSurface**: X11/XCB and Win32 surface creation with headless fallback
 - **VulkanSwapchain**: Format selection (SRGB preferred), present mode selection (FIFO/MAILBOX), validated recreation + renderer resync on resize
 - **VulkanRenderPass**: Color + depth render pass, per-swapchain-image framebuffers, depth resource management
 - **VulkanPipeline**: SPIR-V shader loading, graphics pipeline with dynamic viewport/scissor, explicit descriptor/push-constant layouts, configurable depth/cull/blend
 - **VulkanRenderer**: Sync2 (`vkQueueSubmit2`) submission with legacy fallback, timeline-semaphore frame pacing, GPU timestamp telemetry, per-frame command pools
 - **VulkanMemoryAllocator**: Block sub-allocation with persistent mapping + staging upload ring
-- **VulkanDescriptorManager**: SPIR-V reflection, layout/pool management, buffer and image writes
+- **VulkanDescriptorManager**: SPIR-V reflection, layout/pool management, buffer and image writes, bindless (update-after-bind, partially bound, runtime-array) sets
 - **Render graph**: Automatic image barriers between declarative passes
 - **VulkanParallelRecorder**: Multithreaded secondary command-buffer recording
 
@@ -74,7 +74,7 @@ Engine facade with `Result<T>` error model, configurable event transport, and ti
 | Check | Status |
 |-------|--------|
 | Headless CTest (unit tests) | ✅ All pass |
-| Vulkan validation preset (RTX 2060 + Khronos layer, **148/148**) | ✅ Zero diagnostics |
+| Vulkan validation preset (RTX 2060 + Khronos layer, **150/150**) | ✅ Zero diagnostics |
 | Vulkan validation CI job (Mesa lavapipe) | ✅ Wired in `.github/workflows/test.yml` |
 | TSan (`halt_on_error=1`) | ✅ Zero data races |
 | ASan/UBSan | ✅ No memory or UB errors |

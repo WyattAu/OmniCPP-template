@@ -151,7 +151,7 @@ omnicpp::core::Result<void> VulkanSwapchain::create_image_views(VkDevice device)
 #endif
 }
 
-void VulkanSwapchain::cleanup(VkDevice device) noexcept {
+void VulkanSwapchain::cleanup([[maybe_unused]] VkDevice device) noexcept {
 #ifdef OMNICPP_HAS_VULKAN
   if (device) {
     for (auto view : image_views_) if (view) vkDestroyImageView(device, view, nullptr);

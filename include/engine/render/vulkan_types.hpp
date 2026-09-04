@@ -36,11 +36,15 @@ typedef struct VkQueryPool_T* VkQueryPool;
 typedef struct VkDebugUtilsMessengerEXT_T* VkDebugUtilsMessengerEXT;
 
 using VkDeviceSize = std::uint64_t;
+constexpr VkDeviceSize VK_WHOLE_SIZE = ~static_cast<VkDeviceSize>(0);
 using VkBufferUsageFlags = std::uint32_t;
 using VkMemoryPropertyFlags = std::uint32_t;
 using VkDescriptorType = std::uint32_t;
 using VkShaderStageFlags = std::uint32_t;
 using VkImageLayout = std::uint32_t;
+using VkDescriptorSetLayoutCreateFlags = std::uint32_t;
+using VkDescriptorPoolCreateFlags = std::uint32_t;
+using VkDescriptorBindingFlags = std::uint32_t;
 
 constexpr VkDescriptorType VK_DESCRIPTOR_TYPE_MAX_ENUM = 0x7FFFFFFF;
 constexpr VkDescriptorType VK_DESCRIPTOR_TYPE_SAMPLER = 0;
@@ -56,6 +60,14 @@ constexpr VkShaderStageFlags VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT = 0x000
 constexpr VkShaderStageFlags VK_SHADER_STAGE_GEOMETRY_BIT = 0x00000008;
 constexpr VkShaderStageFlags VK_SHADER_STAGE_FRAGMENT_BIT = 0x00000010;
 constexpr VkShaderStageFlags VK_SHADER_STAGE_COMPUTE_BIT = 0x00000020;
+constexpr VkDescriptorSetLayoutCreateFlags
+    VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT = 0x00000002;
+constexpr VkDescriptorPoolCreateFlags
+    VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT = 0x00000002;
+constexpr VkDescriptorBindingFlags
+    VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT = 0x00000001;
+constexpr VkDescriptorBindingFlags
+    VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT = 0x00000004;
 
 using VkFormat = std::uint32_t;
 using VkImageLayout = std::uint32_t;

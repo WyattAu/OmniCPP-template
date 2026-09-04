@@ -154,6 +154,7 @@ omnicpp::core::Result<void> VulkanContext::initialize(
   // when the selected device advertises them, and chain the struct explicitly.
   synchronization2_enabled_ = false;
   timeline_semaphores_enabled_ = false;
+  descriptor_indexing_enabled_ = false;
   VkPhysicalDeviceVulkan13Features vulkan13_features{};
   vulkan13_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES;
   VkPhysicalDeviceVulkan12Features vulkan12_features{};
@@ -182,6 +183,27 @@ omnicpp::core::Result<void> VulkanContext::initialize(
   }
   if (is_vulkan12) {
     timeline_semaphores_enabled_ = vulkan12_features.timelineSemaphore == VK_TRUE;
+    // Bindless descriptor indexing: require the full combination used by the
+    // renderer (runtime-sized arrays, partially-bound sets, update-after-bind
+    // for sampled images and storage buffers, and non-uniform indexing).
+    descriptor_indexing_enabled_ =
+        vulkan12_features.descriptorIndexing == VK_TRUE &&
+        vulkan12_features.runtimeDescriptorArray == VK_TRUE &&
+        vulkan12_features.descriptorBindingPartiallyBound == VK_TRUE &&
+        vulkan12_features.descriptorBindingSampledImageUpdateAfterBind == VK_TRUE &&
+        vulkan12_features.descriptorBindingStorageBufferUpdateAfterBind == VK_TRUE &&
+        vulkan12_features.shaderSampledImageArrayNonUniformIndexing == VK_TRUE &&
+        vulkan12_features.shaderStorageBufferArrayNonUniformIndexing == VK_TRUE;
+    if (descriptor_indexing_enabled_) {
+      vulkan12_features.descriptorIndexing = VK_TRUE;
+      vulkan12_features.runtimeDescriptorArray = VK_TRUE;
+      vulkan12_features.descriptorBindingPartiallyBound = VK_TRUE;
+      vulkan12_features.descriptorBindingSampledImageUpdateAfterBind = VK_TRUE;
+      vulkan12_features.descriptorBindingStorageBufferUpdateAfterBind = VK_TRUE;
+      vulkan12_features.shaderSampledImageArrayNonUniformIndexing = VK_TRUE;
+      vulkan12_features.shaderStorageBufferArrayNonUniformIndexing = VK_TRUE;
+      device_extensions.push_back(VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME);
+    }
   }
   // Enable the negotiated feature structs on the device.
   if (synchronization2_enabled_) {

@@ -84,10 +84,30 @@ fences for the tail region before reusing bytes.
 `reflect_spirv_resources()` is a dependency-free SPIR-V parser that extracts set/binding/
 type/count for UBOs, SSBOs, samplers, combined image samplers, storage images, and input
 attachments. Stage flags derive from `OpEntryPoint` execution models and merge across
-modules.
+modules. Arrayed resources resolve their dimension: runtime arrays report a descriptor
+count of 0 (expanded to a bounded capacity in bindless layouts), sized arrays report the
+constant length. glslang's `readonly buffer` SSBO pattern (Uniform storage class with a
+runtime-array member) is classified correctly as a storage buffer.
 
 `VulkanDescriptorManager` builds layouts from reflected bindings, sizes its pool
-automatically, allocates sets, and applies buffer/image writes.
+automatically (one pool per layout, so bindless and regular layouts coexist), allocates
+sets, and applies buffer/image writes.
+
+### Bindless (descriptor indexing)
+
+When the device advertises the required Vulkan 1.2 features (checked as a full set:
+`descriptorIndexing`, `runtimeDescriptorArray`, `descriptorBindingPartiallyBound`,
+update-after-bind for sampled images and storage buffers, and non-uniform indexing for
+sampled-image and storage-buffer arrays), `has_descriptor_indexing()` is true and
+`create_layout(bindings, sets, /*bindless=*/true)` creates:
+
+- update-after-bind + partially-bound bindings (null descriptors legal at bind time,
+  writes any time up to draw/dispatch submission)
+- runtime-sized arrays in shaders (`float values[]`), bounded by the layout's capacity
+- an `UPDATE_AFTER_BIND` pool backing persistent sets
+
+The hardware test renders 8 palette bands through a runtime-sized SSBO array indexed by
+push constants, with zero validation diagnostics.
 
 ## Render Graph
 
@@ -120,6 +140,8 @@ Hardware tests run under the Khronos validation layer, forced via
 
 Key hardware tests (`tests/unit/test_rendering.cpp`):
 
+- `VulkanHardware.AllocatorAlignmentPadSubAllocation`
+- `VulkanHardware.BindlessDescriptorIndexingRender`
 - `VulkanHardware.SwapchainRecreationStress`
 - `VulkanHardware.OffscreenTriangleReadback`
 - `VulkanHardware.HeadlessSwapchainAndRenderSubmission`

@@ -2,6 +2,7 @@
 
 #include <cstring>
 #include <unordered_map>
+#include <utility>
 
 #ifdef OMNICPP_HAS_VULKAN
 #include <vulkan/vulkan.h>
@@ -30,8 +31,11 @@ constexpr std::uint32_t kSpirvMagic = 0x07230203U;
 
 // Op codes used by the reflector.
 constexpr std::uint16_t kOpEntryPoint = 15;
+constexpr std::uint16_t kOpConstant = 43;
 constexpr std::uint16_t kOpDecorate = 71;
 constexpr std::uint16_t kOpTypeStruct = 30;
+constexpr std::uint16_t kOpTypeArray = 28;
+constexpr std::uint16_t kOpTypeRuntimeArray = 29;
 constexpr std::uint16_t kOpTypePointer = 32;
 constexpr std::uint16_t kOpTypeSampler = 45;
 constexpr std::uint16_t kOpTypeSampledImage = 46;
@@ -63,6 +67,13 @@ struct IdInfo {
   std::uint32_t binding{0};
   bool has_binding{false};
   std::uint32_t array_dim{1};
+  bool is_array{false};             // OpTypeArray (sized).
+  bool is_runtime_array{false};     // OpTypeRuntimeArray (unsized).
+  std::uint32_t element_id{0};      // Element type for array types.
+  std::uint32_t length_id{0};       // Length operand id for sized arrays.
+  std::uint32_t constant_value{0};  // Literal for OpConstant scalars.
+  bool is_constant{false};
+  std::vector<std::uint32_t> member_ids;  // OpTypeStruct members.
   std::uint32_t stage_flags{0};   // VkShaderStageFlags bit contributed by entry points.
 };
 
@@ -133,6 +144,9 @@ std::vector<ReflectedBinding> reflect_spirv_resources(
         break;
       }
       case kOpTypePointer: {
+        // operands: result id, storage class, pointee type id. (The original
+        // subset read operands[1] as the pointee, which silently broke every
+        // pointer whose storage class word was parsed as the pointee id.)
         if (operand_count >= 3) {
           IdInfo info;
           info.pointer_class = operands[1];
@@ -143,7 +157,30 @@ std::vector<ReflectedBinding> reflect_spirv_resources(
       }
       case kOpTypeStruct: {
         if (operand_count >= 1) {
-          ids[operands[0]] = IdInfo{}; // Struct types tracked for pointee lookups.
+          IdInfo info;
+          info.member_ids.assign(operands, operands + operand_count);
+          ids[operands[0]] = std::move(info); // Struct members for runtime-array detection.
+        }
+        break;
+      }
+      case kOpTypeArray: {
+        // operands: result id, element type id, length id.
+        if (operand_count >= 3) {
+          IdInfo info;
+          info.is_array = true;
+          info.element_id = operands[1];
+          info.length_id = operands[2];
+          ids[operands[0]] = info;
+        }
+        break;
+      }
+      case kOpTypeRuntimeArray: {
+        // operands: result id, element type id.
+        if (operand_count >= 2) {
+          IdInfo info;
+          info.is_runtime_array = true;
+          info.element_id = operands[1];
+          ids[operands[0]] = info;
         }
         break;
       }
@@ -165,6 +202,15 @@ std::vector<ReflectedBinding> reflect_spirv_resources(
         }
         break;
       }
+      case kOpConstant: {
+        // operands: result type id, result id, literal words (scalars only).
+        if (operand_count >= 3) {
+          auto& slot = ids[operands[1]];
+          slot.is_constant = true;
+          slot.constant_value = operands[2];
+        }
+        break;
+      }
       case kOpDecorate: {
         if (operand_count >= 3) {
           const std::uint32_t target = operands[0];
@@ -180,18 +226,43 @@ std::vector<ReflectedBinding> reflect_spirv_resources(
       }
       case kOpVariable: {
         if (operand_count >= 3) {
-          const std::uint32_t result_id = operands[0];
-          const std::uint32_t value_type = operands[1];
+          // SPIR-V operand order: [result type id, result id, storage class].
+          const std::uint32_t result_type = operands[0];   // pointer type id
+          const std::uint32_t result_id = operands[1];     // the variable's own id
           const std::uint32_t storage_class = operands[2];
 
           std::uint32_t kind = kKindUnknown;
           if (storage_class == kStorageUniform) {
             kind = kKindUniformBuffer;
+            // glslang represents `readonly buffer` SSBOs with Uniform storage.
+            // A block whose (array-wrapped) struct contains a runtime array is
+            // an SSBO per the spec, so reclassify for correct layouts.
+            std::uint32_t pointee = 0;
+            const auto ptr_it = ids.find(result_type);
+            if (ptr_it != ids.end()) pointee = ptr_it->second.pointee_id;
+            for (std::uint32_t hop = 0; hop < 8 && pointee != 0U; ++hop) {
+              const auto it = ids.find(pointee);
+              if (it == ids.end()) break;
+              if (it->second.is_array || it->second.is_runtime_array) {
+                pointee = it->second.element_id;  // Look through array wrappers.
+              } else if (it->second.member_ids.empty()) {
+                break;
+              } else {
+                for (const std::uint32_t member : it->second.member_ids) {
+                  const auto member_it = ids.find(member);
+                  if (member_it != ids.end() && member_it->second.is_runtime_array) {
+                    kind = kKindStorageBuffer;
+                    break;
+                  }
+                }
+                break;
+              }
+            }
           } else if (storage_class == kStorageStorageBuffer) {
             kind = kKindStorageBuffer;
           } else if (storage_class == kStorageUniformConstant) {
             // Resolve through the pointer's pointee type.
-            const auto ptr_it = ids.find(value_type);
+            const auto ptr_it = ids.find(result_type);
             if (ptr_it != ids.end() && ptr_it->second.kind == kKindUnknown) {
               const auto pointee_it = ids.find(ptr_it->second.pointee_id);
               if (pointee_it != ids.end()) kind = pointee_it->second.kind;
@@ -202,7 +273,27 @@ std::vector<ReflectedBinding> reflect_spirv_resources(
 
           IdInfo var_info;
           var_info.kind = kind;
-          var_info.array_dim = 1; // Block/resource arrays are out of the subset.
+          // Resolve the descriptor array dimension from the pointee type:
+          // OpTypeRuntimeArray -> 0 (runtime descriptor array); OpTypeArray ->
+          // the constant length when resolvable.
+          var_info.array_dim = 1;
+          {
+            const auto var_ptr_it = ids.find(result_type);
+            if (var_ptr_it != ids.end()) {
+              const auto pointee_it = ids.find(var_ptr_it->second.pointee_id);
+              if (pointee_it != ids.end()) {
+                if (pointee_it->second.is_runtime_array) {
+                  var_info.array_dim = 0;
+                } else if (pointee_it->second.is_array) {
+                  const auto len_it = ids.find(pointee_it->second.length_id);
+                  var_info.array_dim =
+                      (len_it != ids.end() && len_it->second.is_constant)
+                          ? len_it->second.constant_value
+                          : 0U;
+                }
+              }
+            }
+          }
           // The variable inherits any decorations applied to its own id.
           const auto existing = ids.find(result_id);
           if (existing != ids.end()) {
@@ -212,7 +303,7 @@ std::vector<ReflectedBinding> reflect_spirv_resources(
           }
           ids[result_id] = var_info;
           // Propagate set/binding from the pointer type if decorated there.
-          const auto value_it = ids.find(value_type);
+          const auto value_it = ids.find(result_type);
           if (value_it != ids.end()) {
             auto& slot = ids[result_id];
             if (value_it->second.set != 0U || value_it->second.has_binding) {
@@ -301,17 +392,29 @@ void VulkanDescriptorManager::cleanup() noexcept {
   if (device_) {
     for (const auto& info : layouts_) {
       if (info.layout) vkDestroyDescriptorSetLayout(device_, info.layout, nullptr);
+      if (info.pool) vkDestroyDescriptorPool(device_, info.pool, nullptr);
     }
-    if (pool_) vkDestroyDescriptorPool(device_, pool_, nullptr);
   }
 #endif
   layouts_.clear();
-  pool_ = VK_NULL_HANDLE;
   device_ = VK_NULL_HANDLE;
 }
 
+const DescriptorSetLayoutInfo* VulkanDescriptorManager::find_layout(
+    VkDescriptorSetLayout layout) const noexcept {
+#ifdef OMNICPP_HAS_VULKAN
+  for (const auto& info : layouts_) {
+    if (info.layout == layout) return &info;
+  }
+#else
+  (void)layout;
+#endif
+  return nullptr;
+}
+
 omnicpp::core::Result<VkDescriptorSetLayout> VulkanDescriptorManager::create_layout(
-    const std::vector<ReflectedBinding>& bindings, std::uint32_t sets_to_reserve) {
+    const std::vector<ReflectedBinding>& bindings, std::uint32_t sets_to_reserve,
+    bool bindless) {
 #ifdef OMNICPP_HAS_VULKAN
   if (!device_) {
     return omnicpp::core::Result<VkDescriptorSetLayout>::error(
@@ -337,8 +440,36 @@ omnicpp::core::Result<VkDescriptorSetLayout> VulkanDescriptorManager::create_lay
     layout_bindings.push_back(lb);
   }
 
+  // Bindless: every binding is update-after-bind and partially bound, so
+  // descriptors can be null at bind time and written any time up to
+  // draw/dispatch submission. Requires negotiated device support.
+  // Runtime-array bindings keep a fixed bounded count in the layout (the
+  // shader's unsized array inherits this bound): zero-count bindings combined
+  // with update-after-bind trigger allocator bugs in validation-layer builds.
+  constexpr std::uint32_t kDefaultBindlessArrayCapacity = 1024;
+  std::vector<VkDescriptorBindingFlags> binding_flags;
+  VkDescriptorSetLayoutBindingFlagsCreateInfo binding_flags_info{};
+  if (bindless) {
+    for (auto& lb : layout_bindings) {
+      if (lb.descriptorCount == 0U) lb.descriptorCount = kDefaultBindlessArrayCapacity;
+    }
+    binding_flags.resize(layout_bindings.size(),
+                         VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT |
+                             VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT);
+    binding_flags_info.sType =
+        VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO;
+    binding_flags_info.bindingCount = static_cast<std::uint32_t>(binding_flags.size());
+    binding_flags_info.pBindingFlags = binding_flags.data();
+  }
+
   VkDescriptorSetLayoutCreateInfo layout_info{};
   layout_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+  if (bindless) {
+    // UPDATE_AFTER_BIND_POOL is the only layout-level flag required; the
+    // per-binding flags above carry partially-bound + update-after-bind.
+    layout_info.flags = VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT;
+    layout_info.pNext = &binding_flags_info;
+  }
   layout_info.bindingCount = static_cast<std::uint32_t>(layout_bindings.size());
   layout_info.pBindings = layout_bindings.data();
   VkDescriptorSetLayout layout = VK_NULL_HANDLE;
@@ -347,44 +478,46 @@ omnicpp::core::Result<VkDescriptorSetLayout> VulkanDescriptorManager::create_lay
         omnicpp::core::RuntimeError::vulkan_not_available);
   }
 
-  // Grow (or create) the pool to hold the requested capacity.
-  std::unordered_map<VkDescriptorType, std::uint32_t> type_counts;
-  for (const auto& binding : bindings) {
-    type_counts[binding.type] += binding.count * sets_to_reserve;
-  }
-  std::vector<VkDescriptorPoolSize> pool_sizes;
-  pool_sizes.reserve(type_counts.size());
-  for (const auto& [type, count] : type_counts) {
-    pool_sizes.push_back({type, count});
-  }
-
-  if (pool_) {
-    // Existing pool: reset is too destructive across frames, so grow by
-    // creating a larger pool is out of scope; require upfront sizing.
-    // (Single-pool-per-manager is this increment's scope.)
-    vkDestroyDescriptorSetLayout(device_, layout, nullptr);
-    return omnicpp::core::Result<VkDescriptorSetLayout>::error(
-        omnicpp::core::RuntimeError::invalid_config);
-  }
-  VkDescriptorPoolCreateInfo pool_info{};
-  pool_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-  pool_info.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
-  pool_info.maxSets = sets_to_reserve;
-  pool_info.poolSizeCount = static_cast<std::uint32_t>(pool_sizes.size());
-  pool_info.pPoolSizes = pool_sizes.data();
-  if (vkCreateDescriptorPool(device_, &pool_info, nullptr, &pool_) != VK_SUCCESS) {
-    vkDestroyDescriptorSetLayout(device_, layout, nullptr);
-    return omnicpp::core::Result<VkDescriptorSetLayout>::error(
-        omnicpp::core::RuntimeError::vulkan_not_available);
+  // Pool capacity from the reserved set count; one pool per layout so
+  // bindless (update-after-bind) and regular layouts coexist. Bindless
+  // runtime-array bindings were expanded to the fixed capacity above, so
+  // pool sizing sees the same effective counts.
+  VkDescriptorPool pool = VK_NULL_HANDLE;
+  {
+    std::unordered_map<VkDescriptorType, std::uint32_t> type_counts;
+    for (const auto& lb : layout_bindings) {
+      type_counts[lb.descriptorType] += lb.descriptorCount * sets_to_reserve;
+    }
+    std::vector<VkDescriptorPoolSize> pool_sizes;
+    pool_sizes.reserve(type_counts.size());
+    for (const auto& [type, count] : type_counts) {
+      pool_sizes.push_back({type, count});
+    }
+    VkDescriptorPoolCreateInfo pool_info{};
+    pool_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+    // Bindless sets are persistent and freed with the pool; regular sets
+    // support individual free for frame reuse.
+    pool_info.flags = bindless ? VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT
+                               : VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
+    pool_info.maxSets = sets_to_reserve;
+    pool_info.poolSizeCount = static_cast<std::uint32_t>(pool_sizes.size());
+    pool_info.pPoolSizes = pool_sizes.data();
+    if (vkCreateDescriptorPool(device_, &pool_info, nullptr, &pool) != VK_SUCCESS) {
+      vkDestroyDescriptorSetLayout(device_, layout, nullptr);
+      return omnicpp::core::Result<VkDescriptorSetLayout>::error(
+          omnicpp::core::RuntimeError::vulkan_not_available);
+    }
   }
 
   DescriptorSetLayoutInfo info;
   info.layout = layout;
   info.bindings = bindings;
+  info.pool = pool;
+  info.bindless = bindless;
   layouts_.push_back(std::move(info));
   return omnicpp::core::Result<VkDescriptorSetLayout>::ok(layout);
 #else
-  (void)bindings; (void)sets_to_reserve;
+  (void)bindings; (void)sets_to_reserve; (void)bindless;
   return omnicpp::core::Result<VkDescriptorSetLayout>::error(
       omnicpp::core::RuntimeError::vulkan_not_available);
 #endif
@@ -393,13 +526,14 @@ omnicpp::core::Result<VkDescriptorSetLayout> VulkanDescriptorManager::create_lay
 omnicpp::core::Result<VkDescriptorSet> VulkanDescriptorManager::allocate_set(
     VkDescriptorSetLayout layout) {
 #ifdef OMNICPP_HAS_VULKAN
-  if (!device_ || !pool_ || !layout) {
+  const DescriptorSetLayoutInfo* info = find_layout(layout);
+  if (!device_ || !info || !info->pool || !layout) {
     return omnicpp::core::Result<VkDescriptorSet>::error(
         omnicpp::core::RuntimeError::invalid_config);
   }
   VkDescriptorSetAllocateInfo alloc_info{};
   alloc_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-  alloc_info.descriptorPool = pool_;
+  alloc_info.descriptorPool = info->pool;
   alloc_info.descriptorSetCount = 1;
   alloc_info.pSetLayouts = &layout;
   VkDescriptorSet set = VK_NULL_HANDLE;

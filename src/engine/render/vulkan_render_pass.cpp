@@ -237,7 +237,7 @@ omnicpp::core::Result<void> VulkanRenderPass::create_depth_resources(
 #endif
 }
 
-void VulkanRenderPass::cleanup(VkDevice device) noexcept {
+void VulkanRenderPass::cleanup([[maybe_unused]] VkDevice device) noexcept {
 #ifdef OMNICPP_HAS_VULKAN
   if (device) {
     for (auto fb : framebuffers_) {
@@ -257,7 +257,7 @@ void VulkanRenderPass::cleanup(VkDevice device) noexcept {
 #endif
 }
 
-VkFormat VulkanRenderPass::find_supported_depth_format(VkPhysicalDevice device) {
+VkFormat VulkanRenderPass::find_supported_depth_format([[maybe_unused]] VkPhysicalDevice device) {
 #ifdef OMNICPP_HAS_VULKAN
   if (!device) return VK_FORMAT_UNDEFINED;
 

@@ -46,11 +46,20 @@ if(OMNICPP_USE_VULKAN AND Vulkan_FOUND)
             DEPENDS ${CMAKE_SOURCE_DIR}/assets/shaders/ubo_triangle.frag
             VERBATIM
         )
+        add_custom_command(
+            OUTPUT ${OMNICPP_SHADER_DIR}/bindless_palette.frag.spv
+            COMMAND ${OMNICPP_SHADER_COMPILER} ${OMNICPP_SHADER_COMPILER_ARGS}
+                    ${CMAKE_SOURCE_DIR}/assets/shaders/bindless_palette.frag
+                    -o ${OMNICPP_SHADER_DIR}/bindless_palette.frag.spv
+            DEPENDS ${CMAKE_SOURCE_DIR}/assets/shaders/bindless_palette.frag
+            VERBATIM
+        )
         add_custom_target(omnicpp_test_shaders
             DEPENDS
                 ${OMNICPP_SHADER_DIR}/triangle.vert.spv
                 ${OMNICPP_SHADER_DIR}/triangle.frag.spv
                 ${OMNICPP_SHADER_DIR}/ubo_triangle.frag.spv
+                ${OMNICPP_SHADER_DIR}/bindless_palette.frag.spv
         )
     endif()
 endif()
