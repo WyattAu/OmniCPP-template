@@ -41,7 +41,8 @@ omnicpp::core::Result<void> VulkanContext::initialize(
   app_info.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
   app_info.pEngineName = "OmniCpp Engine";
   app_info.engineVersion = VK_MAKE_VERSION(1, 0, 0);
-  app_info.apiVersion = get_highest_api_version();
+  const std::uint32_t instance_api_version = get_highest_api_version();
+  app_info.apiVersion = instance_api_version;
 
   VkInstanceCreateInfo create_info{};
   create_info.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
@@ -139,6 +140,14 @@ omnicpp::core::Result<void> VulkanContext::initialize(
     queue_create_infos.push_back(qci);
   }
 
+  // Effective API version: min(instance request, device support). Feature
+  // structs for versions above the effective API must not appear in the
+  // vkCreateDevice pNext chain (VUID-VkDeviceCreateInfo-pNext-pNext).
+  const std::uint32_t effective_api =
+      instance_api_version < props.apiVersion ? instance_api_version : props.apiVersion;
+  const bool is_vulkan13 = effective_api >= VK_API_VERSION_1_3;
+  const bool is_vulkan12 = effective_api >= VK_API_VERSION_1_2;
+
   VkPhysicalDeviceFeatures supported_features{};
   vkGetPhysicalDeviceFeatures(physical_device_, &supported_features);
   VkPhysicalDeviceFeatures device_features{};
@@ -159,8 +168,6 @@ omnicpp::core::Result<void> VulkanContext::initialize(
   vulkan13_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES;
   VkPhysicalDeviceVulkan12Features vulkan12_features{};
   vulkan12_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
-  const bool is_vulkan13 = props.apiVersion >= VK_API_VERSION_1_3;
-  const bool is_vulkan12 = props.apiVersion >= VK_API_VERSION_1_2;
   if (is_vulkan13 || is_vulkan12) {
     VkPhysicalDeviceFeatures2 features2{};
     features2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
@@ -450,6 +457,9 @@ std::uint32_t VulkanContext::get_highest_api_version() {
   if (enumerate_version) {
     std::uint32_t version = VK_API_VERSION_1_0;
     if (enumerate_version(&version) == VK_SUCCESS) {
+      // Request up to 1.3: the effective API is min(instance, device), so a
+      // 1.3-capable loader is required to legally use 1.3 feature structs.
+      if (version >= VK_API_VERSION_1_3) return VK_API_VERSION_1_3;
       if (version >= VK_API_VERSION_1_2) return VK_API_VERSION_1_2;
       if (version >= VK_API_VERSION_1_1) return VK_API_VERSION_1_1;
     }

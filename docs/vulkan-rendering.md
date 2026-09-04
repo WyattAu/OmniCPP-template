@@ -21,15 +21,25 @@ Khronos validation layer with zero diagnostics, and exercised in CI on Mesa lava
 
 ## Feature Negotiation
 
-`VulkanContext` queries `VkPhysicalDeviceVulkan13Features` and
-`VkPhysicalDeviceVulkan12Features` in one chained `vkGetPhysicalDeviceFeatures2` call and
-enables, only when the device advertises them:
+`VulkanContext` requests the highest instance API the loader supports (up to 1.3), then
+computes the **effective API** as `min(instance version, device version)`. Feature structs
+(`VkPhysicalDeviceVulkan13Features`, `VkPhysicalDeviceVulkan12Features`) are chained into
+`vkCreateDevice` only when the *effective* API covers them — chaining a 1.3 struct under an
+effective 1.2 API is a spec violation (`VUID-VkDeviceCreateInfo-pNext-pNext`) that some
+drivers tolerate and others (correctly) reject.
+
+The context queries both feature structs in one chained `vkGetPhysicalDeviceFeatures2` call
+and enables, only when the device advertises them:
 
 - **Synchronization 2** (1.3) — unlocks `vkQueueSubmit2` and stage/access-scoped submit infos
 - **Timeline semaphores** (1.2) — unlocks fence-free CPU/GPU frame pacing
+- **Descriptor indexing** (1.2) — the full bindless combination: runtime-sized arrays,
+  partially-bound sets, update-after-bind for sampled images and storage buffers, and
+  non-uniform array indexing
 
-Introspection: `has_synchronization2()`, `has_timeline_semaphores()`, and
-`timestamp_period_ns` (device limits, for GPU timestamp conversion).
+Introspection: `has_synchronization2()`, `has_timeline_semaphores()`,
+`has_descriptor_indexing()`, and `timestamp_period_ns` (device limits, for GPU timestamp
+conversion).
 
 Extensions such as `VK_KHR_synchronization2` are added to the device only when the
 corresponding feature is actually enabled.
