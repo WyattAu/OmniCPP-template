@@ -82,7 +82,8 @@ public:
   //! Write one image (sampler + view) into `binding` of `set`.
   [[nodiscard]] omnicpp::core::Result<void> write_image(
       VkDescriptorSet set, std::uint32_t binding, VkDescriptorType type,
-      VkSampler sampler, VkImageView view, VkImageLayout layout);
+      VkSampler sampler, VkImageView view, VkImageLayout layout,
+      std::uint32_t array_element = 0);
 
   [[nodiscard]] const std::vector<DescriptorSetLayoutInfo>& layouts() const noexcept {
     return layouts_;

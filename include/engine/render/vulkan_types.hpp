@@ -26,6 +26,7 @@ typedef struct VkCommandPool_T* VkCommandPool;
 typedef struct VkCommandBuffer_T* VkCommandBuffer;
 typedef struct VkFence_T* VkFence;
 typedef struct VkSemaphore_T* VkSemaphore;
+typedef struct VkEvent_T* VkEvent;
 typedef struct VkBuffer_T* VkBuffer;
 typedef struct VkBufferView_T* VkBufferView;
 typedef struct VkDescriptorPool_T* VkDescriptorPool;

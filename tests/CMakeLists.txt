@@ -47,6 +47,38 @@ if(OMNICPP_USE_VULKAN AND Vulkan_FOUND)
             VERBATIM
         )
         add_custom_command(
+            OUTPUT ${OMNICPP_SHADER_DIR}/fill_gradient.comp.spv
+            COMMAND ${OMNICPP_SHADER_COMPILER} ${OMNICPP_SHADER_COMPILER_ARGS}
+                    ${CMAKE_SOURCE_DIR}/assets/shaders/fill_gradient.comp
+                    -o ${OMNICPP_SHADER_DIR}/fill_gradient.comp.spv
+            DEPENDS ${CMAKE_SOURCE_DIR}/assets/shaders/fill_gradient.comp
+            VERBATIM
+        )
+        add_custom_command(
+            OUTPUT ${OMNICPP_SHADER_DIR}/gradient_triangle.vert.spv
+            COMMAND ${OMNICPP_SHADER_COMPILER} ${OMNICPP_SHADER_COMPILER_ARGS}
+                    ${CMAKE_SOURCE_DIR}/assets/shaders/gradient_triangle.vert
+                    -o ${OMNICPP_SHADER_DIR}/gradient_triangle.vert.spv
+            DEPENDS ${CMAKE_SOURCE_DIR}/assets/shaders/gradient_triangle.vert
+            VERBATIM
+        )
+        add_custom_command(
+            OUTPUT ${OMNICPP_SHADER_DIR}/gradient_triangle.frag.spv
+            COMMAND ${OMNICPP_SHADER_COMPILER} ${OMNICPP_SHADER_COMPILER_ARGS}
+                    ${CMAKE_SOURCE_DIR}/assets/shaders/gradient_triangle.frag
+                    -o ${OMNICPP_SHADER_DIR}/gradient_triangle.frag.spv
+            DEPENDS ${CMAKE_SOURCE_DIR}/assets/shaders/gradient_triangle.frag
+            VERBATIM
+        )
+        add_custom_command(
+            OUTPUT ${OMNICPP_SHADER_DIR}/bindless_textures.frag.spv
+            COMMAND ${OMNICPP_SHADER_COMPILER} ${OMNICPP_SHADER_COMPILER_ARGS}
+                    ${CMAKE_SOURCE_DIR}/assets/shaders/bindless_textures.frag
+                    -o ${OMNICPP_SHADER_DIR}/bindless_textures.frag.spv
+            DEPENDS ${CMAKE_SOURCE_DIR}/assets/shaders/bindless_textures.frag
+            VERBATIM
+        )
+        add_custom_command(
             OUTPUT ${OMNICPP_SHADER_DIR}/bindless_palette.frag.spv
             COMMAND ${OMNICPP_SHADER_COMPILER} ${OMNICPP_SHADER_COMPILER_ARGS}
                     ${CMAKE_SOURCE_DIR}/assets/shaders/bindless_palette.frag
@@ -60,6 +92,10 @@ if(OMNICPP_USE_VULKAN AND Vulkan_FOUND)
                 ${OMNICPP_SHADER_DIR}/triangle.frag.spv
                 ${OMNICPP_SHADER_DIR}/ubo_triangle.frag.spv
                 ${OMNICPP_SHADER_DIR}/bindless_palette.frag.spv
+                ${OMNICPP_SHADER_DIR}/bindless_textures.frag.spv
+                ${OMNICPP_SHADER_DIR}/fill_gradient.comp.spv
+                ${OMNICPP_SHADER_DIR}/gradient_triangle.vert.spv
+                ${OMNICPP_SHADER_DIR}/gradient_triangle.frag.spv
         )
     endif()
 endif()
@@ -78,6 +114,7 @@ add_executable(omnicpp_unit_tests
     unit/test_rendering.cpp
     unit/test_reflector_and_allocator_robustness.cpp
     unit/test_latency_telemetry.cpp
+    unit/test_job_system.cpp
 )
 target_link_libraries(omnicpp_unit_tests PRIVATE omnicpp_runtime Threads::Threads gtest gtest_main)
 target_include_directories(omnicpp_unit_tests PRIVATE ${CMAKE_SOURCE_DIR}/include)

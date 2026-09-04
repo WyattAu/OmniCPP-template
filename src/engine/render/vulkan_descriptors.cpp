@@ -37,8 +37,8 @@ constexpr std::uint16_t kOpTypeStruct = 30;
 constexpr std::uint16_t kOpTypeArray = 28;
 constexpr std::uint16_t kOpTypeRuntimeArray = 29;
 constexpr std::uint16_t kOpTypePointer = 32;
-constexpr std::uint16_t kOpTypeSampler = 45;
-constexpr std::uint16_t kOpTypeSampledImage = 46;
+constexpr std::uint16_t kOpTypeSampler = 26;
+constexpr std::uint16_t kOpTypeSampledImage = 27;
 constexpr std::uint16_t kOpTypeImage = 25;
 constexpr std::uint16_t kOpVariable = 59;
 
@@ -261,11 +261,23 @@ std::vector<ReflectedBinding> reflect_spirv_resources(
           } else if (storage_class == kStorageStorageBuffer) {
             kind = kKindStorageBuffer;
           } else if (storage_class == kStorageUniformConstant) {
-            // Resolve through the pointer's pointee type.
+            // Resolve through the pointer's pointee type, looking through
+            // array wrappers: bindless textures are runtime arrays of
+            // sampled images, so the pointee is OpTypeRuntimeArray, not the
+            // sampled-image type itself.
             const auto ptr_it = ids.find(result_type);
-            if (ptr_it != ids.end() && ptr_it->second.kind == kKindUnknown) {
-              const auto pointee_it = ids.find(ptr_it->second.pointee_id);
-              if (pointee_it != ids.end()) kind = pointee_it->second.kind;
+            if (ptr_it != ids.end()) {
+              std::uint32_t pointee = ptr_it->second.pointee_id;
+              for (std::uint32_t hop = 0; hop < 8 && pointee != 0U; ++hop) {
+                const auto it = ids.find(pointee);
+                if (it == ids.end()) break;
+                if (it->second.is_array || it->second.is_runtime_array) {
+                  pointee = it->second.element_id;  // Look through wrappers.
+                  continue;
+                }
+                if (it->second.kind != kKindUnknown) kind = it->second.kind;
+                break;
+              }
             }
           } else {
             break; // Push constants, uniforms-in, etc. are not descriptors.
@@ -577,7 +589,8 @@ omnicpp::core::Result<void> VulkanDescriptorManager::write_buffer(
 
 omnicpp::core::Result<void> VulkanDescriptorManager::write_image(
     VkDescriptorSet set, std::uint32_t binding, VkDescriptorType type,
-    VkSampler sampler, VkImageView view, VkImageLayout layout) {
+    VkSampler sampler, VkImageView view, VkImageLayout layout,
+    std::uint32_t array_element) {
 #ifdef OMNICPP_HAS_VULKAN
   if (!device_ || !set || !view) {
     return omnicpp::core::Result<void>::error(omnicpp::core::RuntimeError::invalid_config);
@@ -590,6 +603,7 @@ omnicpp::core::Result<void> VulkanDescriptorManager::write_image(
   write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
   write.dstSet = set;
   write.dstBinding = binding;
+  write.dstArrayElement = array_element;
   write.descriptorCount = 1;
   write.descriptorType = type;
   write.pImageInfo = &image_info;

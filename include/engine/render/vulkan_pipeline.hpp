@@ -58,6 +58,12 @@ public:
       bool enable_depth_write = true,
       bool enable_backface_cull = true);
 
+  //! Create a compute pipeline from the "compute" stage module (load with
+  //! load_shader_stage_file(device, path, "compute") first). Requires a
+  //! caller-created layout (create_pipeline_layout).
+  [[nodiscard]] omnicpp::core::Result<void> create_compute_pipeline(
+      VkDevice device, VkPipelineLayout pipeline_layout = VK_NULL_HANDLE);
+
   [[nodiscard]] omnicpp::core::Result<void> create_pipeline_layout(
       VkDevice device, const void* push_constant_range = nullptr);
   //! Layout with descriptor set layouts (type-safe overload).
@@ -73,6 +79,7 @@ public:
 private:
   VkShaderModule vertex_shader_{VK_NULL_HANDLE};
   VkShaderModule fragment_shader_{VK_NULL_HANDLE};
+  VkShaderModule compute_shader_{VK_NULL_HANDLE};
   VkPipeline pipeline_{VK_NULL_HANDLE};
   VkPipelineLayout layout_{VK_NULL_HANDLE};
   bool owns_layout_{false};

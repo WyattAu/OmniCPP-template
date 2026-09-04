@@ -3,11 +3,42 @@
 #include <algorithm>
 #include <thread>
 
+#include "engine/core/job_system.hpp"
+
 #ifdef OMNICPP_HAS_VULKAN
 #include <vulkan/vulkan.h>
 #endif
 
 namespace omnicpp::render {
+
+namespace {
+
+#ifdef OMNICPP_HAS_VULKAN
+//! Function-pointer trampoline: records one band's secondary command buffer.
+void run_band_job(void* raw) {
+  auto* job = static_cast<VulkanParallelRecorder::BandJob*>(raw);
+  VkCommandBufferBeginInfo begin{};
+  begin.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+  begin.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT |
+                VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
+  VkCommandBufferInheritanceInfo inheritance{};
+  inheritance.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO;
+  inheritance.renderPass = job->render_pass;
+  inheritance.framebuffer = job->framebuffer;
+  inheritance.subpass = 0;
+  begin.pInheritanceInfo = &inheritance;
+  vkBeginCommandBuffer(job->buffer, &begin);
+
+  VkRect2D scissor{};
+  scissor.offset = {0, static_cast<std::int32_t>(job->band_offset)};
+  scissor.extent = {job->width, job->extent_height};
+  (*job->fn)(job->buffer, scissor);
+
+  vkEndCommandBuffer(job->buffer);
+}
+#endif // OMNICPP_HAS_VULKAN
+
+} // namespace
 
 VulkanParallelRecorder::~VulkanParallelRecorder() { cleanup(); }
 
@@ -22,6 +53,7 @@ omnicpp::core::Result<void> VulkanParallelRecorder::initialize(
   queue_family_index_ = queue_family_index;
   band_count_ = band_count;
   bands_.resize(band_count);
+  band_jobs_.resize(band_count);
   for (auto& band : bands_) {
     band.pool = VK_NULL_HANDLE;
     band.buffer = VK_NULL_HANDLE;
@@ -63,6 +95,7 @@ void VulkanParallelRecorder::cleanup() noexcept {
   }
 #endif
   bands_.clear();
+  band_jobs_.clear();
   band_count_ = 0;
   device_ = VK_NULL_HANDLE;
 }
@@ -80,43 +113,54 @@ omnicpp::core::Result<std::vector<VkCommandBuffer>> VulkanParallelRecorder::reco
         omnicpp::core::RuntimeError::invalid_config);
   }
 
+  const std::size_t band_count = bands_.size();
   const std::uint32_t band_height = height / band_count_;
 
-  auto record_band_buffer = [&](std::size_t index) {
-    const VkCommandBuffer buffer = bands_[index].buffer;
-    VkCommandBufferBeginInfo begin{};
-    begin.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-    begin.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT |
-                  VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
-    VkCommandBufferInheritanceInfo inheritance{};
-    inheritance.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO;
-    inheritance.renderPass = compatible_pass;
-    inheritance.framebuffer = framebuffer;
-    inheritance.subpass = 0;
-    begin.pInheritanceInfo = &inheritance;
-    vkBeginCommandBuffer(buffer, &begin);
-
-    VkRect2D scissor{};
-    scissor.offset = {0, static_cast<std::int32_t>(index * band_height)};
-    scissor.extent = {width, (index + 1 == bands_.size()) ? height - index * band_height
-                                                          : band_height};
-    record_band(buffer, scissor);
-
-    vkEndCommandBuffer(buffer);
-  };
-
-  std::vector<std::thread> workers;
-  workers.reserve(bands_.size());
-  for (std::size_t i = 1; i < bands_.size(); ++i) {
-    workers.emplace_back(record_band_buffer, i);
+  // Fill the reused per-band job payloads (no allocation: band_jobs_ was
+  // sized at initialize()).
+  for (std::size_t i = 0; i < band_count; ++i) {
+    BandJob& job = band_jobs_[i];
+    job.fn = &record_band;
+    job.buffer = bands_[i].buffer;
+    job.render_pass = compatible_pass;
+    job.framebuffer = framebuffer;
+    job.band_offset = static_cast<std::uint32_t>(i) * band_height;
+    job.band_height = band_height;
+    job.width = width;
+    job.extent_height = (i + 1 == band_count) ? height - job.band_offset : band_height;
   }
-  record_band_buffer(0); // Band 0 on the calling thread.
-  for (auto& worker : workers) {
-    worker.join();
+
+  if (job_system_ != nullptr && job_system_->is_running()) {
+    // Persistent-workers path: fork/join through the job system. No thread
+    // creation and no heap allocation per frame. Band 0 runs on the calling
+    // thread (it has nothing better to do), bands 1..n-1 as raw jobs.
+    omnicpp::core::JobCounter counter;
+    counter.add(static_cast<int>(band_count - 1));
+    for (std::size_t i = 1; i < band_count; ++i) {
+      job_system_->submit_raw(omnicpp::core::JobPriority::render, &counter,
+                              &run_band_job, &band_jobs_[i]);
+    }
+    run_band_job(&band_jobs_[0]);
+    counter.wait();
+  } else {
+    // Fallback: ad-hoc threads (original behavior; per-frame thread creation).
+    // Fallback: ad-hoc threads (original behavior; per-frame thread creation).
+    auto record_band_buffer = [&](std::size_t index) {
+      run_band_job(&band_jobs_[index]);
+    };
+    std::vector<std::thread> workers;
+    workers.reserve(band_count - 1);
+    for (std::size_t i = 1; i < band_count; ++i) {
+      workers.emplace_back(record_band_buffer, i);
+    }
+    record_band_buffer(0);
+    for (auto& worker : workers) {
+      worker.join();
+    }
   }
 
   std::vector<VkCommandBuffer> buffers;
-  buffers.reserve(bands_.size());
+  buffers.reserve(band_count);
   for (const auto& band : bands_) {
     buffers.push_back(band.buffer);
   }

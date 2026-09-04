@@ -104,6 +104,8 @@ omnicpp::core::Result<void> VulkanPipeline::load_shader_stage_file(
     stage_flag = VK_SHADER_STAGE_VERTEX_BIT;
   } else if (stage == "fragment") {
     stage_flag = VK_SHADER_STAGE_FRAGMENT_BIT;
+  } else if (stage == "compute") {
+    stage_flag = VK_SHADER_STAGE_COMPUTE_BIT;
   } else {
     return omnicpp::core::Result<void>::error(omnicpp::core::RuntimeError::invalid_config);
   }
@@ -146,6 +148,9 @@ omnicpp::core::Result<void> VulkanPipeline::load_shader_stage_file(
     case VK_SHADER_STAGE_FRAGMENT_BIT:
       fragment_shader_ = module;
       break;
+    case VK_SHADER_STAGE_COMPUTE_BIT:
+      compute_shader_ = module;
+      break;
     default:
       vkDestroyShaderModule(device, module, nullptr);
       return omnicpp::core::Result<void>::error(omnicpp::core::RuntimeError::invalid_config);
@@ -160,7 +165,47 @@ omnicpp::core::Result<void> VulkanPipeline::load_shader_stage_file(
 bool VulkanPipeline::has_stage(const std::string& stage) const noexcept {
   if (stage == "vertex") return vertex_shader_ != VK_NULL_HANDLE;
   if (stage == "fragment") return fragment_shader_ != VK_NULL_HANDLE;
+  if (stage == "compute") return compute_shader_ != VK_NULL_HANDLE;
   return false;
+}
+
+omnicpp::core::Result<void> VulkanPipeline::create_compute_pipeline(
+    VkDevice device, VkPipelineLayout pipeline_layout) {
+#ifdef OMNICPP_HAS_VULKAN
+  if (!device || !compute_shader_) {
+    return omnicpp::core::Result<void>::error(omnicpp::core::RuntimeError::vulkan_not_available);
+  }
+  if (!pipeline_layout) {
+    return omnicpp::core::Result<void>::error(omnicpp::core::RuntimeError::invalid_config);
+  }
+  if (layout_ != pipeline_layout) {
+    if (owns_layout_ && layout_ != VK_NULL_HANDLE) {
+      vkDestroyPipelineLayout(device, layout_, nullptr);
+      owns_layout_ = false;
+    }
+    layout_ = pipeline_layout;
+  }
+
+  VkPipelineShaderStageCreateInfo stage_info{};
+  stage_info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+  stage_info.stage = VK_SHADER_STAGE_COMPUTE_BIT;
+  stage_info.module = compute_shader_;
+  stage_info.pName = "main";
+
+  VkComputePipelineCreateInfo create_info{};
+  create_info.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
+  create_info.stage = stage_info;
+  create_info.layout = layout_;
+
+  const VkResult result = vkCreateComputePipelines(device, VK_NULL_HANDLE, 1, &create_info, nullptr, &pipeline_);
+  if (result != VK_SUCCESS) {
+    return omnicpp::core::Result<void>::error(omnicpp::core::RuntimeError::vulkan_not_available);
+  }
+  return omnicpp::core::Result<void>::ok();
+#else
+  (void)device; (void)pipeline_layout;
+  return omnicpp::core::Result<void>::error(omnicpp::core::RuntimeError::vulkan_not_available);
+#endif
 }
 
 omnicpp::core::Result<void> VulkanPipeline::create_graphics_pipeline(
@@ -358,6 +403,7 @@ void VulkanPipeline::cleanup(VkDevice device) noexcept {
     if (owns_layout_ && layout_) vkDestroyPipelineLayout(device, layout_, nullptr);
     if (vertex_shader_) vkDestroyShaderModule(device, vertex_shader_, nullptr);
     if (fragment_shader_) vkDestroyShaderModule(device, fragment_shader_, nullptr);
+    if (compute_shader_) vkDestroyShaderModule(device, compute_shader_, nullptr);
   }
 #else
   (void)device;

@@ -8,12 +8,21 @@
  * buffer per band on worker threads (command pools are thread-local, one per
  * thread, per Vulkan's external synchronization requirements). The primary
  * buffer then executes the secondaries inside the render pass.
+ *
+ * Execution backend: when a JobSystem is attached (set_job_system), band
+ * recording forks onto the system's persistent workers — no thread creation
+ * and no heap allocation per frame. Otherwise ad-hoc threads are spawned
+ * (original behavior, kept as a fallback).
  */
 
 #include "engine/core/deterministic_runtime.hpp"
 #include "engine/render/vulkan_types.hpp"
 #include <functional>
 #include <vector>
+
+namespace omnicpp::core {
+class JobSystem;
+}
 
 namespace omnicpp::render {
 
@@ -53,8 +62,29 @@ public:
       std::uint32_t width, std::uint32_t height, const RecordBandFn& record_band,
       VkRenderPass compatible_pass, VkFramebuffer framebuffer = VK_NULL_HANDLE);
 
+  /**
+   * @brief Attach a job system for persistent-worker band recording.
+   *
+   * When set and running, record_parallel() forks band jobs onto the system's
+   * workers (no per-frame thread creation, no per-frame allocation). When
+   * null or stopped, ad-hoc threads are used (original behavior).
+   */
+  void set_job_system(omnicpp::core::JobSystem* system) noexcept { job_system_ = system; }
+
   //! Reset all secondary buffers for the next frame (call outside render pass).
   [[nodiscard]] omnicpp::core::Result<void> reset();
+
+  //! Per-band job payload (reused across frames; sized at initialize()).
+  struct BandJob {
+    const RecordBandFn* fn{nullptr};
+    VkCommandBuffer buffer{VK_NULL_HANDLE};
+    VkRenderPass render_pass{VK_NULL_HANDLE};
+    VkFramebuffer framebuffer{VK_NULL_HANDLE};
+    std::uint32_t band_offset{0};
+    std::uint32_t band_height{0};
+    std::uint32_t width{0};
+    std::uint32_t extent_height{0};
+  };
 
 private:
   struct Band {
@@ -65,7 +95,9 @@ private:
   VkDevice device_{VK_NULL_HANDLE};
   std::uint32_t queue_family_index_{0};
   std::vector<Band> bands_;
+  std::vector<BandJob> band_jobs_;
   std::uint32_t band_count_{0};
+  omnicpp::core::JobSystem* job_system_{nullptr};
 };
 
 } // namespace omnicpp::render

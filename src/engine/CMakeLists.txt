@@ -17,6 +17,7 @@ add_library(omnicpp_runtime SHARED
     render/vulkan_memory_allocator.cpp
     render/vulkan_descriptors.cpp
     render/vulkan_render_graph.cpp
+    render/vulkan_compute.cpp
     render/vulkan_parallel_recorder.cpp
 )
 set_target_properties(omnicpp_runtime PROPERTIES OUTPUT_NAME omnicpp_runtime)

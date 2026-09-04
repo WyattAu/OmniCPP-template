@@ -144,6 +144,17 @@ command buffer per band on worker threads, using per-thread command pools (Vulka
 external-sync rules) and correct `RENDER_PASS_CONTINUE` inheritance info. Secondaries
 execute via `vkCmdExecuteCommands` inside one primary render pass.
 
+Two execution backends, selected with `set_job_system`:
+
+- **Job system (default for the engine frame path)** — band jobs fork onto the
+  prioritized `JobSystem`'s persistent workers as allocation-free function pointers
+  (`submit_raw`), joined with a `JobCounter`. No thread creation and no heap allocation
+  per frame. Band 0 records on the calling thread while the rest run on workers.
+- **Ad-hoc threads (fallback)** — original behavior; a thread per band per frame.
+  Kept for embedders that do not run a job system.
+
+The contention stress test exercises both backends in alternating waves.
+
 ## Swapchain Recreation
 
 `VulkanSwapchain::recreate()` rebuilds image views safely;
@@ -198,9 +209,22 @@ Shader compilation prefers `glslc` (shaderc) and falls back to
 CI runs this exact preset on Mesa lavapipe (software GPU) with the validation layer
 enabled — see `.github/workflows/test.yml`.
 
+## Compute
+
+`VulkanCompute` (`engine/render/vulkan_compute.hpp`) dispatches compute pipelines on the
+compute-capable queue with event-based synchronization: record a dispatch, signal an
+`VkEvent`, then have graphics waits consume it (`wait_events`) for a compute-to-graphics
+handoff inside one submission — no queue round-trip. Pipelines load through
+`VulkanPipeline::load_shader_stage_file(..., "compute")` and
+`create_compute_pipeline`. Covered by `VulkanHardware.ComputeToGraphicsEventHandoff`
+(compute fills a storage buffer; a graphics pipeline renders it; the result is verified
+by pixel readback) with zero validation diagnostics.
+
 ## Remaining Roadmap
 
 1. **Cross-vendor hardware runs** (AMD/Intel/mobile) — requires physical hardware or a
    GPU CI service; the lavapipe CI job covers driver-independent correctness.
-2. Bindless descriptor indexing (EXT_descriptor_indexing) on top of the reflection layer.
-3. Async-compute queue support in the render graph (compute passes + transfer passes).
+2. Async-compute overlap in the render graph (queue-family transitions, graphics/compute
+   parallelism) on top of the compute dispatch layer.
+3. Job-system prioritization across submit/upload queues; zero-allocation audit of
+   remaining per-frame paths.

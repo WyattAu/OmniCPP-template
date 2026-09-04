@@ -142,7 +142,11 @@ void execute_render_graph(
   for (std::size_t p = 0; p < passes.size() && p < compiled.barriers_per_pass.size(); ++p) {
     const auto& barriers = compiled.barriers_per_pass[p];
     if (!barriers.empty()) {
-      std::vector<VkImageMemoryBarrier> vk_barriers;
+      // Reused scratch storage: zero heap operations on the steady-state frame
+      // path. thread_local keeps concurrent recording on separate command
+      // buffers safe.
+      thread_local std::vector<VkImageMemoryBarrier> vk_barriers;
+      vk_barriers.clear();
       vk_barriers.reserve(barriers.size());
       VkPipelineStageFlags src_stage_mask = 0;
       VkPipelineStageFlags dst_stage_mask = 0;

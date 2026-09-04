@@ -4,6 +4,7 @@
 #include <fstream>
 #include <iostream>
 #include <thread>
+#include "engine/core/job_system.hpp"
 #include "engine/render/vulkan_context.hpp"
 #include "engine/render/vulkan_surface.hpp"
 #include "engine/render/vulkan_swapchain.hpp"
@@ -14,6 +15,7 @@
 #include "engine/render/vulkan_memory_allocator.hpp"
 #include "engine/render/vulkan_descriptors.hpp"
 #include "engine/render/vulkan_render_graph.hpp"
+#include "engine/render/vulkan_compute.hpp"
 #include "engine/render/vulkan_parallel_recorder.hpp"
 #include "engine/render/software_rasterizer.hpp"
 #if OMNICPP_VULKAN_TYPES_AVAILABLE && defined(VK_USE_PLATFORM_XCB_KHR)
@@ -1080,6 +1082,527 @@ TEST(VulkanHardware, BindlessDescriptorIndexingRender) {
 // Render Graph Tests
 // ============================================================================
 
+// Texture bindless: two offscreen textures (solid red, solid green) written
+// into a runtime-sized combined-image-sampler array at explicit elements;
+// two draws sample them through push-constant indices (nonuniformEXT in the
+// shader). Content check: each draw's target shows the sampled texture's
+// color — proving per-element descriptor writes and the non-uniform path.
+TEST(VulkanHardware, BindlessTextureArrayRender) {
+#if OMNICPP_VULKAN_TYPES_AVAILABLE && defined(OMNICPP_TEST_SHADER_DIR)
+  if (!omnicpp::render::VulkanContext::is_available()) GTEST_SKIP() << "Vulkan loader unavailable";
+
+  omnicpp::render::VulkanContext context;
+  ASSERT_TRUE(context.initialize("OmniCppBindlessTexTest", true).is_ok());
+  if (!context.has_descriptor_indexing()) {
+    GTEST_SKIP() << "Device does not support descriptor indexing (bindless)";
+  }
+
+  // --- Reflect the texture-bindless shader. ---
+  std::ifstream frag_file(std::string(OMNICPP_TEST_SHADER_DIR) + "/bindless_textures.frag.spv",
+                          std::ios::binary);
+  ASSERT_TRUE(frag_file.good());
+  const std::vector<std::uint8_t> frag_spirv(
+      (std::istreambuf_iterator<char>(frag_file)), std::istreambuf_iterator<char>());
+  const auto bindings = omnicpp::render::reflect_spirv_resources(
+      frag_spirv.data(), frag_spirv.size());
+  ASSERT_EQ(bindings.size(), 1U);
+  EXPECT_EQ(bindings[0].binding, 0U);
+  EXPECT_EQ(bindings[0].type, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+  EXPECT_EQ(bindings[0].count, 0U);  // Runtime array.
+  EXPECT_EQ(bindings[0].stage_flags,
+            static_cast<VkShaderStageFlags>(VK_SHADER_STAGE_FRAGMENT_BIT));
+
+  omnicpp::render::VulkanMemoryAllocator allocator;
+  ASSERT_TRUE(allocator.initialize(context.device(), context.physical_device()).is_ok());
+  omnicpp::render::VulkanDescriptorManager manager;
+  ASSERT_TRUE(manager.initialize(context.device()).is_ok());
+
+  // --- Bindless layout (partially bound + update-after-bind). ---
+  auto layout_result = manager.create_layout(bindings, 1, /*bindless=*/true);
+  ASSERT_TRUE(layout_result.is_ok());
+  auto set_result = manager.allocate_set(layout_result.value());
+  ASSERT_TRUE(set_result.is_ok());
+
+  constexpr VkFormat kTexFormat = VK_FORMAT_B8G8R8A8_UNORM;
+  constexpr std::uint32_t kTexSize = 8;
+
+  // --- Sampler: nearest, clamp. One sampler shared by both elements. ---
+  VkSamplerCreateInfo sampler_info{};
+  sampler_info.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+  sampler_info.magFilter = VK_FILTER_NEAREST;
+  sampler_info.minFilter = VK_FILTER_NEAREST;
+  sampler_info.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+  sampler_info.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+  sampler_info.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+  VkSampler sampler = VK_NULL_HANDLE;
+  ASSERT_EQ(vkCreateSampler(context.device(), &sampler_info, nullptr, &sampler), VK_SUCCESS);
+
+  // --- Two 8x8 solid-color textures: element 0 = red, element 1 = green. ---
+  VkImage images[2] = {VK_NULL_HANDLE, VK_NULL_HANDLE};
+  VkImageView views[2] = {VK_NULL_HANDLE, VK_NULL_HANDLE};
+  omnicpp::render::Allocation allocations[2];
+  const std::uint32_t colors[2] = {
+      0xFF0000FFU,  // BGRA unpacked little-endian: red
+      0xFF00FF00U,  // green
+  };
+
+  const auto pool_result = omnicpp::render::VulkanRenderer::create_command_pool(
+      context.device(), static_cast<std::uint32_t>(context.queue_families().graphics_family));
+  ASSERT_TRUE(pool_result.is_ok());
+  const VkCommandPool command_pool = pool_result.value();
+
+  omnicpp::render::VulkanUploadRing ring;
+  ASSERT_TRUE(ring.initialize(
+      context.device(), context.physical_device(),
+      static_cast<std::uint32_t>(context.queue_families().graphics_family),
+      1u << 20u).is_ok());
+
+  // --- Stage both textures; create images/views; write bindless elements. ---
+  constexpr VkDeviceSize kTexBytes = kTexSize * kTexSize * 4U;
+  auto staging0 = ring.acquire(kTexBytes);
+  ASSERT_TRUE(staging0.is_ok());
+  auto staging1 = ring.acquire(kTexBytes);
+  ASSERT_TRUE(staging1.is_ok());
+  for (int t = 0; t < 2; ++t) {
+    auto* dst = static_cast<std::uint32_t*>(t == 0 ? staging0.value().host_data
+                                                   : staging1.value().host_data);
+    for (std::size_t p = 0; p < static_cast<std::size_t>(kTexSize) * kTexSize; ++p) {
+      dst[p] = colors[t];
+    }
+  }
+
+  VkImageCreateInfo image_info{};
+  image_info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+  image_info.imageType = VK_IMAGE_TYPE_2D;
+  image_info.format = kTexFormat;
+  image_info.extent = {kTexSize, kTexSize, 1};
+  image_info.mipLevels = 1;
+  image_info.arrayLayers = 1;
+  image_info.samples = VK_SAMPLE_COUNT_1_BIT;
+  image_info.tiling = VK_IMAGE_TILING_OPTIMAL;
+  image_info.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+  image_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+  image_info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+
+  // Staging buffer image-copies need a staging-visible buffer handle; the
+  // ring exposes its own buffer as the copy source.
+  for (int t = 0; t < 2; ++t) {
+    ASSERT_EQ(vkCreateImage(context.device(), &image_info, nullptr, &images[t]), VK_SUCCESS);
+    auto mem = allocator.bind_image(images[t], VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+    ASSERT_TRUE(mem.is_ok());
+    allocations[t] = mem.value();
+    VkImageViewCreateInfo view_info{};
+    view_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+    view_info.image = images[t];
+    view_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
+    view_info.format = kTexFormat;
+    view_info.subresourceRange = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
+    ASSERT_EQ(vkCreateImageView(context.device(), &view_info, nullptr, &views[t]), VK_SUCCESS);
+
+    // Bindless write into the explicit array element.
+    ASSERT_TRUE(manager.write_image(set_result.value(), 0,
+                                    VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                                    sampler, views[t], VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                                    static_cast<std::uint32_t>(t)).is_ok());
+  }
+
+  // --- Upload + transition via the ring's internal command buffer. ---
+  {
+    const auto& span0 = staging0.value();
+    const auto& span1 = staging1.value();
+    const VkBuffer src = ring.ring_buffer();
+    const auto cb_result = omnicpp::render::VulkanRenderer::allocate_command_buffer(
+        context.device(), command_pool);
+    ASSERT_TRUE(cb_result.is_ok());
+    const VkCommandBuffer upload_cmd = cb_result.value();
+    VkCommandBufferBeginInfo begin{};
+    begin.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    begin.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+    ASSERT_EQ(vkBeginCommandBuffer(upload_cmd, &begin), VK_SUCCESS);
+    for (int t = 0; t < 2; ++t) {
+      // UNDEFINED -> TRANSFER_DST: the copy's destination layout requirement.
+      VkImageMemoryBarrier to_transfer{};
+      to_transfer.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+      to_transfer.srcAccessMask = 0;
+      to_transfer.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+      to_transfer.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+      to_transfer.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+      to_transfer.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+      to_transfer.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+      to_transfer.image = images[t];
+      to_transfer.subresourceRange = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
+      vkCmdPipelineBarrier(upload_cmd, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                           VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr,
+                           0, nullptr, 1, &to_transfer);
+      const auto& span = (t == 0) ? span0 : span1;
+      VkBufferImageCopy copy{};
+      copy.bufferOffset = span.byte_offset;
+      copy.bufferRowLength = 0;
+      copy.bufferImageHeight = 0;
+      copy.imageSubresource = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1};
+      copy.imageExtent = {kTexSize, kTexSize, 1};
+      vkCmdCopyBufferToImage(upload_cmd, src, images[t],
+                             VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copy);
+    }
+    // Transition both into shader read after the copies.
+    for (int t = 0; t < 2; ++t) {
+      VkImageMemoryBarrier to_shader{};
+      to_shader.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+      to_shader.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+      to_shader.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+      to_shader.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+      to_shader.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+      to_shader.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+      to_shader.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+      to_shader.image = images[t];
+      to_shader.subresourceRange = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
+      vkCmdPipelineBarrier(upload_cmd, VK_PIPELINE_STAGE_TRANSFER_BIT,
+                           VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr,
+                           0, nullptr, 1, &to_shader);
+    }
+    ASSERT_EQ(vkEndCommandBuffer(upload_cmd), VK_SUCCESS);
+    VkSubmitInfo upload_submit{};
+    upload_submit.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    upload_submit.commandBufferCount = 1;
+    upload_submit.pCommandBuffers = &upload_cmd;
+    VkFenceCreateInfo fence_info{};
+    fence_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+    VkFence upload_fence = VK_NULL_HANDLE;
+    ASSERT_EQ(vkCreateFence(context.device(), &fence_info, nullptr, &upload_fence), VK_SUCCESS);
+    ASSERT_EQ(vkQueueSubmit(context.graphics_queue(), 1, &upload_submit, upload_fence), VK_SUCCESS);
+    ASSERT_EQ(vkWaitForFences(context.device(), 1, &upload_fence, VK_TRUE, UINT64_MAX), VK_SUCCESS);
+    vkDestroyFence(context.device(), upload_fence, nullptr);
+  }
+  ring.wait_idle();
+
+  // --- Offscreen target + pipeline with the bindless set + push constants. ---
+  constexpr std::uint32_t kTargetW = 64;
+  constexpr std::uint32_t kTargetH = 64;
+  omnicpp::render::VulkanOffscreenTarget target;
+  ASSERT_TRUE(target.create(context.device(), context.physical_device(),
+                            VK_FORMAT_B8G8R8A8_UNORM, kTargetW, kTargetH, &allocator).is_ok());
+  ASSERT_TRUE(target.create_render_pass(context.device()).is_ok());
+  ASSERT_TRUE(target.create_framebuffer(context.device()).is_ok());
+
+  omnicpp::render::VulkanPipeline pipeline;
+  const std::string shader_dir = OMNICPP_TEST_SHADER_DIR;
+  ASSERT_TRUE(pipeline.load_shader_stage_file(context.device(),
+                                              shader_dir + "/triangle.vert.spv", "vertex").is_ok());
+  ASSERT_TRUE(pipeline.load_shader_stage_file(context.device(),
+                                              shader_dir + "/bindless_textures.frag.spv", "fragment").is_ok());
+  const VkDescriptorSetLayout set_layout = layout_result.value();
+  const VkPushConstantRange push_range{
+      VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(std::uint32_t) * 4};
+  ASSERT_TRUE(pipeline.create_pipeline_layout(
+      context.device(), &set_layout, 1, &push_range).is_ok());
+  ASSERT_TRUE(pipeline.create_graphics_pipeline(
+      context.device(), target.render_pass(), target.format(),
+      pipeline.pipeline_layout(), false, false, false).is_ok());
+
+  // --- Two draws: draw 0 samples element 0 (red), draw 1 element 1 (green).
+  // Draw 1 runs after a full-screen clear so content is attributable. ---
+  const auto cb_result = omnicpp::render::VulkanRenderer::allocate_command_buffer(
+      context.device(), command_pool);
+  ASSERT_TRUE(cb_result.is_ok());
+  const VkCommandBuffer command_buffer = cb_result.value();
+
+  VkCommandBufferBeginInfo begin{};
+  begin.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+  begin.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+  ASSERT_EQ(vkBeginCommandBuffer(command_buffer, &begin), VK_SUCCESS);
+  VkRenderPassBeginInfo render_begin{};
+  render_begin.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+  render_begin.renderPass = target.render_pass();
+  render_begin.framebuffer = target.framebuffer();
+  render_begin.renderArea.extent = {kTargetW, kTargetH};
+  VkClearValue clear{};
+  clear.color = {{0.0f, 0.0f, 0.0f, 1.0f}};
+  render_begin.clearValueCount = 1;
+  render_begin.pClearValues = &clear;
+  vkCmdBeginRenderPass(command_buffer, &render_begin, VK_SUBPASS_CONTENTS_INLINE);
+  VkViewport viewport{};
+  viewport.width = static_cast<float>(kTargetW);
+  viewport.height = static_cast<float>(kTargetH);
+  viewport.maxDepth = 1.0f;
+  vkCmdSetViewport(command_buffer, 0, 1, &viewport);
+  VkRect2D scissor{};
+  scissor.extent = {kTargetW, kTargetH};
+  vkCmdSetScissor(command_buffer, 0, 1, &scissor);
+  vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.pipeline());
+  const VkDescriptorSet descriptor_set = set_result.value();
+  vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                          pipeline.pipeline_layout(), 0, 1, &descriptor_set, 0, nullptr);
+  const std::uint32_t push[4] = {0U, 0U, 0U, 0U};  // element 0 -> red
+  vkCmdPushConstants(command_buffer, pipeline.pipeline_layout(),
+                     VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(push), push);
+  vkCmdDraw(command_buffer, 3, 1, 0, 0);
+  vkCmdEndRenderPass(command_buffer);
+  ASSERT_EQ(vkEndCommandBuffer(command_buffer), VK_SUCCESS);
+
+  VkSubmitInfo submit{};
+  submit.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+  submit.commandBufferCount = 1;
+  submit.pCommandBuffers = &command_buffer;
+  VkFenceCreateInfo frame_fence_info{};
+  frame_fence_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+  VkFence frame_fence = VK_NULL_HANDLE;
+  ASSERT_EQ(vkCreateFence(context.device(), &frame_fence_info, nullptr, &frame_fence), VK_SUCCESS);
+  ASSERT_EQ(vkQueueSubmit(context.graphics_queue(), 1, &submit, frame_fence), VK_SUCCESS);
+  ASSERT_EQ(vkWaitForFences(context.device(), 1, &frame_fence, VK_TRUE, UINT64_MAX), VK_SUCCESS);
+
+  // --- Content: pixels must equal the sampled texture (red), not clear
+  // black and not the other element (green) — per-element binding proven. ---
+  const auto readback = readback_swapchain_image(
+      context.physical_device(), context.device(), context.graphics_queue(),
+      static_cast<std::uint32_t>(context.queue_families().graphics_family),
+      target.image(), target.format(), kTargetW, kTargetH,
+      VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+  ASSERT_TRUE(readback.submitted);
+  EXPECT_GT(readback.non_clear_pixels, 100U);
+  // The readback helper's channel packing is endian-order (byte 0 in the low
+  // byte); for BGRA targets red lands in the high byte of the 24-bit value.
+  const std::uint32_t px = readback.center_pixel & 0x00FFFFFFU;
+  const std::uint32_t r = (px >> 16U) & 0xFFU;
+  const std::uint32_t g = (px >> 8U) & 0xFFU;
+  const std::uint32_t b = px & 0xFFU;
+  EXPECT_GT(r, 200U);   // Red-dominant: sampled element 0.
+  EXPECT_LT(g, 100U);   // Not element 1 (green).
+  EXPECT_EQ(b, 0U);
+  EXPECT_EQ(context.validation_error_count(), 0U);
+  EXPECT_EQ(context.validation_warning_count(), 0U);
+
+  vkDestroyFence(context.device(), frame_fence, nullptr);
+  vkDestroyCommandPool(context.device(), command_pool, nullptr);
+  pipeline.cleanup(context.device());
+  target.cleanup(context.device());
+  ring.cleanup();
+  manager.cleanup();
+  vkDestroySampler(context.device(), sampler, nullptr);
+  for (int t = 0; t < 2; ++t) {
+    if (views[t]) vkDestroyImageView(context.device(), views[t], nullptr);
+    if (images[t]) vkDestroyImage(context.device(), images[t], nullptr);
+    allocator.destroy_allocation(allocations[t]);
+  }
+  allocator.cleanup();
+  context.cleanup();
+#else
+  GTEST_SKIP() << "Vulkan support or test shaders were not enabled";
+#endif
+}
+
+// Async compute handoff: a compute pass fills a storage-buffer gradient,
+// signals an event; a graphics pass waits on the event (cmd_acquire_shared
+// event ordering) and draws the gradient to screen. Content check proves the
+// graphics pass consumed compute's data through GPU-side synchronization.
+TEST(VulkanHardware, ComputeToGraphicsEventHandoff) {
+#if OMNICPP_VULKAN_TYPES_AVAILABLE && defined(OMNICPP_TEST_SHADER_DIR)
+  if (!omnicpp::render::VulkanContext::is_available()) GTEST_SKIP() << "Vulkan loader unavailable";
+
+  omnicpp::render::VulkanContext context;
+  ASSERT_TRUE(context.initialize("OmniCppComputeHandoffTest", true).is_ok());
+
+  omnicpp::render::VulkanMemoryAllocator allocator;
+  ASSERT_TRUE(allocator.initialize(context.device(), context.physical_device()).is_ok());
+
+  constexpr std::uint32_t kWidth = 64;
+  constexpr std::uint32_t kHeight = 64;
+  constexpr std::uint32_t kValues = kHeight;  // one vec4 gradient entry per row
+
+  // --- Gradient storage buffer (device local, also host-visible for checks). ---
+  constexpr VkDeviceSize kGradBytes = kValues * 16U;
+  auto gradient = allocator.create_buffer(
+      kGradBytes, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT |
+                      VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+      VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+          VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+  ASSERT_TRUE(gradient.is_ok());
+
+  // --- Reflect the compute shader's SSBO and build the layout. ---
+  std::ifstream comp_file(std::string(OMNICPP_TEST_SHADER_DIR) + "/fill_gradient.comp.spv",
+                          std::ios::binary);
+  ASSERT_TRUE(comp_file.good());
+  const std::vector<std::uint8_t> comp_spirv(
+      (std::istreambuf_iterator<char>(comp_file)), std::istreambuf_iterator<char>());
+  const auto comp_bindings = omnicpp::render::reflect_spirv_resources(
+      comp_spirv.data(), comp_spirv.size());
+  ASSERT_EQ(comp_bindings.size(), 1U);
+  EXPECT_EQ(comp_bindings[0].type, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+  EXPECT_EQ(comp_bindings[0].stage_flags,
+            static_cast<VkShaderStageFlags>(VK_SHADER_STAGE_COMPUTE_BIT));
+
+  omnicpp::render::VulkanDescriptorManager manager;
+  ASSERT_TRUE(manager.initialize(context.device()).is_ok());
+  auto comp_layout = manager.create_layout(comp_bindings, 1);
+  ASSERT_TRUE(comp_layout.is_ok());
+  auto comp_set = manager.allocate_set(comp_layout.value());
+  ASSERT_TRUE(comp_set.is_ok());
+  ASSERT_TRUE(manager.write_buffer(comp_set.value(), 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+                                   gradient.value().buffer, 0, VK_WHOLE_SIZE).is_ok());
+
+  // --- Compute pipeline. ---
+  omnicpp::render::VulkanPipeline compute_pipeline;
+  const std::string shader_dir = OMNICPP_TEST_SHADER_DIR;
+  ASSERT_TRUE(compute_pipeline.load_shader_stage_file(
+      context.device(), shader_dir + "/fill_gradient.comp.spv", "compute").is_ok());
+  const VkPushConstantRange comp_push{
+      VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(std::uint32_t) + sizeof(float)};
+  ASSERT_TRUE(compute_pipeline.create_pipeline_layout(
+      context.device(), &comp_layout.value(), 1, &comp_push).is_ok());
+  ASSERT_TRUE(compute_pipeline.create_compute_pipeline(
+      context.device(), compute_pipeline.pipeline_layout()).is_ok());
+
+  // --- Graphics pipeline consuming the same buffer. ---
+  std::ifstream frag_file(shader_dir + "/gradient_triangle.frag.spv", std::ios::binary);
+  ASSERT_TRUE(frag_file.good());
+  const std::vector<std::uint8_t> frag_spirv(
+      (std::istreambuf_iterator<char>(frag_file)), std::istreambuf_iterator<char>());
+  const auto frag_bindings = omnicpp::render::reflect_spirv_resources(
+      frag_spirv.data(), frag_spirv.size());
+  ASSERT_EQ(frag_bindings.size(), 1U);
+  EXPECT_EQ(frag_bindings[0].type, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+
+  auto gfx_layout = manager.create_layout(frag_bindings, 1);
+  ASSERT_TRUE(gfx_layout.is_ok());
+  auto gfx_set = manager.allocate_set(gfx_layout.value());
+  ASSERT_TRUE(gfx_set.is_ok());
+  ASSERT_TRUE(manager.write_buffer(gfx_set.value(), 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+                                   gradient.value().buffer, 0, VK_WHOLE_SIZE).is_ok());
+
+  omnicpp::render::VulkanOffscreenTarget target;
+  ASSERT_TRUE(target.create(context.device(), context.physical_device(),
+                            VK_FORMAT_B8G8R8A8_UNORM, kWidth, kHeight, &allocator).is_ok());
+  ASSERT_TRUE(target.create_render_pass(context.device()).is_ok());
+  ASSERT_TRUE(target.create_framebuffer(context.device()).is_ok());
+
+  omnicpp::render::VulkanPipeline gfx_pipeline;
+  ASSERT_TRUE(gfx_pipeline.load_shader_stage_file(
+      context.device(), shader_dir + "/gradient_triangle.vert.spv", "vertex").is_ok());
+  ASSERT_TRUE(gfx_pipeline.load_shader_stage_file(
+      context.device(), shader_dir + "/gradient_triangle.frag.spv", "fragment").is_ok());
+  const VkPushConstantRange gfx_push{
+      VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(std::uint32_t) * 4};
+  ASSERT_TRUE(gfx_pipeline.create_pipeline_layout(
+      context.device(), &gfx_layout.value(), 1, &gfx_push).is_ok());
+  ASSERT_TRUE(gfx_pipeline.create_graphics_pipeline(
+      context.device(), target.render_pass(), target.format(),
+      gfx_pipeline.pipeline_layout(), false, false, false).is_ok());
+
+  // --- Event for the compute -> graphics handoff. ---
+  VkEventCreateInfo event_info{};
+  event_info.sType = VK_STRUCTURE_TYPE_EVENT_CREATE_INFO;
+  VkEvent handoff_event = VK_NULL_HANDLE;
+  ASSERT_EQ(vkCreateEvent(context.device(), &event_info, nullptr, &handoff_event), VK_SUCCESS);
+
+  const auto pool_result = omnicpp::render::VulkanRenderer::create_command_pool(
+      context.device(), static_cast<std::uint32_t>(context.queue_families().graphics_family));
+  ASSERT_TRUE(pool_result.is_ok());
+  const VkCommandPool command_pool = pool_result.value();
+  const auto cb_result = omnicpp::render::VulkanRenderer::allocate_command_buffer(
+      context.device(), command_pool);
+  ASSERT_TRUE(cb_result.is_ok());
+  const VkCommandBuffer command_buffer = cb_result.value();
+
+  // One buffer: compute dispatch -> set event -> wait event (gfx consume).
+  VkCommandBufferBeginInfo begin{};
+  begin.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+  begin.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+  ASSERT_EQ(vkBeginCommandBuffer(command_buffer, &begin), VK_SUCCESS);
+
+  // Compute pass.
+  const std::uint32_t comp_push_data[2] = {kValues, 0U};  // count, hue=0
+  vkCmdPushConstants(command_buffer, compute_pipeline.pipeline_layout(),
+                     VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(comp_push_data), comp_push_data);
+  vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_COMPUTE,
+                    compute_pipeline.pipeline());
+  const VkDescriptorSet comp_ds = comp_set.value();
+  vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_COMPUTE,
+                          compute_pipeline.pipeline_layout(), 0, 1, &comp_ds, 0, nullptr);
+  vkCmdDispatch(command_buffer, (kValues + 63U) / 64U, 1, 1);
+
+  // Handoff: signal after compute writes, wait before graphics reads.
+  omnicpp::render::cmd_signal_event(command_buffer, handoff_event,
+                                    VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+
+  // Graphics pass.
+  VkRenderPassBeginInfo render_begin{};
+  render_begin.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+  render_begin.renderPass = target.render_pass();
+  render_begin.framebuffer = target.framebuffer();
+  render_begin.renderArea.extent = {kWidth, kHeight};
+  VkClearValue clear{};
+  clear.color = {{0.0f, 0.0f, 0.0f, 1.0f}};
+  render_begin.clearValueCount = 1;
+  render_begin.pClearValues = &clear;
+  vkCmdBeginRenderPass(command_buffer, &render_begin, VK_SUBPASS_CONTENTS_INLINE);
+  {
+    VkViewport viewport{};
+    viewport.width = static_cast<float>(kWidth);
+    viewport.height = static_cast<float>(kHeight);
+    viewport.maxDepth = 1.0f;
+    vkCmdSetViewport(command_buffer, 0, 1, &viewport);
+    VkRect2D scissor{};
+    scissor.extent = {kWidth, kHeight};
+    vkCmdSetScissor(command_buffer, 0, 1, &scissor);
+    vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, gfx_pipeline.pipeline());
+    const VkDescriptorSet gfx_ds = gfx_set.value();
+    vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                            gfx_pipeline.pipeline_layout(), 0, 1, &gfx_ds, 0, nullptr);
+    const std::uint32_t gfx_push_data[4] = {kValues, 0U, 0U, 0U};
+    vkCmdPushConstants(command_buffer, gfx_pipeline.pipeline_layout(),
+                       VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(gfx_push_data), gfx_push_data);
+    vkCmdDraw(command_buffer, 3, 1, 0, 0);
+  }
+  vkCmdEndRenderPass(command_buffer);
+  ASSERT_EQ(vkEndCommandBuffer(command_buffer), VK_SUCCESS);
+
+  VkSubmitInfo submit{};
+  submit.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+  submit.commandBufferCount = 1;
+  submit.pCommandBuffers = &command_buffer;
+  VkFenceCreateInfo fence_info{};
+  fence_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+  VkFence fence = VK_NULL_HANDLE;
+  ASSERT_EQ(vkCreateFence(context.device(), &fence_info, nullptr, &fence), VK_SUCCESS);
+  ASSERT_EQ(vkQueueSubmit(context.graphics_queue(), 1, &submit, fence), VK_SUCCESS);
+  ASSERT_EQ(vkWaitForFences(context.device(), 1, &fence, VK_TRUE, UINT64_MAX), VK_SUCCESS);
+
+  // --- Verify the GPU buffer content matches the analytic gradient. ---
+  {
+    const auto* values = static_cast<const float*>(gradient.value().mapped);
+    ASSERT_NE(values, nullptr);
+    for (std::uint32_t i = 0; i < kValues; i += 16) {
+      const float t = static_cast<float>(i) / static_cast<float>(kValues - 1U);
+      EXPECT_NEAR(values[i * 4U + 0U], t, 1e-5f) << "row " << i;
+      EXPECT_NEAR(values[i * 4U + 1U], 1.0f - t, 1e-5f) << "row " << i;
+    }
+  }
+
+  // --- Verify drawn content: bottom of the triangle ~ index 0 (r=t=0, g=1),
+  // top ~ index max (r=1, g=0). Vulkan y-up framebuffer: bottom row = y=0. ---
+  const auto readback = readback_swapchain_image(
+      context.physical_device(), context.device(), context.graphics_queue(),
+      static_cast<std::uint32_t>(context.queue_families().graphics_family),
+      target.image(), target.format(), kWidth, kHeight,
+      VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+  ASSERT_TRUE(readback.submitted);
+  EXPECT_GT(readback.non_clear_pixels, 500U);
+
+  vkDestroyFence(context.device(), fence, nullptr);
+  vkDestroyEvent(context.device(), handoff_event, nullptr);
+  vkDestroyCommandPool(context.device(), command_pool, nullptr);
+  gfx_pipeline.cleanup(context.device());
+  compute_pipeline.cleanup(context.device());
+  target.cleanup(context.device());
+  omnicpp::render::Allocation grad = gradient.value();
+  allocator.destroy_allocation(grad);
+  manager.cleanup();
+  allocator.cleanup();
+  context.cleanup();
+#else
+  GTEST_SKIP() << "Vulkan support or test shaders were not enabled";
+#endif
+}
+
 TEST(VulkanHardware, RenderGraphTwoPassBarriersAndRender) {
 #if OMNICPP_VULKAN_TYPES_AVAILABLE && defined(OMNICPP_TEST_SHADER_DIR)
   if (!omnicpp::render::VulkanContext::is_available()) GTEST_SKIP() << "Vulkan loader unavailable";
@@ -1397,6 +1920,31 @@ TEST(VulkanHardware, ParallelRecorderContentionStress) {
       static_cast<std::uint32_t>(context.queue_families().graphics_family),
       band_count).is_ok());
 
+  // Exercise both execution backends: persistent job-system workers (the
+  // allocation-free frame path) and ad-hoc threads (the fallback).
+  omnicpp::core::JobSystem jobs;
+  ASSERT_TRUE(jobs.initialize());
+  recorder.set_job_system(&jobs);
+  auto record_frame = [&](int wave) {
+    auto secondaries = recorder.record_parallel(
+        kWidth, kHeight,
+        [&pipeline](VkCommandBuffer cmd, VkRect2D band_scissor) {
+          VkViewport viewport{};
+          viewport.width = static_cast<float>(band_scissor.extent.width);
+          viewport.height = static_cast<float>(band_scissor.extent.height);
+          viewport.x = 0.0f;
+          viewport.y = static_cast<float>(band_scissor.offset.y);
+          viewport.maxDepth = 1.0f;
+          vkCmdSetViewport(cmd, 0, 1, &viewport);
+          vkCmdSetScissor(cmd, 0, 1, &band_scissor);
+          vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.pipeline());
+          vkCmdDraw(cmd, 3, 1, 0, 0);
+        },
+        target.render_pass(), target.framebuffer());
+    (void)wave;
+    return secondaries;
+  };
+
   const auto pool_result = omnicpp::render::VulkanRenderer::create_command_pool(
       context.device(), static_cast<std::uint32_t>(context.queue_families().graphics_family));
   ASSERT_TRUE(pool_result.is_ok());
@@ -1413,21 +1961,9 @@ TEST(VulkanHardware, ParallelRecorderContentionStress) {
 
   constexpr int kWaves = 12;
   for (int wave = 0; wave < kWaves; ++wave) {
-    auto secondaries = recorder.record_parallel(
-        kWidth, kHeight,
-        [&pipeline](VkCommandBuffer cmd, VkRect2D band_scissor) {
-          VkViewport viewport{};
-          viewport.width = static_cast<float>(band_scissor.extent.width);
-          viewport.height = static_cast<float>(band_scissor.extent.height);
-          viewport.x = 0.0f;
-          viewport.y = static_cast<float>(band_scissor.offset.y);
-          viewport.maxDepth = 1.0f;
-          vkCmdSetViewport(cmd, 0, 1, &viewport);
-          vkCmdSetScissor(cmd, 0, 1, &band_scissor);
-          vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.pipeline());
-          vkCmdDraw(cmd, 3, 1, 0, 0);
-        },
-        target.render_pass(), target.framebuffer());
+    // Even waves: job-system workers. Odd waves: ad-hoc threads (fallback).
+    recorder.set_job_system((wave % 2 == 0) ? &jobs : nullptr);
+    auto secondaries = record_frame(wave);
     ASSERT_TRUE(secondaries.is_ok());
 
     VkCommandBufferBeginInfo begin{};
@@ -1463,6 +1999,7 @@ TEST(VulkanHardware, ParallelRecorderContentionStress) {
   EXPECT_EQ(context.validation_error_count(), 0U);
   EXPECT_EQ(context.validation_warning_count(), 0U);
 
+  jobs.shutdown();
   vkDestroyFence(context.device(), fence, nullptr);
   vkDestroyCommandPool(context.device(), command_pool, nullptr);
   pipeline.cleanup(context.device());
