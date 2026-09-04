@@ -17,9 +17,13 @@ namespace omnicpp::render {
 struct QueueFamilyIndices {
   std::int32_t graphics_family{-1};
   std::int32_t present_family{-1};
+  //! Family with COMPUTE but no GRAPHICS bit (true async compute). -1 when
+  //! the device offers none; callers then fall back to the graphics family.
+  std::int32_t compute_family{-1};
   [[nodiscard]] bool is_complete() const noexcept {
     return graphics_family >= 0 && present_family >= 0;
   }
+  [[nodiscard]] bool has_dedicated_compute() const noexcept { return compute_family >= 0; }
 };
 
 struct DeviceProperties {
@@ -58,6 +62,17 @@ public:
   [[nodiscard]] VkDevice device() const noexcept { return device_; }
   [[nodiscard]] VkQueue graphics_queue() const noexcept { return graphics_queue_; }
   [[nodiscard]] VkQueue present_queue() const noexcept { return present_queue_; }
+  //! Dedicated async-compute queue (COMPUTE-only family) or null when the
+  //! device has no such family — callers must fall back to the graphics queue.
+  [[nodiscard]] VkQueue compute_queue() const noexcept { return compute_queue_; }
+  //! Family of compute_queue(); falls back to the graphics family otherwise.
+  [[nodiscard]] std::uint32_t compute_family_index() const noexcept {
+    return queue_families_.has_dedicated_compute()
+               ? static_cast<std::uint32_t>(queue_families_.compute_family)
+               : static_cast<std::uint32_t>(queue_families_.graphics_family);
+  }
+  //! True when a COMPUTE-only queue family was found and a queue was fetched.
+  [[nodiscard]] bool has_dedicated_compute() const noexcept { return compute_queue_ != nullptr; }
   [[nodiscard]] const QueueFamilyIndices& queue_families() const noexcept { return queue_families_; }
   [[nodiscard]] const DeviceProperties& device_properties() const noexcept { return device_properties_; }
   [[nodiscard]] bool has_validation() const noexcept { return validation_enabled_; }
@@ -98,6 +113,7 @@ private:
   VkDevice device_{nullptr};
   VkQueue graphics_queue_{nullptr};
   VkQueue present_queue_{nullptr};
+  VkQueue compute_queue_{nullptr};
   VkDebugUtilsMessengerEXT debug_messenger_{nullptr};
   QueueFamilyIndices queue_families_{};
   DeviceProperties device_properties_{};

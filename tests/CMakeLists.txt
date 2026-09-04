@@ -71,6 +71,71 @@ if(OMNICPP_USE_VULKAN AND Vulkan_FOUND)
             VERBATIM
         )
         add_custom_command(
+            OUTPUT ${OMNICPP_SHADER_DIR}/gen_triangle.comp.spv
+            COMMAND ${OMNICPP_SHADER_COMPILER} ${OMNICPP_SHADER_COMPILER_ARGS}
+                    ${CMAKE_SOURCE_DIR}/assets/shaders/gen_triangle.comp
+                    -o ${OMNICPP_SHADER_DIR}/gen_triangle.comp.spv
+            DEPENDS ${CMAKE_SOURCE_DIR}/assets/shaders/gen_triangle.comp
+            VERBATIM
+        )
+        add_custom_command(
+            OUTPUT ${OMNICPP_SHADER_DIR}/vertexpull_triangle.vert.spv
+            COMMAND ${OMNICPP_SHADER_COMPILER} ${OMNICPP_SHADER_COMPILER_ARGS}
+                    ${CMAKE_SOURCE_DIR}/assets/shaders/vertexpull_triangle.vert
+                    -o ${OMNICPP_SHADER_DIR}/vertexpull_triangle.vert.spv
+            DEPENDS ${CMAKE_SOURCE_DIR}/assets/shaders/vertexpull_triangle.vert
+            VERBATIM
+        )
+        add_custom_command(
+            OUTPUT ${OMNICPP_SHADER_DIR}/vertexpull_triangle.frag.spv
+            COMMAND ${OMNICPP_SHADER_COMPILER} ${OMNICPP_SHADER_COMPILER_ARGS}
+                    ${CMAKE_SOURCE_DIR}/assets/shaders/vertexpull_triangle.frag
+                    -o ${OMNICPP_SHADER_DIR}/vertexpull_triangle.frag.spv
+            DEPENDS ${CMAKE_SOURCE_DIR}/assets/shaders/vertexpull_triangle.frag
+            VERBATIM
+        )
+        add_custom_command(
+            OUTPUT ${OMNICPP_SHADER_DIR}/cull_and_draw.comp.spv
+            COMMAND ${OMNICPP_SHADER_COMPILER} ${OMNICPP_SHADER_COMPILER_ARGS}
+                    ${CMAKE_SOURCE_DIR}/assets/shaders/cull_and_draw.comp
+                    -o ${OMNICPP_SHADER_DIR}/cull_and_draw.comp.spv
+            DEPENDS ${CMAKE_SOURCE_DIR}/assets/shaders/cull_and_draw.comp
+            VERBATIM
+        )
+        add_custom_command(
+            OUTPUT ${OMNICPP_SHADER_DIR}/gpu_objects.vert.spv
+            COMMAND ${OMNICPP_SHADER_COMPILER} ${OMNICPP_SHADER_COMPILER_ARGS}
+                    ${CMAKE_SOURCE_DIR}/assets/shaders/gpu_objects.vert
+                    -o ${OMNICPP_SHADER_DIR}/gpu_objects.vert.spv
+            DEPENDS ${CMAKE_SOURCE_DIR}/assets/shaders/gpu_objects.vert
+            VERBATIM
+        )
+        add_custom_command(
+            OUTPUT ${OMNICPP_SHADER_DIR}/gpu_objects.frag.spv
+            COMMAND ${OMNICPP_SHADER_COMPILER} ${OMNICPP_SHADER_COMPILER_ARGS}
+                    ${CMAKE_SOURCE_DIR}/assets/shaders/gpu_objects.frag
+                    -o ${OMNICPP_SHADER_DIR}/gpu_objects.frag.spv
+            DEPENDS ${CMAKE_SOURCE_DIR}/assets/shaders/gpu_objects.frag
+            VERBATIM
+        )
+
+        add_custom_command(
+            OUTPUT ${OMNICPP_SHADER_DIR}/cube.vert.spv
+            COMMAND ${OMNICPP_SHADER_COMPILER} ${OMNICPP_SHADER_COMPILER_ARGS}
+                    ${CMAKE_SOURCE_DIR}/assets/shaders/cube.vert
+                    -o ${OMNICPP_SHADER_DIR}/cube.vert.spv
+            DEPENDS ${CMAKE_SOURCE_DIR}/assets/shaders/cube.vert
+            VERBATIM
+        )
+        add_custom_command(
+            OUTPUT ${OMNICPP_SHADER_DIR}/cube.frag.spv
+            COMMAND ${OMNICPP_SHADER_COMPILER} ${OMNICPP_SHADER_COMPILER_ARGS}
+                    ${CMAKE_SOURCE_DIR}/assets/shaders/cube.frag
+                    -o ${OMNICPP_SHADER_DIR}/cube.frag.spv
+            DEPENDS ${CMAKE_SOURCE_DIR}/assets/shaders/cube.frag
+            VERBATIM
+        )
+        add_custom_command(
             OUTPUT ${OMNICPP_SHADER_DIR}/bindless_textures.frag.spv
             COMMAND ${OMNICPP_SHADER_COMPILER} ${OMNICPP_SHADER_COMPILER_ARGS}
                     ${CMAKE_SOURCE_DIR}/assets/shaders/bindless_textures.frag
@@ -96,6 +161,14 @@ if(OMNICPP_USE_VULKAN AND Vulkan_FOUND)
                 ${OMNICPP_SHADER_DIR}/fill_gradient.comp.spv
                 ${OMNICPP_SHADER_DIR}/gradient_triangle.vert.spv
                 ${OMNICPP_SHADER_DIR}/gradient_triangle.frag.spv
+                ${OMNICPP_SHADER_DIR}/gen_triangle.comp.spv
+                ${OMNICPP_SHADER_DIR}/vertexpull_triangle.vert.spv
+                ${OMNICPP_SHADER_DIR}/vertexpull_triangle.frag.spv
+                ${OMNICPP_SHADER_DIR}/cull_and_draw.comp.spv
+                ${OMNICPP_SHADER_DIR}/gpu_objects.vert.spv
+                ${OMNICPP_SHADER_DIR}/gpu_objects.frag.spv
+                ${OMNICPP_SHADER_DIR}/cube.vert.spv
+                ${OMNICPP_SHADER_DIR}/cube.frag.spv
         )
     endif()
 endif()
@@ -112,6 +185,8 @@ add_executable(omnicpp_unit_tests
     unit/test_platform_primitives.cpp
     unit/test_ecs_foundation.cpp
     unit/test_rendering.cpp
+    unit/test_gpu_driven.cpp
+    unit/test_objects3d.cpp
     unit/test_reflector_and_allocator_robustness.cpp
     unit/test_latency_telemetry.cpp
     unit/test_job_system.cpp

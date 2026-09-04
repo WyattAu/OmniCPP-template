@@ -1,0 +1,31 @@
+#version 450
+
+// gen_triangle.comp — computes three clip-space vertex positions into a
+// storage buffer for vertex-pull rendering. The graphics pipeline declares
+// no vertex attributes; the vertex shader indexes this buffer by
+// gl_VertexIndex. Buffer layout: data[0..2] = clip positions, data[3..5] =
+// per-vertex hue vectors.
+
+layout(local_size_x = 3, local_size_y = 1, local_size_z = 1) in;
+
+layout(set = 0, binding = 0, std430) buffer VertexBuffer {
+  vec4 data[];  // data[0..2]: clip positions, data[3..5]: hue vectors
+};
+
+layout(push_constant) uniform Push {
+  uint vertex_count;  // must be 3 for this generator
+  float phase;        // rotation phase (radians) around Z
+} push;
+
+void main() {
+  const uint i = gl_GlobalInvocationID.x;
+  if (i >= push.vertex_count) return;
+
+  // Equilateral triangle in clip space, rotated by phase around Z.
+  const float PI = 3.14159265358979;
+  float ang = float(i) * (2.0 * PI / 3.0) + push.phase;
+  vec2 p = vec2(cos(ang), sin(ang)) * 0.85;
+
+  data[i] = vec4(p, 0.0, 1.0);
+  data[3 + i] = vec4(float(i) / 3.0, 1.0 - float(i) / 3.0, 0.5, 1.0);
+}

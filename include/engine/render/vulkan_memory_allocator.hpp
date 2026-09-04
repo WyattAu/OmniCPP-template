@@ -84,6 +84,11 @@ private:
     VkDeviceSize offset{0};
     VkDeviceSize size{0};
   };
+
+  // Cross-queue sharing state (set at initialize()).
+  bool has_dedicated_compute_{false};
+  std::uint32_t compute_family_{0};
+  std::uint32_t graphics_family_{0};
   struct Block {
     VkDeviceMemory memory{VK_NULL_HANDLE};
     VkDeviceSize size{0};

@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 #include <algorithm>
+#include <cmath>
 #include <cstdlib>
 #include <fstream>
 #include <iostream>
@@ -25,257 +26,10 @@
 #if OMNICPP_VULKAN_TYPES_AVAILABLE
 namespace {
 
-bool find_host_memory_type(VkPhysicalDevice physical_device, std::uint32_t type_bits,
-                           VkMemoryPropertyFlags required, std::uint32_t& index) {
-  VkPhysicalDeviceMemoryProperties properties{};
-  vkGetPhysicalDeviceMemoryProperties(physical_device, &properties);
-  for (std::uint32_t i = 0; i < properties.memoryTypeCount; ++i) {
-    if ((type_bits & (1U << i)) != 0U &&
-        (properties.memoryTypes[i].propertyFlags & required) == required) {
-      index = i;
-      return true;
-    }
-  }
-  return false;
-}
+// Image-readback helpers live in the shared test header.
+#include "vulkan_test_readback.hpp"
 
-struct ReadbackResult {
-  bool submitted{false};
-  std::size_t non_clear_pixels{0};
-  std::size_t red_dominant_pixels{0};
-  std::size_t green_dominant_pixels{0};
-  std::size_t blue_dominant_pixels{0};
-  std::uint32_t center_pixel{0};
-  std::uint32_t upper_triangle_pixel{0};
-  std::uint32_t lower_triangle_pixel{0};
-  std::uint32_t corner_pixel{0};
-  std::uint64_t hash{0};
-  std::uint64_t canonical_hash{0};
-};
-
-// Golden fingerprint for the bundled triangle's coarse spatial content. Unlike
-// the raw byte hash, this is independent of BGRA/RGBA and sRGB choice — but it
-// is still driver-specific (rasterization sampling differs between NVIDIA and
-// Mesa lavapipe), so every known-good value is accepted.
-void expect_canonical_triangle_hash(std::uint64_t canonical_hash) {
-  switch (canonical_hash) {
-    case 9189736358881991061ULL:  // NVIDIA (RTX 2060)
-    case 2348590267748365716ULL:  // Mesa lavapipe (CI)
-      SUCCEED();
-      break;
-    default:
-      ADD_FAILURE() << "unexpected canonical_hash=" << canonical_hash
-                    << " (add the new driver's known-good value if valid)";
-      break;
-  }
-}
-
-ReadbackResult readback_swapchain_image(VkPhysicalDevice physical_device, VkDevice device,
-                                        VkQueue queue, std::uint32_t queue_family,
-                                        VkImage image, VkFormat image_format,
-                                        std::uint32_t width, std::uint32_t height,
-                                        VkImageLayout initial_layout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
-                                        VkImageLayout final_layout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR) {
-  ReadbackResult output;
-  const VkDeviceSize byte_size = static_cast<VkDeviceSize>(width) * height * 4;
-
-  VkBufferCreateInfo buffer_info{};
-  buffer_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-  buffer_info.size = byte_size;
-  buffer_info.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT;
-  buffer_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-  VkBuffer buffer = VK_NULL_HANDLE;
-  if (vkCreateBuffer(device, &buffer_info, nullptr, &buffer) != VK_SUCCESS) return output;
-
-  VkMemoryRequirements requirements{};
-  vkGetBufferMemoryRequirements(device, buffer, &requirements);
-  std::uint32_t memory_type = 0;
-  if (!find_host_memory_type(physical_device, requirements.memoryTypeBits,
-                             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                             memory_type)) {
-    vkDestroyBuffer(device, buffer, nullptr);
-    return output;
-  }
-
-  VkMemoryAllocateInfo allocation{};
-  allocation.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-  allocation.allocationSize = requirements.size;
-  allocation.memoryTypeIndex = memory_type;
-  VkDeviceMemory memory = VK_NULL_HANDLE;
-  if (vkAllocateMemory(device, &allocation, nullptr, &memory) != VK_SUCCESS) {
-    vkDestroyBuffer(device, buffer, nullptr);
-    return output;
-  }
-  if (vkBindBufferMemory(device, buffer, memory, 0) != VK_SUCCESS) {
-    vkFreeMemory(device, memory, nullptr);
-    vkDestroyBuffer(device, buffer, nullptr);
-    return output;
-  }
-
-  VkCommandPoolCreateInfo pool_info{};
-  pool_info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-  pool_info.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
-  pool_info.queueFamilyIndex = queue_family;
-  VkCommandPool pool = VK_NULL_HANDLE;
-  if (vkCreateCommandPool(device, &pool_info, nullptr, &pool) != VK_SUCCESS) {
-    vkFreeMemory(device, memory, nullptr);
-    vkDestroyBuffer(device, buffer, nullptr);
-    return output;
-  }
-
-  VkCommandBufferAllocateInfo command_allocation{};
-  command_allocation.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-  command_allocation.commandPool = pool;
-  command_allocation.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-  command_allocation.commandBufferCount = 1;
-  VkCommandBuffer command_buffer = VK_NULL_HANDLE;
-  if (vkAllocateCommandBuffers(device, &command_allocation, &command_buffer) != VK_SUCCESS) {
-    vkDestroyCommandPool(device, pool, nullptr);
-    vkFreeMemory(device, memory, nullptr);
-    vkDestroyBuffer(device, buffer, nullptr);
-    return output;
-  }
-
-  VkCommandBufferBeginInfo begin{};
-  begin.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-  begin.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-  bool valid = vkBeginCommandBuffer(command_buffer, &begin) == VK_SUCCESS;
-
-  if (valid) {
-    VkImageMemoryBarrier to_transfer{};
-    to_transfer.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-    to_transfer.srcAccessMask = 0;
-    to_transfer.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
-    to_transfer.oldLayout = initial_layout;
-    to_transfer.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-    to_transfer.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    to_transfer.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    to_transfer.image = image;
-    to_transfer.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-    to_transfer.subresourceRange.levelCount = 1;
-    to_transfer.subresourceRange.layerCount = 1;
-    if (initial_layout != VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL) {
-      vkCmdPipelineBarrier(command_buffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
-                           VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr,
-                           1, &to_transfer);
-    }
-
-    VkBufferImageCopy copy{};
-    copy.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-    copy.imageSubresource.layerCount = 1;
-    copy.imageExtent = {width, height, 1};
-    vkCmdCopyImageToBuffer(command_buffer, image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-                           buffer, 1, &copy);
-
-    if (final_layout != VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL) {
-      VkImageMemoryBarrier restore_layout = to_transfer;
-      restore_layout.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
-      restore_layout.dstAccessMask = 0;
-      restore_layout.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-      restore_layout.newLayout = final_layout;
-      vkCmdPipelineBarrier(command_buffer, VK_PIPELINE_STAGE_TRANSFER_BIT,
-                           VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, 0, 0, nullptr, 0, nullptr,
-                           1, &restore_layout);
-    }
-    valid = vkEndCommandBuffer(command_buffer) == VK_SUCCESS;
-  }
-
-  VkFenceCreateInfo fence_info{};
-  fence_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-  VkFence fence = VK_NULL_HANDLE;
-  if (valid && vkCreateFence(device, &fence_info, nullptr, &fence) == VK_SUCCESS) {
-    VkSubmitInfo submit{};
-    submit.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-    submit.commandBufferCount = 1;
-    submit.pCommandBuffers = &command_buffer;
-    valid = vkQueueSubmit(queue, 1, &submit, fence) == VK_SUCCESS &&
-            vkWaitForFences(device, 1, &fence, VK_TRUE, UINT64_MAX) == VK_SUCCESS;
-  }
-
-  if (valid) {
-    void* mapped = nullptr;
-    valid = vkMapMemory(device, memory, 0, byte_size, 0, &mapped) == VK_SUCCESS;
-    if (valid) {
-      const auto* bytes = static_cast<const std::uint8_t*>(mapped);
-      const bool rgba = image_format == VK_FORMAT_R8G8B8A8_UNORM ||
-                        image_format == VK_FORMAT_R8G8B8A8_SRGB;
-      const auto pixel_at = [&](std::uint32_t x, std::uint32_t y) {
-        const std::size_t offset =
-            (static_cast<std::size_t>(y) * width + x) * 4U;
-        const auto first = bytes[offset];
-        const auto second = bytes[offset + 1];
-        const auto third = bytes[offset + 2];
-        const auto alpha = bytes[offset + 3];
-        const auto r = rgba ? first : third;
-        const auto g = second;
-        const auto b = rgba ? third : first;
-        return static_cast<std::uint32_t>(r) |
-               (static_cast<std::uint32_t>(g) << 8U) |
-               (static_cast<std::uint32_t>(b) << 16U) |
-               (static_cast<std::uint32_t>(alpha) << 24U);
-      };
-
-      std::uint64_t hash = 1469598103934665603ULL;
-      for (std::size_t i = 0; i < static_cast<std::size_t>(byte_size); i += 4) {
-        const auto first = bytes[i];
-        const auto g = bytes[i + 1];
-        const auto third = bytes[i + 2];
-        const auto r = rgba ? first : third;
-        const auto b = rgba ? third : first;
-        if (r != 0 || g != 0 || b != 0) ++output.non_clear_pixels;
-        if (r > g && r > b) ++output.red_dominant_pixels;
-        if (g > r && g > b) ++output.green_dominant_pixels;
-        if (b > r && b > g) ++output.blue_dominant_pixels;
-        const std::uint32_t pixel = static_cast<std::uint32_t>(r) |
-                                     (static_cast<std::uint32_t>(g) << 8U) |
-                                     (static_cast<std::uint32_t>(b) << 16U) |
-                                     (static_cast<std::uint32_t>(bytes[i + 3]) << 24U);
-        hash ^= pixel;
-        hash *= 1099511628211ULL;
-      }
-      output.center_pixel = pixel_at(width / 2U, height / 2U);
-      // Both samples lie on the triangle's vertical centerline, away from its
-      // edges. Vulkan's framebuffer row orientation does not affect this test.
-      output.upper_triangle_pixel = pixel_at(width / 2U, height / 4U);
-      output.lower_triangle_pixel = pixel_at(width / 2U, (height * 13U) / 16U);
-      output.corner_pixel = pixel_at(0, 0);
-      output.hash = hash;
-
-      // Canonicalize a coarse spatial classification rather than raw bytes.
-      // This remains stable across BGRA/RGBA and UNORM/SRGB swapchain formats.
-      constexpr std::uint32_t grid_width = 16;
-      constexpr std::uint32_t grid_height = 12;
-      std::uint64_t canonical_hash = 1469598103934665603ULL;
-      for (std::uint32_t gy = 0; gy < grid_height; ++gy) {
-        for (std::uint32_t gx = 0; gx < grid_width; ++gx) {
-          const auto pixel = pixel_at(
-              ((2U * gx + 1U) * width) / (2U * grid_width),
-              ((2U * gy + 1U) * height) / (2U * grid_height));
-          const auto r = pixel & 0xFFU;
-          const auto g = (pixel >> 8U) & 0xFFU;
-          const auto b = (pixel >> 16U) & 0xFFU;
-          const std::uint8_t category =
-              (r == 0U && g == 0U && b == 0U) ? 0U :
-              (r > g && r > b) ? 1U :
-              (g > r && g > b) ? 2U :
-              (b > r && b > g) ? 3U : 4U;
-          canonical_hash ^= category;
-          canonical_hash *= 1099511628211ULL;
-        }
-      }
-      output.canonical_hash = canonical_hash;
-      output.submitted = true;
-      vkUnmapMemory(device, memory);
-    }
-  }
-
-  if (fence) vkDestroyFence(device, fence, nullptr);
-  vkDestroyCommandPool(device, pool, nullptr);
-  vkFreeMemory(device, memory, nullptr);
-  vkDestroyBuffer(device, buffer, nullptr);
-  return output;
-}
+using namespace omnicpp_test;
 
 } // namespace
 #endif
@@ -1595,6 +1349,264 @@ TEST(VulkanHardware, ComputeToGraphicsEventHandoff) {
   target.cleanup(context.device());
   omnicpp::render::Allocation grad = gradient.value();
   allocator.destroy_allocation(grad);
+  manager.cleanup();
+  allocator.cleanup();
+  context.cleanup();
+#else
+  GTEST_SKIP() << "Vulkan support or test shaders were not enabled";
+#endif
+}
+
+TEST(VulkanHardware, AsyncComputeTimelineOverlap) {
+#if OMNICPP_VULKAN_TYPES_AVAILABLE && defined(OMNICPP_TEST_SHADER_DIR)
+  if (!omnicpp::render::VulkanContext::is_available()) GTEST_SKIP() << "Vulkan loader unavailable";
+
+  omnicpp::render::VulkanContext context;
+  ASSERT_TRUE(context.initialize("OmniCppAsyncComputeTest", true).is_ok());
+  if (!context.has_timeline_semaphores()) {
+    GTEST_SKIP() << "Timeline semaphores unavailable";
+  }
+  if (!context.has_dedicated_compute()) {
+    GTEST_SKIP() << "No COMPUTE-only family: async overlap not testable here";
+  }
+
+  omnicpp::render::VulkanMemoryAllocator allocator;
+  ASSERT_TRUE(allocator.initialize(context.device(), context.physical_device()).is_ok());
+
+  const std::uint32_t comp_family = context.compute_family_index();
+
+  // Vertex storage written by compute on the async queue, read by graphics.
+  // CONCURRENT sharing (both families) means cross-queue handoffs need only
+  // the timeline semaphore as memory dependency — no ownership ping-pong.
+  constexpr std::uint32_t kVertices = 3;
+  constexpr VkDeviceSize kDataBytes = 6U * sizeof(float) * 4U;  // 3 pos + 3 hue
+  auto vertices = allocator.create_buffer(
+      kDataBytes,
+      VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+      VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+          VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+  ASSERT_TRUE(vertices.is_ok());
+  std::memset(vertices.value().mapped, 0, static_cast<std::size_t>(kDataBytes));
+
+  omnicpp::render::AsyncComputeQueue async;
+  ASSERT_TRUE(async.initialize(context.device(), context.compute_queue(), comp_family).is_ok());
+
+  // --- Compute pipeline: gen_triangle writes positions + hues. ---
+  const std::string shader_dir = OMNICPP_TEST_SHADER_DIR;
+  std::ifstream comp_file(shader_dir + "/gen_triangle.comp.spv", std::ios::binary);
+  ASSERT_TRUE(comp_file.good());
+  const std::vector<std::uint8_t> comp_spirv(
+      (std::istreambuf_iterator<char>(comp_file)), std::istreambuf_iterator<char>());
+  const auto comp_bindings = omnicpp::render::reflect_spirv_resources(
+      comp_spirv.data(), comp_spirv.size());
+  ASSERT_EQ(comp_bindings.size(), 1U);
+  EXPECT_EQ(comp_bindings[0].type, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+
+  omnicpp::render::VulkanDescriptorManager manager;
+  ASSERT_TRUE(manager.initialize(context.device()).is_ok());
+  auto comp_layout = manager.create_layout(comp_bindings, 1);
+  ASSERT_TRUE(comp_layout.is_ok());
+  auto comp_set = manager.allocate_set(comp_layout.value());
+  ASSERT_TRUE(comp_set.is_ok());
+  ASSERT_TRUE(manager.write_buffer(comp_set.value(), 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+                                   vertices.value().buffer, 0, VK_WHOLE_SIZE).is_ok());
+
+  omnicpp::render::VulkanPipeline compute_pipeline;
+  ASSERT_TRUE(compute_pipeline.load_shader_stage_file(
+      context.device(), shader_dir + "/gen_triangle.comp.spv", "compute").is_ok());
+  const VkPushConstantRange comp_push{
+      VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(std::uint32_t) + sizeof(float)};
+  ASSERT_TRUE(compute_pipeline.create_pipeline_layout(
+      context.device(), &comp_layout.value(), 1, &comp_push).is_ok());
+  ASSERT_TRUE(compute_pipeline.create_compute_pipeline(
+      context.device(), compute_pipeline.pipeline_layout()).is_ok());
+
+  // --- Graphics pipeline: vertex-pull triangle tinted by the compute hue. ---
+  omnicpp::render::VulkanOffscreenTarget target;
+  ASSERT_TRUE(target.create(context.device(), context.physical_device(),
+                            VK_FORMAT_B8G8R8A8_UNORM, 64, 64, &allocator).is_ok());
+  ASSERT_TRUE(target.create_render_pass(context.device()).is_ok());
+  ASSERT_TRUE(target.create_framebuffer(context.device()).is_ok());
+
+  omnicpp::render::VulkanPipeline gfx_pipeline;
+  ASSERT_TRUE(gfx_pipeline.load_shader_stage_file(
+      context.device(), shader_dir + "/vertexpull_triangle.vert.spv", "vertex").is_ok());
+  ASSERT_TRUE(gfx_pipeline.load_shader_stage_file(
+      context.device(), shader_dir + "/vertexpull_triangle.frag.spv", "fragment").is_ok());
+  // Both stages touch the SSBO (vertex pulls, fragment reads hue); reflect
+  // the vertex stage and merge the fragment's stage flags.
+  std::ifstream vp_file(shader_dir + "/vertexpull_triangle.vert.spv", std::ios::binary);
+  ASSERT_TRUE(vp_file.good());
+  const std::vector<std::uint8_t> vp_spirv(
+      (std::istreambuf_iterator<char>(vp_file)), std::istreambuf_iterator<char>());
+  const auto vp_bindings = omnicpp::render::reflect_spirv_resources(
+      vp_spirv.data(), vp_spirv.size());
+  ASSERT_EQ(vp_bindings.size(), 1U);
+  std::ifstream vf_file(shader_dir + "/vertexpull_triangle.frag.spv", std::ios::binary);
+  ASSERT_TRUE(vf_file.good());
+  const std::vector<std::uint8_t> vf_spirv(
+      (std::istreambuf_iterator<char>(vf_file)), std::istreambuf_iterator<char>());
+  const auto vf_bindings = omnicpp::render::reflect_spirv_resources(
+      vf_spirv.data(), vf_spirv.size());
+  ASSERT_TRUE(vf_bindings.empty());  // hue frag reads only the varying
+  auto gfx_layout = manager.create_layout(vp_bindings, 1);
+  ASSERT_TRUE(gfx_layout.is_ok());
+  auto gfx_set = manager.allocate_set(gfx_layout.value());
+  ASSERT_TRUE(gfx_set.is_ok());
+  ASSERT_TRUE(manager.write_buffer(gfx_set.value(), 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+                                   vertices.value().buffer, 0, VK_WHOLE_SIZE).is_ok());
+  ASSERT_TRUE(gfx_pipeline.create_pipeline_layout(
+      context.device(), &gfx_layout.value(), 1, nullptr).is_ok());
+  ASSERT_TRUE(gfx_pipeline.create_graphics_pipeline(
+      context.device(), target.render_pass(), target.format(),
+      gfx_pipeline.pipeline_layout(), false, false, false).is_ok());
+
+  const auto gfx_pool_result = omnicpp::render::VulkanRenderer::create_command_pool(
+      context.device(), static_cast<std::uint32_t>(context.queue_families().graphics_family));
+  ASSERT_TRUE(gfx_pool_result.is_ok());
+  const VkCommandPool gfx_pool = gfx_pool_result.value();
+  const auto gfx_cb_result = omnicpp::render::VulkanRenderer::allocate_command_buffer(
+      context.device(), gfx_pool);
+  ASSERT_TRUE(gfx_cb_result.is_ok());
+  const VkCommandBuffer gfx_cb = gfx_cb_result.value();
+
+  VkFenceCreateInfo fence_info{};
+  fence_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+  VkFence gfx_fence = VK_NULL_HANDLE;
+  ASSERT_EQ(vkCreateFence(context.device(), &fence_info, nullptr, &gfx_fence), VK_SUCCESS);
+
+  // --- Two pipelined frames. Frame N: async compute regenerates vertices
+  // with rotation phase = N radians; graphics waits (GPU-side) on frame N's
+  // timeline value, then draws. Frame 1's vertices differ from frame 0's —
+  // proving the graphics pass consumed THIS frame's compute output. ---
+  constexpr int kFrames = 2;
+  std::uint64_t last_signalled = 0;
+  for (int frame = 0; frame < kFrames; ++frame) {
+    async.begin();
+    struct CompCtx {
+      VkPipeline pipeline;
+      VkPipelineLayout layout;
+      VkDescriptorSet set;
+      std::uint32_t count;
+      float phase;
+    };
+    CompCtx comp_ctx{compute_pipeline.pipeline(), compute_pipeline.pipeline_layout(),
+                     comp_set.value(), kVertices, static_cast<float>(frame)};
+    async.record(
+        [](VkCommandBuffer cmd, void* ud) {
+          auto* c = static_cast<CompCtx*>(ud);
+          vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, c->pipeline);
+          vkCmdPushConstants(cmd, c->layout, VK_SHADER_STAGE_COMPUTE_BIT, 0,
+                             sizeof(std::uint32_t) + sizeof(float), &c->count);
+          vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, c->layout,
+                                  0, 1, &c->set, 0, nullptr);
+          vkCmdDispatch(cmd, c->count, 1, 1);
+        },
+        &comp_ctx);
+    auto signal_result = async.submit();
+    ASSERT_TRUE(signal_result.is_ok());
+    last_signalled = signal_result.value();
+
+    // Consumer: graphics waits on the compute timeline value before drawing.
+    ASSERT_EQ(vkResetCommandBuffer(gfx_cb, 0), VK_SUCCESS);
+    VkCommandBufferBeginInfo begin{};
+    begin.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    begin.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+    ASSERT_EQ(vkBeginCommandBuffer(gfx_cb, &begin), VK_SUCCESS);
+    VkRenderPassBeginInfo render_begin{};
+    render_begin.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+    render_begin.renderPass = target.render_pass();
+    render_begin.framebuffer = target.framebuffer();
+    render_begin.renderArea.extent = {64, 64};
+    VkClearValue clear{};
+    clear.color = {{0.0f, 0.0f, 0.0f, 1.0f}};
+    render_begin.clearValueCount = 1;
+    render_begin.pClearValues = &clear;
+    vkCmdBeginRenderPass(gfx_cb, &render_begin, VK_SUBPASS_CONTENTS_INLINE);
+    {
+      VkViewport viewport{};
+      viewport.width = 64.0f;
+      viewport.height = 64.0f;
+      viewport.maxDepth = 1.0f;
+      vkCmdSetViewport(gfx_cb, 0, 1, &viewport);
+      VkRect2D scissor{};
+      scissor.extent = {64, 64};
+      vkCmdSetScissor(gfx_cb, 0, 1, &scissor);
+      vkCmdBindPipeline(gfx_cb, VK_PIPELINE_BIND_POINT_GRAPHICS, gfx_pipeline.pipeline());
+      const VkDescriptorSet gfx_ds = gfx_set.value();
+      vkCmdBindDescriptorSets(gfx_cb, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                              gfx_pipeline.pipeline_layout(), 0, 1, &gfx_ds, 0, nullptr);
+      vkCmdDraw(gfx_cb, kVertices, 1, 0, 0);
+    }
+    vkCmdEndRenderPass(gfx_cb);
+    ASSERT_EQ(vkEndCommandBuffer(gfx_cb), VK_SUCCESS);
+
+    VkSemaphore wait_sem = async.timeline_semaphore();
+    VkTimelineSemaphoreSubmitInfo timeline_wait{};
+    timeline_wait.sType = VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO;
+    timeline_wait.waitSemaphoreValueCount = 1;
+    timeline_wait.pWaitSemaphoreValues = &last_signalled;
+    constexpr VkPipelineStageFlags kWaitStage =
+        VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+    VkSubmitInfo submit{};
+    submit.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    submit.pNext = &timeline_wait;
+    submit.waitSemaphoreCount = 1;
+    submit.pWaitSemaphores = &wait_sem;
+    submit.pWaitDstStageMask = &kWaitStage;
+    submit.commandBufferCount = 1;
+    submit.pCommandBuffers = &gfx_cb;
+    ASSERT_EQ(vkResetFences(context.device(), 1, &gfx_fence), VK_SUCCESS);
+    ASSERT_EQ(vkQueueSubmit(context.graphics_queue(), 1, &submit, gfx_fence), VK_SUCCESS);
+    ASSERT_EQ(vkWaitForFences(context.device(), 1, &gfx_fence, VK_TRUE, UINT64_MAX), VK_SUCCESS);
+  }
+
+  // --- Verify: compute output matches the analytic rotation for the FINAL
+  // phase (1 radian); the framebuffer has triangle coverage tinted by the
+  // compute-generated hue (green-dominant, hue[0] = (0,1,.5,1)). ---
+  {
+    const auto* data = static_cast<const float*>(vertices.value().mapped);
+    ASSERT_NE(data, nullptr);
+    const float expect_x[3] = {0.85f * std::cos(1.0f),
+                               0.85f * std::cos(1.0f + 2.0943951f),
+                               0.85f * std::cos(1.0f + 4.1887902f)};
+    const float expect_y[3] = {0.85f * std::sin(1.0f),
+                               0.85f * std::sin(1.0f + 2.0943951f),
+                               0.85f * std::sin(1.0f + 4.1887902f)};
+    for (std::uint32_t i = 0; i < kVertices; ++i) {
+      EXPECT_NEAR(data[i * 4U + 0U], expect_x[i], 1e-5f) << "vertex " << i;
+      EXPECT_NEAR(data[i * 4U + 1U], expect_y[i], 1e-5f) << "vertex " << i;
+      EXPECT_NEAR(data[i * 4U + 2U], 0.0f, 1e-6f) << "vertex " << i;
+      EXPECT_NEAR(data[i * 4U + 3U], 1.0f, 1e-6f) << "vertex " << i;
+      // Hue vector: r = i/3, g = 1 - i/3, b = 0.5, a = 1.
+      EXPECT_NEAR(data[(3U + i) * 4U + 0U], static_cast<float>(i) / 3.0f, 1e-6f) << "hue " << i;
+      EXPECT_NEAR(data[(3U + i) * 4U + 1U], 1.0f - static_cast<float>(i) / 3.0f, 1e-6f) << "hue " << i;
+    }
+  }
+
+  const auto readback = readback_swapchain_image(
+      context.physical_device(), context.device(), context.graphics_queue(),
+      static_cast<std::uint32_t>(context.queue_families().graphics_family),
+      target.image(), target.format(), 64, 64,
+      VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+  ASSERT_TRUE(readback.submitted);
+  EXPECT_GT(readback.non_clear_pixels, 500U);
+  // hue[0] = (0, 1, 0.5): green dominant along the v0 corner; the interpolated
+  // interior mixes hues, so require a meaningful green-dominant population.
+  EXPECT_GT(readback.green_dominant_pixels, 100U);
+
+  EXPECT_EQ(context.validation_error_count(), 0U);
+  EXPECT_EQ(context.validation_warning_count(), 0U);
+
+  ASSERT_TRUE(async.wait_done());
+  async.cleanup();  // destroy queue resources BEFORE the device goes away
+  vkDestroyFence(context.device(), gfx_fence, nullptr);
+  vkDestroyCommandPool(context.device(), gfx_pool, nullptr);
+  gfx_pipeline.cleanup(context.device());
+  compute_pipeline.cleanup(context.device());
+  target.cleanup(context.device());
+  omnicpp::render::Allocation verts = vertices.value();
+  allocator.destroy_allocation(verts);
   manager.cleanup();
   allocator.cleanup();
   context.cleanup();

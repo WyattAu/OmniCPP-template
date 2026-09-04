@@ -130,6 +130,9 @@ omnicpp::core::Result<void> VulkanContext::initialize(
 
   std::vector<VkDeviceQueueCreateInfo> queue_create_infos;
   std::set<std::int32_t> unique_families = {queue_families_.graphics_family, queue_families_.present_family};
+  if (queue_families_.has_dedicated_compute()) {
+    unique_families.insert(queue_families_.compute_family);
+  }
   float priority = 1.0f;
   for (std::int32_t fam : unique_families) {
     VkDeviceQueueCreateInfo qci{};
@@ -153,6 +156,10 @@ omnicpp::core::Result<void> VulkanContext::initialize(
   VkPhysicalDeviceFeatures device_features{};
   // Anisotropy is optional for this renderer; only enable supported features.
   device_features.samplerAnisotropy = supported_features.samplerAnisotropy;
+  // Vertex pulling (SSBO reads in the vertex stage) requires this feature;
+  // enable when the device supports it so compute-generated geometry works.
+  device_features.vertexPipelineStoresAndAtomics =
+      supported_features.vertexPipelineStoresAndAtomics;
 
   if (!check_device_extension_support(physical_device_)) {
     cleanup();
@@ -190,6 +197,9 @@ omnicpp::core::Result<void> VulkanContext::initialize(
   }
   if (is_vulkan12) {
     timeline_semaphores_enabled_ = vulkan12_features.timelineSemaphore == VK_TRUE;
+    if (timeline_semaphores_enabled_) {
+      vulkan12_features.timelineSemaphore = VK_TRUE;
+    }
     // Bindless descriptor indexing: require the full combination used by the
     // renderer (runtime-sized arrays, partially-bound sets, update-after-bind
     // for sampled images and storage buffers, and non-uniform indexing).
@@ -236,6 +246,9 @@ omnicpp::core::Result<void> VulkanContext::initialize(
 
   vkGetDeviceQueue(device_, static_cast<std::uint32_t>(queue_families_.graphics_family), 0, &graphics_queue_);
   vkGetDeviceQueue(device_, static_cast<std::uint32_t>(queue_families_.present_family), 0, &present_queue_);
+  if (queue_families_.has_dedicated_compute()) {
+    vkGetDeviceQueue(device_, static_cast<std::uint32_t>(queue_families_.compute_family), 0, &compute_queue_);
+  }
 
   // Headless surface support is optional and checked after instance creation.
   std::uint32_t extension_count = 0;
@@ -432,7 +445,16 @@ QueueFamilyIndices VulkanContext::find_queue_families(VkPhysicalDevice device, V
   std::vector<VkQueueFamilyProperties> families(count);
   vkGetPhysicalDeviceQueueFamilyProperties(device, &count, families.data());
   for (std::uint32_t i = 0; i < count; ++i) {
-    if (families[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) indices.graphics_family = static_cast<std::int32_t>(i);
+    const bool graphics = (families[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) != 0;
+    const bool compute = (families[i].queueFlags & VK_QUEUE_COMPUTE_BIT) != 0;
+    if (graphics) indices.graphics_family = static_cast<std::int32_t>(i);
+    // Dedicated async compute: COMPUTE-capable family with no GRAPHICS bit.
+    // Prefer the deepest (largest queue count) such family.
+    if (compute && !graphics &&
+        (indices.compute_family < 0 ||
+         families[i].queueCount > families[static_cast<std::size_t>(indices.compute_family)].queueCount)) {
+      indices.compute_family = static_cast<std::int32_t>(i);
+    }
     if (surface) {
       VkBool32 present_support = false;
       vkGetPhysicalDeviceSurfaceSupportKHR(device, i, surface, &present_support);
@@ -440,7 +462,9 @@ QueueFamilyIndices VulkanContext::find_queue_families(VkPhysicalDevice device, V
     } else {
       indices.present_family = indices.graphics_family;
     }
-    if (indices.is_complete()) break;
+    // Scan ALL families: the dedicated compute family typically sits after
+    // the graphics one (e.g. NVIDIA: 0=GRAPHICS|COMPUTE, 1=COMPUTE, 2=TRANSFER),
+    // so an early break once graphics+present are found would miss it.
   }
   return indices;
 #else
@@ -475,9 +499,9 @@ void VulkanContext::record_validation_message(std::uint32_t severity,
                                                const char* message) noexcept {
 #ifdef OMNICPP_HAS_VULKAN
   // The loader reports its explicit-layer notice through the debug callback;
-  // exclude only that known informational message, never an entire category.
-  const bool forced_layer_notice =
-      message && std::strstr(message, "forced enabled due to env var") != nullptr;
+  // exclude only those known informational notices, never an entire category.
+  const bool forced_layer_notice = message && (std::strstr(message, "forced enabled due to env var") != nullptr ||
+      std::strstr(message, "defined and adding layers") != nullptr);
   if (!forced_layer_notice &&
       (severity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT) != 0U) {
     validation_error_count_.fetch_add(1, std::memory_order_relaxed);

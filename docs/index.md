@@ -74,7 +74,7 @@ Engine facade with `Result<T>` error model, configurable event transport, and ti
 | Check | Status |
 |-------|--------|
 | Headless CTest (unit tests) | ✅ All pass |
-| Vulkan validation preset (RTX 2060 + Khronos layer, **176/176**) | ✅ Zero diagnostics |
+| Vulkan validation preset (RTX 2060 + Khronos layer, **180/180**) | ✅ Zero diagnostics |
 | Vulkan validation CI job (Mesa lavapipe) | ✅ Wired in `.github/workflows/test.yml` |
 | TSan (`halt_on_error=1`) | ✅ Zero data races |
 | ASan/UBSan | ✅ No memory or UB errors |

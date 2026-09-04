@@ -2,6 +2,7 @@
 
 #ifdef OMNICPP_HAS_VULKAN
 #include <vulkan/vulkan.h>
+#include <cstring>
 #endif
 
 namespace omnicpp::render {
@@ -106,6 +107,91 @@ omnicpp::core::Result<void> VulkanOffscreenTarget::create(
 #endif
 }
 
+omnicpp::core::Result<void> VulkanOffscreenTarget::create_depth(
+    VkDevice device, VkPhysicalDevice physical_device, VkFormat depth_format) {
+#ifdef OMNICPP_HAS_VULKAN
+  if (!device || !physical_device || depth_format == VK_FORMAT_UNDEFINED) {
+    return omnicpp::core::Result<void>::error(omnicpp::core::RuntimeError::invalid_config);
+  }
+  // Format must actually support depth attachment usage.
+  VkImageFormatProperties fmt_props{};
+  if (vkGetPhysicalDeviceImageFormatProperties(
+          physical_device, depth_format, VK_IMAGE_TYPE_2D, VK_IMAGE_TILING_OPTIMAL,
+          VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, 0, &fmt_props) != VK_SUCCESS) {
+    return omnicpp::core::Result<void>::error(omnicpp::core::RuntimeError::invalid_config);
+  }
+
+  VkImageCreateInfo image_info{};
+  image_info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+  image_info.imageType = VK_IMAGE_TYPE_2D;
+  image_info.extent = {width_, height_, 1};
+  image_info.mipLevels = 1;
+  image_info.arrayLayers = 1;
+  image_info.format = depth_format;
+  image_info.tiling = VK_IMAGE_TILING_OPTIMAL;
+  image_info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+  image_info.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+  image_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+  image_info.samples = VK_SAMPLE_COUNT_1_BIT;
+  if (vkCreateImage(device, &image_info, nullptr, &depth_image_) != VK_SUCCESS) {
+    return omnicpp::core::Result<void>::error(omnicpp::core::RuntimeError::vulkan_not_available);
+  }
+
+  if (allocator_) {
+    auto allocation = allocator_->bind_image(depth_image_, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+    if (!allocation.is_ok()) {
+      vkDestroyImage(device, depth_image_, nullptr);
+      depth_image_ = VK_NULL_HANDLE;
+      return omnicpp::core::Result<void>::error(allocation.error());
+    }
+    depth_allocation_ = allocation.value();
+    depth_uses_allocator_ = true;
+  } else {
+    VkMemoryRequirements requirements{};
+    vkGetImageMemoryRequirements(device, depth_image_, &requirements);
+    VkPhysicalDeviceMemoryProperties memory_properties{};
+    vkGetPhysicalDeviceMemoryProperties(physical_device, &memory_properties);
+    bool found = false;
+    for (std::uint32_t i = 0; i < memory_properties.memoryTypeCount; ++i) {
+      if ((requirements.memoryTypeBits & (1U << i)) != 0U &&
+          (memory_properties.memoryTypes[i].propertyFlags & VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) != 0U) {
+        VkMemoryAllocateInfo alloc{};
+        alloc.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+        alloc.allocationSize = requirements.size;
+        alloc.memoryTypeIndex = i;
+        if (vkAllocateMemory(device, &alloc, nullptr, &depth_memory_) == VK_SUCCESS &&
+            vkBindImageMemory(device, depth_image_, depth_memory_, 0) == VK_SUCCESS) {
+          found = true;
+          break;
+        }
+      }
+    }
+    if (!found) {
+      vkDestroyImage(device, depth_image_, nullptr);
+      depth_image_ = VK_NULL_HANDLE;
+      return omnicpp::core::Result<void>::error(omnicpp::core::RuntimeError::vulkan_not_available);
+    }
+  }
+
+  VkImageViewCreateInfo view_info{};
+  view_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+  view_info.image = depth_image_;
+  view_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
+  view_info.format = depth_format;
+  view_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+  view_info.subresourceRange.levelCount = 1;
+  view_info.subresourceRange.layerCount = 1;
+  if (vkCreateImageView(device, &view_info, nullptr, &depth_view_) != VK_SUCCESS) {
+    return omnicpp::core::Result<void>::error(omnicpp::core::RuntimeError::vulkan_not_available);
+  }
+  depth_format_ = depth_format;
+  return omnicpp::core::Result<void>::ok();
+#else
+  (void)device; (void)physical_device; (void)depth_format;
+  return omnicpp::core::Result<void>::error(omnicpp::core::RuntimeError::vulkan_not_available);
+#endif
+}
+
 omnicpp::core::Result<void> VulkanOffscreenTarget::create_render_pass(VkDevice device) {
 #ifdef OMNICPP_HAS_VULKAN
   if (!device || !image_ || render_pass_) {
@@ -122,26 +208,59 @@ omnicpp::core::Result<void> VulkanOffscreenTarget::create_render_pass(VkDevice d
   color_attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
   color_attachment.finalLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
 
+  VkAttachmentDescription depth_attachment{};
+  depth_attachment.format = depth_format_;
+  depth_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
+  depth_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+  depth_attachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+  depth_attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+  depth_attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+  depth_attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+  depth_attachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
   VkAttachmentReference color_reference{};
   color_reference.attachment = 0;
   color_reference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
+  VkAttachmentReference depth_reference{};
+  depth_reference.attachment = 1;
+  depth_reference.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
   VkSubpassDescription subpass{};
   subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-  subpass.colorAttachmentCount = 1;
-  subpass.pColorAttachments = &color_reference;
+  if (depth_image_ != VK_NULL_HANDLE) {
+    subpass.colorAttachmentCount = 1;
+    subpass.pColorAttachments = &color_reference;
+    subpass.pDepthStencilAttachment = &depth_reference;
+  } else {
+    subpass.colorAttachmentCount = 1;
+    subpass.pColorAttachments = &color_reference;
+  }
 
   VkSubpassDependency dependency{};
   dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
   dependency.dstSubpass = 0;
   dependency.srcStageMask = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-  dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-  dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+  dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
+                            (depth_image_ != VK_NULL_HANDLE
+                                 ? VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT
+                                 : 0);
+  dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT |
+                             (depth_image_ != VK_NULL_HANDLE
+                                  ? VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT
+                                  : 0);
+
+  VkAttachmentDescription attachments[2] = {color_attachment, depth_attachment};
 
   VkRenderPassCreateInfo render_pass_info{};
   render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-  render_pass_info.attachmentCount = 1;
-  render_pass_info.pAttachments = &color_attachment;
+  if (depth_image_ != VK_NULL_HANDLE) {
+    render_pass_info.attachmentCount = 2;
+    render_pass_info.pAttachments = attachments;
+  } else {
+    render_pass_info.attachmentCount = 1;
+    render_pass_info.pAttachments = &color_attachment;
+  }
   render_pass_info.subpassCount = 1;
   render_pass_info.pSubpasses = &subpass;
   render_pass_info.dependencyCount = 1;
@@ -163,11 +282,17 @@ omnicpp::core::Result<void> VulkanOffscreenTarget::create_framebuffer(VkDevice d
   if (!device || !image_view_ || !render_pass_ || framebuffer_) {
     return omnicpp::core::Result<void>::error(omnicpp::core::RuntimeError::invalid_config);
   }
+  VkImageView attachment_views[2] = {image_view_, depth_view_};
   VkFramebufferCreateInfo framebuffer_info{};
   framebuffer_info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
   framebuffer_info.renderPass = render_pass_;
-  framebuffer_info.attachmentCount = 1;
-  framebuffer_info.pAttachments = &image_view_;
+  if (depth_view_ != VK_NULL_HANDLE) {
+    framebuffer_info.attachmentCount = 2;
+    framebuffer_info.pAttachments = attachment_views;
+  } else {
+    framebuffer_info.attachmentCount = 1;
+    framebuffer_info.pAttachments = attachment_views;
+  }
   framebuffer_info.width = width_;
   framebuffer_info.height = height_;
   framebuffer_info.layers = 1;
@@ -187,6 +312,16 @@ void VulkanOffscreenTarget::cleanup(VkDevice device) noexcept {
   if (device) {
     if (framebuffer_) vkDestroyFramebuffer(device, framebuffer_, nullptr);
     if (render_pass_) vkDestroyRenderPass(device, render_pass_, nullptr);
+    if (depth_view_) vkDestroyImageView(device, depth_view_, nullptr);
+    if (depth_image_) vkDestroyImage(device, depth_image_, nullptr);
+    if (depth_uses_allocator_) {
+      depth_allocation_.image = VK_NULL_HANDLE;
+      allocator_->destroy_allocation(depth_allocation_);
+      depth_allocation_ = {};
+      depth_uses_allocator_ = false;
+    } else if (depth_memory_) {
+      vkFreeMemory(device, depth_memory_, nullptr);
+    }
     if (image_view_) vkDestroyImageView(device, image_view_, nullptr);
     if (image_) vkDestroyImage(device, image_, nullptr);
     if (uses_allocator_) {
@@ -207,6 +342,10 @@ void VulkanOffscreenTarget::cleanup(VkDevice device) noexcept {
   image_view_ = VK_NULL_HANDLE;
   image_ = VK_NULL_HANDLE;
   memory_ = VK_NULL_HANDLE;
+  depth_image_ = VK_NULL_HANDLE;
+  depth_view_ = VK_NULL_HANDLE;
+  depth_memory_ = VK_NULL_HANDLE;
+  depth_format_ = VK_FORMAT_UNDEFINED;
   format_ = VK_FORMAT_UNDEFINED;
   width_ = 0;
   height_ = 0;

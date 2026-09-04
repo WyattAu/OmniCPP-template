@@ -1,6 +1,7 @@
 #include "engine/render/vulkan_memory_allocator.hpp"
 
 #include <algorithm>
+#include <array>
 #include <cstring>
 
 #ifdef OMNICPP_HAS_VULKAN
@@ -30,6 +31,28 @@ omnicpp::core::Result<void> VulkanMemoryAllocator::initialize(
   if (device_) cleanup();
   device_ = device;
   physical_device_ = physical_device;
+  // Detect a dedicated COMPUTE-only family so cross-queue buffers can use
+  // CONCURRENT sharing (no ownership-transfer ping-pong on handoff).
+  has_dedicated_compute_ = false;
+  compute_family_ = graphics_family_ = 0;
+  std::uint32_t family_count = 0;
+  vkGetPhysicalDeviceQueueFamilyProperties(physical_device, &family_count, nullptr);
+  if (family_count > 0) {
+    std::vector<VkQueueFamilyProperties> families(family_count);
+    vkGetPhysicalDeviceQueueFamilyProperties(physical_device, &family_count, families.data());
+    for (std::uint32_t i = 0; i < family_count; ++i) {
+      const bool gfx = (families[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) != 0;
+      const bool comp = (families[i].queueFlags & VK_QUEUE_COMPUTE_BIT) != 0;
+      if (gfx && graphics_family_ == 0 && families[i].queueCount > 0) {
+        graphics_family_ = i;
+      }
+      if (comp && !gfx) {
+        has_dedicated_compute_ = true;
+        compute_family_ = i;
+        break;
+      }
+    }
+  }
   return omnicpp::core::Result<void>::ok();
 #else
   (void)device; (void)physical_device;
@@ -49,6 +72,9 @@ void VulkanMemoryAllocator::cleanup() noexcept {
   allocation_count_ = 0;
   device_ = VK_NULL_HANDLE;
   physical_device_ = VK_NULL_HANDLE;
+  has_dedicated_compute_ = false;
+  compute_family_ = 0;
+  graphics_family_ = 0;
 }
 
 std::uint32_t VulkanMemoryAllocator::find_memory_type(
@@ -190,6 +216,17 @@ omnicpp::core::Result<Allocation> VulkanMemoryAllocator::create_buffer(
   buffer_info.size = size;
   buffer_info.usage = usage;
   buffer_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+  // Buffers shared between compute and graphics queues: when the device has a
+  // dedicated COMPUTE-only family, mark CONCURRENT (family pair {compute,
+  // graphics}) so cross-family handoffs need no release/acquire ping-pong.
+  std::array<std::uint32_t, 2> sharing_families{};
+  if (has_dedicated_compute_ && compute_family_ != graphics_family_) {
+    sharing_families[0] = compute_family_;
+    sharing_families[1] = graphics_family_;
+    buffer_info.sharingMode = VK_SHARING_MODE_CONCURRENT;
+    buffer_info.queueFamilyIndexCount = 2;
+    buffer_info.pQueueFamilyIndices = sharing_families.data();
+  }
   VkBuffer buffer = VK_NULL_HANDLE;
   if (vkCreateBuffer(device_, &buffer_info, nullptr, &buffer) != VK_SUCCESS) {
     return omnicpp::core::Result<Allocation>::error(

@@ -220,11 +220,45 @@ handoff inside one submission — no queue round-trip. Pipelines load through
 (compute fills a storage buffer; a graphics pipeline renders it; the result is verified
 by pixel readback) with zero validation diagnostics.
 
+### Async Compute Overlap
+
+`AsyncComputeQueue` (same header) drives a **dedicated compute queue** when the device
+exposes one (NVIDIA dGPUs do): a fence ring allows compute frame N+1 to be recorded while
+frame N is still in flight, a `VkSemaphore` of type TIMELINE hands results to graphics, and
+buffer ownership between compute/graphics families is managed explicitly
+(`release_buffer_to`/`acquire_buffer_from`) for exclusive-mode resources. The context
+enables `VK_FEATURE_TIMELINE_SEMAPHORE` and selects a compute-only family when available.
+Hardware-verified by `VulkanHardware.AsyncComputeTimelineHandoff`: compute generates and
+animates triangle vertices for frame N+1 while graphics renders frame N, with the vertex
+data validated against the analytic rotation.
+
+## GPU-Driven Rendering
+
+The `cull_and_draw.comp` + `gpu_objects` pipeline implements a CPU-independent draw path:
+compute culls each instance's bounding sphere against view-frustum planes, compacts
+accepted indices into a list, and **atomically maintains the indirect draw command** —
+graphics executes `vkCmdDrawIndirect` and the vertex shader resolves
+`compacted[gl_InstanceIndex]`. The CPU never touches per-instance draw data; it only
+publishes instance state. `VulkanHardware.GpuDrivenCullIndirectDraw` verifies both
+directions by readback (an all-visible frame is populated; moving every sphere behind the
+camera empties the frame to 0 pixels), and `VulkanHardware.SustainedGpuDrivenFrameBenchmark`
+runs a 300-frame animated loop, reporting frame-CPU percentiles (p50/p90/p99/p99.9/max)
+via `LatencyTracker`.
+
+## 3D Objects: Depth, Transforms, Animation
+
+`VulkanOffscreenTarget::create_depth()` adds an optional depth attachment (D32 or D24S8,
+format-capability checked); the render pass gains a depth attachment with clear-to-1.0.
+Cube meshes are drawn with model + view-projection matrices through push constants,
+depth-tested, backface-culled, and animated. `VulkanHardware.CubeMeshDepthOcclusionAnimation`
+verifies by pixel classification: the near cube occludes the far one, swapping depths
+swaps the visible color both ways, and a 45-degree rotation changes the rendered image.
+
 ## Remaining Roadmap
 
 1. **Cross-vendor hardware runs** (AMD/Intel/mobile) — requires physical hardware or a
    GPU CI service; the lavapipe CI job covers driver-independent correctness.
-2. Async-compute overlap in the render graph (queue-family transitions, graphics/compute
-   parallelism) on top of the compute dispatch layer.
-3. Job-system prioritization across submit/upload queues; zero-allocation audit of
-   remaining per-frame paths.
+2. Render-graph-native async compute: partition passes onto the compute queue with
+   automatic release/acquire barriers (the `AsyncComputeQueue` primitives exist).
+3. GPU-driven scene scale-up: mesh-level LOD selection, Hi-Z occlusion culling, and
+   per-draw culling counters read back through the telemetry path.

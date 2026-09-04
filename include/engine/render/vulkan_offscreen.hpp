@@ -26,12 +26,23 @@ public:
       VkDevice device, VkPhysicalDevice physical_device,
       VkFormat format, std::uint32_t width, std::uint32_t height,
       VulkanMemoryAllocator* allocator = nullptr);
+
+  //! Optional depth-stencil attachment. Call BEFORE create_render_pass();
+  //! when present, the render pass gains a depth attachment (cleared to
+  //! 1.0, stored DONT_CARE) and the framebuffer includes its view.
+  [[nodiscard]] omnicpp::core::Result<void> create_depth(
+      VkDevice device, VkPhysicalDevice physical_device, VkFormat depth_format);
+
   [[nodiscard]] omnicpp::core::Result<void> create_render_pass(VkDevice device);
   [[nodiscard]] omnicpp::core::Result<void> create_framebuffer(VkDevice device);
   void cleanup(VkDevice device) noexcept;
 
   [[nodiscard]] VkImage image() const noexcept { return image_; }
   [[nodiscard]] VkImageView image_view() const noexcept { return image_view_; }
+  [[nodiscard]] VkImage depth_image() const noexcept { return depth_image_; }
+  [[nodiscard]] VkImageView depth_view() const noexcept { return depth_view_; }
+  [[nodiscard]] VkFormat depth_format() const noexcept { return depth_format_; }
+  [[nodiscard]] bool has_depth() const noexcept { return depth_image_ != VK_NULL_HANDLE; }
   [[nodiscard]] VkRenderPass render_pass() const noexcept { return render_pass_; }
   [[nodiscard]] VkFramebuffer framebuffer() const noexcept { return framebuffer_; }
   [[nodiscard]] VkFormat format() const noexcept { return format_; }
@@ -50,6 +61,12 @@ private:
   Allocation allocator_allocation_{};
   bool uses_allocator_{false};
   VkImageView image_view_{VK_NULL_HANDLE};
+  VkImage depth_image_{VK_NULL_HANDLE};
+  VkImageView depth_view_{VK_NULL_HANDLE};
+  VkDeviceMemory depth_memory_{VK_NULL_HANDLE};
+  VkFormat depth_format_{VK_FORMAT_UNDEFINED};
+  bool depth_uses_allocator_{false};
+  Allocation depth_allocation_{};
   VkRenderPass render_pass_{VK_NULL_HANDLE};
   VkFramebuffer framebuffer_{VK_NULL_HANDLE};
   VkFormat format_{VK_FORMAT_UNDEFINED};

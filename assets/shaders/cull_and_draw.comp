@@ -1,0 +1,69 @@
+#version 450
+
+// cull_and_draw.comp — GPU-driven rendering prep: per-instance frustum
+// culling with compaction. Each invocation tests one instance's bounding
+// sphere against the view frustum; accepted instances are appended (atomic
+// slot allocation) to a compacted index list, and the indirect draw's
+// instanceCount accumulates the accepted total. Graphics executes
+// vkCmdDrawIndirect with this command; the vertex shader resolves
+// compacted[gl_InstanceIndex] — the CPU never touches per-instance data.
+//
+// Binding 0, flat uint words (std430, stride 4):
+//   [0]                 instance_count
+//   [1]                 accepted_count  (atomic: compaction cursor AND result)
+//   [2  .. 25]          frustum: 6 planes x (nx, ny, nz, d), inside = +d
+//   [sp .. sp+4N-1]     spheres: N x (cx, cy, cz, radius)
+//   [cp .. cp+N-1]      compacted original instance indices (output)
+//   sp = 26, cp = 26 + 4*N (push constants)
+//
+// Binding 1, VkDrawIndirectCommand:
+//   vertexCount=36 (filled by CPU once), instanceCount (atomic on GPU),
+//   firstVertex=0, firstInstance=0.
+
+layout(local_size_x = 64) in;
+
+layout(set = 0, binding = 0, std430) buffer CullBuffer {
+  uint words[];
+} cull;
+
+layout(set = 0, binding = 1, std430) buffer DrawBuffer {
+  uint vertexCount;
+  uint instanceCount;
+  uint firstVertex;
+  uint firstInstance;
+} draw_cmd;
+
+layout(push_constant) uniform Push {
+  uint sphere_offset;   // word index of the spheres (26)
+  uint compact_offset;  // word index of the compacted list (26 + 4*N)
+} push;
+
+void main() {
+  const uint i = gl_GlobalInvocationID.x;
+  if (i >= cull.words[0]) return;
+
+  const uint sp = push.sphere_offset + i * 4u;
+  const vec4 s = vec4(uintBitsToFloat(cull.words[sp]),
+                      uintBitsToFloat(cull.words[sp + 1u]),
+                      uintBitsToFloat(cull.words[sp + 2u]),
+                      uintBitsToFloat(cull.words[sp + 3u]));
+
+  bool visible = true;
+  for (int p = 0; p < 6; ++p) {
+    const uint fp = 2u + uint(p) * 4u;
+    const vec3 n = vec3(uintBitsToFloat(cull.words[fp]),
+                        uintBitsToFloat(cull.words[fp + 1u]),
+                        uintBitsToFloat(cull.words[fp + 2u]));
+    const float d = uintBitsToFloat(cull.words[fp + 3u]);
+    if (dot(n, s.xyz) + d < -s.w) {
+      visible = false;
+      break;
+    }
+  }
+  if (!visible) return;
+
+  // Accepted: allocate a compaction slot; header.y doubles as the cursor.
+  const uint slot = atomicAdd(cull.words[1], 1u);
+  cull.words[push.compact_offset + slot] = i;
+  atomicAdd(draw_cmd.instanceCount, 1u);
+}
