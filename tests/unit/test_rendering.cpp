@@ -49,6 +49,23 @@ struct ReadbackResult {
   std::uint64_t canonical_hash{0};
 };
 
+// Golden fingerprint for the bundled triangle's coarse spatial content. Unlike
+// the raw byte hash, this is independent of BGRA/RGBA and sRGB choice — but it
+// is still driver-specific (rasterization sampling differs between NVIDIA and
+// Mesa lavapipe), so every known-good value is accepted.
+void expect_canonical_triangle_hash(std::uint64_t canonical_hash) {
+  switch (canonical_hash) {
+    case 9189736358881991061ULL:  // NVIDIA (RTX 2060)
+    case 2348590267748365716ULL:  // Mesa lavapipe (CI)
+      SUCCEED();
+      break;
+    default:
+      ADD_FAILURE() << "unexpected canonical_hash=" << canonical_hash
+                    << " (add the new driver's known-good value if valid)";
+      break;
+  }
+}
+
 ReadbackResult readback_swapchain_image(VkPhysicalDevice physical_device, VkDevice device,
                                         VkQueue queue, std::uint32_t queue_family,
                                         VkImage image, VkFormat image_format,
@@ -436,7 +453,7 @@ TEST(VulkanHardware, HeadlessSwapchainAndRenderSubmission) {
             << std::endl;
   // Golden fingerprint for the bundled triangle's coarse spatial content.
   // Unlike the raw byte hash, this is independent of BGRA/RGBA and sRGB choice.
-  EXPECT_EQ(readback.canonical_hash, 9189736358881991061ULL);
+  expect_canonical_triangle_hash(readback.canonical_hash);
   ASSERT_TRUE(renderer.present_frame().is_ok());
 
   // Exercise both frame slots and the complete swapchain image set. A single
@@ -1448,7 +1465,7 @@ TEST(VulkanHardware, OffscreenTriangleReadback) {
   EXPECT_GT(readback.red_dominant_pixels, 100U);
   EXPECT_GT(readback.green_dominant_pixels, 100U);
   EXPECT_GT(readback.blue_dominant_pixels, 100U);
-  EXPECT_EQ(readback.canonical_hash, 9189736358881991061ULL);
+  expect_canonical_triangle_hash(readback.canonical_hash);
   EXPECT_EQ(context.validation_error_count(), 0U);
   EXPECT_EQ(context.validation_warning_count(), 0U);
 
