@@ -32,7 +32,9 @@
 #include "engine/render/vulkan_offscreen.hpp"
 #include "engine/render/vulkan_pipeline.hpp"
 #include "engine/render/vulkan_renderer.hpp"
-#if OMNICPP_VULKAN_TYPES_AVAILABLE
+#ifdef OMNICPP_HAS_VULKAN
+#include "vulkan_test_readback.hpp"
+
 using omnicpp_test::readback_swapchain_image;
 #endif
 

@@ -106,6 +106,14 @@ std::size_t VulkanMemoryAllocator::find_or_create_block(
     if ((type_bits & (1U << blocks_[i].memory_type)) == 0U) continue;
     const auto block_flags = memory_properties.memoryTypes[blocks_[i].memory_type].propertyFlags;
     if ((block_flags & properties) != properties) continue;
+    // A block is mapped only when its ORIGINAL request included HOST_VISIBLE.
+    // On drivers where a device-local type is also host-visible (llvmpipe), a
+    // flag-only check would serve host-visible allocations from an unmapped
+    // block, yielding mapped=nullptr and a crash on first CPU write.
+    if ((properties & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) != 0U &&
+        blocks_[i].mapped == nullptr) {
+      continue;
+    }
     for (const auto& range : blocks_[i].free_ranges) {
       if (range.size >= size) return i;
     }
